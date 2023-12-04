@@ -11,7 +11,7 @@ global user 1
 
 
 if $user==1 {
-* G:\.shortcut-targets-by-id\1WdgNEyGs57PgSqqCPP_B2s_Inzx7SKst\Spillover migration data
+
 global IN  C:/Users/laura/Desktop/InnovationProject/data/raw
 *global CEO_IN C:/Users/laura/Desktop/data/CEOProject/rawdata
 global TEMP C:/Users/laura/Desktop/InnovationProject/data/temp
