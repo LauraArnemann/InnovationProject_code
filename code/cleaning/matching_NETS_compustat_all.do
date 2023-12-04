@@ -146,13 +146,49 @@ drop gvkey
 save "${TEMP}/NETS_nonmerged3_all.dta", replace 
 
 
-
 ********************************************************************************
 * Fuzzy Name-to-Name matching using reclink command 
 ********************************************************************************
 
 use "${TEMP}/compustat_nonmerged3.dta", clear 
-reclink hqcompany using "${TEMP}/NETS_nonmerged3_all.dta", gen(myscore) idm(gvkey) idu(hqduns) 
+reclink hqcompany hqzipcode using "${TEMP}/NETS_nonmerged3_all.dta", gen(myscore) idm(gvkey) idu(hqduns) 
+keep if myscore>0.9
+keep if _merge==3 
+keep hqduns gvkey hqcompany Uhqcompany Uhqzipcode hqzipcode
+
+export excel using "${TEMP}/matched_reclink_patents_all_zipcode_name.xlsx", replace firstrow(variables)
+
+********************************************************************************
+* An RA manually assessed the quality of the match: Then read it in again 
+********************************************************************************
+
+import excel using "${TEMP}/matched_reclink_patents_all_zipcode_name_reviewed.xlsx", firstrow clear 
+keep if Matching_control==1 
+duplicates tag gvkey if Matching_control==1, gen(dup)
+drop if dup==1 
+drop dup 
+duplicates tag hqduns if Matching_control==1, gen(dup)
+drop if dup==1
+drop dup 
+* two companies, which we will probably need to research independently 
+tempfile matching3 
+save `matching3'
+
+use "${TEMP}/compustat_nonmerged3.dta", clear 
+merge 1:1 gvkey using `matching3'
+keep if _merge==1 
+drop _merge 
+drop hqduns 
+save "${TEMP}/compustat_nonmerged4.dta", replace 
+
+
+********************************************************************************
+* Merge with all headquarters of publicly listed companies not only those with
+* multiple establishments 
+********************************************************************************
+
+
+
 
 
 
