@@ -4,15 +4,15 @@
 // Author: Laura Arnemann 
 // Goal: Master 
 
-JUST CHANGEING STH TO TRY OUT GIT
 * Set the global so the paths adjust quickly
 
 global user 1 
 
 
 if $user==1 {
-
+* G:\.shortcut-targets-by-id\1WdgNEyGs57PgSqqCPP_B2s_Inzx7SKst\Spillover migration data
 global IN  C:/Users/laura/Desktop/InnovationProject/data/raw
+global code C:/Users/laura/Desktop/InnovationProject/code_git
 *global CEO_IN C:/Users/laura/Desktop/data/CEOProject/rawdata
 global TEMP C:/Users/laura/Desktop/InnovationProject/data/temp
 global OUT C:/Users/laura/Desktop/InnovationProject/data/final
@@ -33,6 +33,14 @@ else {
 ********************************************************************************
 * Matching NETS + Patent Data via Compustat
 ********************************************************************************
+
+
+do "${code}/01_cleaning_compustat.do" 
+do "${code}/02_cleaning_NETS.do"
+
+* Afterwards matching with the different companies 
+
+do ${code}/ 
 
 *1: cleaning_NETS + cleaning_NETS_10employees 
 *2: cleaning_compustat 

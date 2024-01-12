@@ -4,8 +4,10 @@
 // Author: Laura Arnemann 
 // Goal: Preparing Nets Data for merge 
 
-/* 
-*/ 
+
+********************************************************************************
+* Only Use Data on public companies 
+********************************************************************************
 
 use "${IN}/NETS2022_hq_multiple.dta", clear 
 merge 1:1 dunsnumber using "${TEMP}/public_private/public_companies.dta"
@@ -13,7 +15,6 @@ keep if _merge==3
 drop _merge 
 duplicates drop hqduns, force  
 save "${TEMP}/NETS2022_public.dta", replace 
-
 
 
 use "${TEMP}/NETS2022_hq_multiple.dta", clear 

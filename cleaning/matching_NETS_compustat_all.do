@@ -182,6 +182,23 @@ drop hqduns
 save "${TEMP}/compustat_nonmerged4.dta", replace 
 
 
+* Match with all companies that reported being a public company 
+
+use "${TEMP}/compustat_nonmerged4.dta", clear
+drop Uhqcompany Uhqzipcode Matching_control H 
+reclink hqcompany using "${IN}/main_data/data_NETS/hq_companies_public_cleaned.dta", gen(myscore) idm(gvkey) idu(hqduns) 
+keep if myscore >0.9 
+keep hqduns gvkey hqcompany Uhqcompany NETSzipcode hqzipcode 
+export excel using "${TEMP}/matched_reclink_patents_public_name.xlsx", replace firstrow(variables)
+
+* Again this was checked manually by an RA 
+
+
+import excel using "${TEMP}/matched_reclink_patents_public_name_bearbeitet.xlsx", firstrow clear
+keep if Match==1 
+duplicates tag gvkey, gen(dup)
+
+
 ********************************************************************************
 * Merge with all headquarters of publicly listed companies not only those with
 * multiple establishments 

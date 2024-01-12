@@ -5,13 +5,13 @@
 // Goal: Name Matching compustat and NETS data which were indicated as public companies in data set 
 
 
-use "${IN}/gvkey_patents.dta", clear
-destring gvkey, replace 
-save "${TEMP}/patmatch.dta", replace 
+use "${IN}/main_data/data_patents/patmatch.dta", clear
+tempfile patmatch 
+save `patmatch', replace 
 
 
 use "${TEMP}/compustat.dta", clear
-merge 1:m gvkey using "${TEMP}/patmatch.dta" , keepusing(gvkey)
+merge 1:m gvkey using `patmatch' , keepusing(gvkey)
 * patents from 27 companies not matched 
 gen nopatents=1 if _merge==1 
 drop indfmt consol popsrc datafmt curcd costat datadate
@@ -21,8 +21,7 @@ drop _merge
 save "${TEMP}/nonmerged_companies_compustat.dta", replace 
 
 
-use "${IN}/NETS2022_hq_multiple.dta", clear 
-
+use "${IN}/main_data/data_NETS/NETS2022_hq_multiple.dta", clear 
 drop if hqcompany=="DLISTED" 
 replace hqcompany=subinstr(hqcompany,"INC","INCORPORATED",.)
 replace hqcompany = subinstr(hqcompany,"CORPORATION","CORP",.)
@@ -72,10 +71,9 @@ foreach char in "'" ".""!" "?" "*" ","{
 duplicates drop hqduns, force
 drop if missing(hqcompany)
 
-rename hqzipcode NETSzipcode 
-
-merge 1:1 dunsnumber using "${IN}/public_private/public_companies.dta"
-keep if _merge==3 
+merge 1:1 dunsnumber using "${IN}/main_data/data_NETS/public_companies.dta"
+*"${IN}/main_data/data_NETS/public_companies.dta"
+keep if _merge==3 | _merge==2
 *  5,805 companies not merged 
 drop _merge 
 duplicates drop hqduns, force  
@@ -85,10 +83,10 @@ save "${TEMP}/NETS2022_public_cleaned.dta", replace
 
 
 use "${TEMP}/compustat.dta", clear
-merge 1:m gvkey using `patmatch' 
-gen nopatents=1 if _merge==1 
-keep if missing(nopatents)
-drop _merge 
+*merge 1:m gvkey using "${IN}/main_data/data_patents/patmatch.dta"
+*gen nopatents=1 if _merge==1 
+*keep if missing(nopatents)
+*drop _merge 
 duplicates drop gvkey, force  
 
 * 42979 unique gvkeys 
@@ -100,6 +98,7 @@ duplicates drop hqcompany, force
 replace hqcompany = subinstr(hqcompany," ","",.)
 replace hqcompany = subinstr(hqcompany,"CORPORATION","CORP",.)
 replace hqcompany = subinstr(hqcompany, "(THE)", "", .)
+*replace hqcompany = subinstr(hqcompany,"(DEL)","",.)
 replace hqcompany = subinstr(hqcompany,"/NV","",.)
 replace hqcompany = subinstr(hqcompany,"TECHNNOLOGIES","TECH",.)
 replace hqcompany = subinstr(hqcompany,"TECHNNOLOGY","TECH",.)
@@ -117,7 +116,23 @@ replace hqcompany = subinstr(hqcompany,"RSRTS","RESORTS",.)
 replace hqcompany = subinstr(hqcompany,"-RDH","",.)
 replace hqcompany = subinstr(hqcompany,"-ADS","",.)
 replace hqcompany = subinstr(hqcompany,"()","",.)
+*replace hqcompany = subinstr(hqcompany,"RESOURCES","RES",.)
+*replace hqcompany = subinstr(hqcompany,"PHARMACEUTICALS","PHARMA",.)
+*replace hqcompany = subinstr(hqcompany,"PHARMACEUTICAL","PHARMA",.)
+*replace hqcompany = subinstr(hqcompany,"INTERNATIONAL","INTL",.)
+*replace hqcompany = subinstr(hqcompany,"SERVICES","SVCS",.)
+*replace hqcompany = subinstr(hqcompany,"LABORATORIES","LABS",.)
+*replace hqcompany = subinstr(hqcompany,"LABORATORY","LAB",.)
 
+/*
+foreach char in "'" ".""!" "?" "*" ","{
+	qui replace hqcompany = subinstr(hqcompany, "`char'",  "",.)
+}
+
+foreach char in "'" ".""!" "?" "*" ","{
+	qui replace hqcompany = subinstr(hqcompany, "`char'",  "",.)
+}
+*/
 *53 companies which appeared two times 
 duplicates drop hqcompany, force 
 destring hqzipcode, replace force 
@@ -128,40 +143,36 @@ save "${TEMP}/compustat_names_cleaned.dta", replace
 ********************************************************************************
 use "${TEMP}/compustat_names_cleaned.dta", clear 
 merge 1:m hqcompany using "${TEMP}/NETS2022_public_cleaned.dta"
-
+*merge 1:m hqcompany using "${IN}/main_data/data_NETS/NETS2022_public_cleaned.dta"
+* Still haven't really figured out where this came from 
 
 * Only companies which recorded some sort of patenting activity 
 /*
     Result                      Number of obs
     -----------------------------------------
-    Not matched                        21,482
-        from master                     7,470  (_merge==1)
-        from using                     14,012  (_merge==2)
+    Not matched                        21,551
+        from master                     7,505  (_merge==1)
+        from using                     14,046  (_merge==2)
 
-    Matched                             9,976  (_merge==3)
+    Matched                             9,942  (_merge==3)
     -----------------------------------------
-*/ 
 
-
-
-
+*/
 
 /* 
-
-
     Result                      Number of obs
     -----------------------------------------
-    Not matched                        47,672
-        from master                    33,396  (_merge==1)
-        from using                     14,276  (_merge==2)
+    Not matched                       920,110
+        from master                    31,995  (_merge==1)
+        from using                    888,115  (_merge==2)
 
-    Matched                             9,712  (_merge==3)
+    Matched                            12,511  (_merge==3)
     -----------------------------------------
-
 
 */ 
 
- * This affects 172 observations 
+
+* I assume this is all observations not limited to only the companies that 
 
 keep if _merge==3
 duplicates tag gvkey, gen(dup)
@@ -170,9 +181,9 @@ drop if dup>0 & hqzipcode!= zipNETS
 duplicates drop gvkey, force 
 
 keep gvkey hqduns 
-*3978 observations matched
+*actually with this we get 4151 observations matched from compustat to NETS 
+*save "${TEMP}/linking_table/public_linkingtable1_v2.dta", replace 
 save "${TEMP}/linking_table/public_linkingtable1.dta", replace 
-
 
 use "${TEMP}/compustat_names_cleaned.dta", clear 
 merge 1:1 gvkey using "${TEMP}/linking_table/public_linkingtable1.dta"
