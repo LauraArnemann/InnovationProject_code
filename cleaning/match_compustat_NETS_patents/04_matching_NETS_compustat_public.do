@@ -5,6 +5,8 @@
 // Goal: Name Matching compustat and NETS data which were indicated as public companies in data set 
 
 
+
+
 use "${IN}/main_data/data_patents/patmatch.dta", clear
 tempfile patmatch 
 save `patmatch', replace 
@@ -182,8 +184,8 @@ duplicates drop gvkey, force
 
 keep gvkey hqduns 
 *actually with this we get 4151 observations matched from compustat to NETS 
-*save "${TEMP}/linking_table/public_linkingtable1_v2.dta", replace 
-save "${TEMP}/linking_table/public_linkingtable1.dta", replace 
+save "${TEMP}/linking_table/public_linkingtable1_v2.dta", replace 
+*save "${TEMP}/linking_table/public_linkingtable1.dta", replace 
 
 use "${TEMP}/compustat_names_cleaned.dta", clear 
 merge 1:1 gvkey using "${TEMP}/linking_table/public_linkingtable1.dta"

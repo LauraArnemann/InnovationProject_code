@@ -171,15 +171,17 @@ duplicates tag hqduns if Matching_control==1, gen(dup)
 drop if dup==1
 drop dup 
 * two companies, which we will probably need to research independently 
-tempfile matching3 
-save `matching3'
+save "${TEMP}/linking_table/nonpublic_linkingtable4.dta", replace 
 
 use "${TEMP}/compustat_nonmerged3.dta", clear 
-merge 1:1 gvkey using `matching3'
+merge 1:1 gvkey using "${TEMP}/linking_table/nonpublic_linkingtable4.dta"
 keep if _merge==1 
 drop _merge 
 drop hqduns 
 save "${TEMP}/compustat_nonmerged4.dta", replace 
+
+
+* Generate new linking table based on work from RA
 
 
 * Match with all companies that reported being a public company 
@@ -197,6 +199,10 @@ export excel using "${TEMP}/matched_reclink_patents_public_name.xlsx", replace f
 import excel using "${TEMP}/matched_reclink_patents_public_name_bearbeitet.xlsx", firstrow clear
 keep if Match==1 
 duplicates tag gvkey, gen(dup)
+duplicates drop gvkey, force 
+* This deletes two observations 
+keep gvkey hqduns 
+save "${TEMP}/linking_table/nonpublic_linkingtable5.dta"
 
 
 ********************************************************************************

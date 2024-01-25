@@ -39,6 +39,15 @@ merge m:1 gvkey using "${TEMP}/linking_table/nonpublic_linkingtable3.dta"
 replace max_merge =3 if _merge==3 
 drop _merge
 
+merge m:1 gvkey using "${TEMP}/linking_table/nonpublic_linkingtable4.dta"
+replace max_merge =3 if _merge==3 
+drop _merge
+
+
+merge m:1 gvkey using "${TEMP}/linking_table/nonpublic_linkingtable5.dta"
+replace max_merge =3 if _merge==3 
+drop _merge
+
 merge m:1 gvkey using "${TEMP}/linking_table/linking_table1.dta"
 replace max_merge =3 if _merge==3 
 drop _merge
@@ -47,7 +56,7 @@ merge m:1 gvkey using "${TEMP}/linking_table/linking_table2.dta"
 replace max_merge =3 if _merge==3 
 drop _merge
 
-* This way I already matched 40% of the observations with the NETS database 
+* This way I already matched 42% of the observations with the NETS database 
 
 /*
  max_merge |      Freq.     Percent        Cum.
@@ -73,6 +82,76 @@ merge 1:m gvkey gyear using "${IN}/main_data/data_patents/patmatch.dta"
 */
 
 * Currently we match half of the companies with positive R+D expenditure, overall 26.67 percent of all companies 
+
+* Checking for Execucomp 
+global TEMP_INNO C:/Users/laura/Desktop/InnovationProject/data/temp
+
+
+use "$OUT/final_stacked_increases.dta", clear
+
+
+merge m:1 gvkey using "${TEMP_INNO}/linking_table/public_linkingtable1_v2.dta"
+
+/*
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                       404,956
+        from master                   404,956  (_merge==1)
+        from using                          0  (_merge==2)
+
+    Matched                           201,948  (_merge==3)
+    -----------------------------------------
+*/
+
+drop if _merge==2 
+gen max_merge = _merge if _merge==3 
+drop _merge 
+
+
+merge m:1 gvkey using "${TEMP_INNO}/linking_table/public_linkingtable2_v2.dta"
+* 3.218 observations already matched 
+replace max_merge =3 if _merge==3 
+drop _merge 
+replace max_merge=0 if missing(max_merge)
+
+merge m:1 gvkey using "${TEMP_INNO}/linking_table/nonpublic_linkingtable3.dta"
+replace max_merge =3 if _merge==3 
+drop _merge
+
+merge m:1 gvkey using "${TEMP_INNO}/linking_table/nonpublic_linkingtable4.dta"
+replace max_merge =3 if _merge==3 
+drop _merge
+
+
+merge m:1 gvkey using "${TEMP_INNO}/linking_table/nonpublic_linkingtable5.dta"
+replace max_merge =3 if _merge==3 
+drop _merge
+
+merge m:1 gvkey using "${TEMP_INNO}/linking_table/linking_table1.dta"
+replace max_merge =3 if _merge==3 
+drop _merge
+
+merge m:1 gvkey using "${TEMP_INNO}/linking_table/linking_table2.dta"
+replace max_merge =3 if _merge==3 
+drop _merge
+
+/*
+
+  max_merge |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     46,889       16.67       16.67
+          3 |    234,416       83.33      100.00
+------------+-----------------------------------
+      Total |    281,305      100.00
+
+Some 8 duplicates of gvkey   
+	  
+	  
+*/ 
+
+
+
 
 /*
 use "C:\Users\laura\Desktop\patent_gvkey_merge_reclink_allmatched.dta", clear

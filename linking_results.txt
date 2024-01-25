@@ -1,10 +1,18 @@
-# This is just an overview of the linking steps carried out and the success rate of the respective steps
+# This is just an overview of the linking steps carried out and the success rate of the respective steps: 12.01.2024 
+
+
+# These two tables are created using the dofile name_matching_NETS_2020
 
 # Linking Table 1: 
 Direct matching of compustat 2020 companies with geocoded NETS data based on latitude longitude and company name 
 
 # Linking Table 2: 
 *Fuzzy Geomatching using a python file 
+
+
+
+
+# These two tables are created using the dofile matching_NETS_compustat_public
 
 # Public Linking Table 1: 
 Direct name matching of compustat companies with recorded patent activity and public companies in NETS with multiple estabs; matches 3978 unique gvkey
@@ -13,8 +21,13 @@ Direct name matching of compustat companies with recorded patent activity and pu
 Fuzzy name matching of compustat companies with recorded patent activity and public companies in NETS with multiple estabs; matches 998 unique gvkeys
 
 
+
 # Linking Table 3: 
 Fuzzy name matching of compustat companies with recorded patent activity and companies with multiple hqs in NETS; only companies kept with the same zip code 
 
 # Linking Table 4: 
 Fuzzy name and zipcode matching of compustat companies with recorded patent activity and companies with multiple hqs in NETS
+
+
+# Public Linking Table 1 V2: 
+Direct name matching of compustat companies and public companies in NETS; matches 10.175 unique gvkeys

@@ -38,9 +38,20 @@ else {
 do "${code}/01_cleaning_compustat.do" 
 do "${code}/02_cleaning_NETS.do"
 
-* Afterwards matching with the different companies 
 
-do ${code}/ 
+* Matching the NETS data with the compustat companies 
+
+* this merges only compustat companies which were in the 2020 dataset  
+do "${code}/name_matching_2020.do"
+
+* this merges only NETS companies which were indicated as public companies 
+do "${code}/matching_NETS_compustat_public.do"
+
+* this merges only NETS companies which reported to have multiple HQs 
+do "${code}/matching_NETS_compustat_all.do"
+
+* To check the number of merges one can run 
+do "${code}/checking_RD_expenditure.do" 
 
 *1: cleaning_NETS + cleaning_NETS_10employees 
 *2: cleaning_compustat 

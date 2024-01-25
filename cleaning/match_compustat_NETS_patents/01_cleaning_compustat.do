@@ -80,4 +80,9 @@ forvalues i=1/18 {
 	local b=`a'+1
 	save "${TEMP}/compustat_addresses`i'.dta", replace 
 }
-
+*/
+clear 
+forvalues i=1/18 {
+	append using "${TEMP}/geocoding_done/compustat/compustat_geocoded_`i'.dta", clear
+}
+save "${TEMP}/geocoding_done/compustat/compustat_geocoded_final.dta"

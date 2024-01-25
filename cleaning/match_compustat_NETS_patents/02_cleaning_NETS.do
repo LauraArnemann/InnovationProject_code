@@ -4,7 +4,7 @@
 // Author: Laura Arnemann 
 // Goal: Preparing Nets Data for merge 
 
-
+use "${TEMP}/public_private/public_companies.dta", clear
 ********************************************************************************
 * Only Use Data on public companies 
 ********************************************************************************

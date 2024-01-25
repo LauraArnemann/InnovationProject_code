@@ -2,9 +2,6 @@
 
 
 
-
-
-
 use "${TEMP}/compustat_names_cleaned.dta", clear 
 merge 1:m gvkey using "${TEMP}/linking_table/public_linkingtable1.dta", keepusing(hqduns)
 keep if _merge==3 
