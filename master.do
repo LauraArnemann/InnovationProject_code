@@ -9,6 +9,8 @@
 global user 1 
 
 
+*ssc install outreg2
+
 if $user==1 {
 * G:\.shortcut-targets-by-id\1WdgNEyGs57PgSqqCPP_B2s_Inzx7SKst\Spillover migration data
 global IN  C:/Users/laura/Desktop/InnovationProject/data/raw
@@ -17,6 +19,12 @@ global code C:/Users/laura/Desktop/InnovationProject/code_git
 global TEMP C:/Users/laura/Desktop/InnovationProject/data/temp
 global OUT C:/Users/laura/Desktop/InnovationProject/data/final
 global LINKING  C:/Users/laura/Desktop/InnovationProject/data/linking_table
+
+
+global PATENTDTA C:/Users/laura/Desktop/InnovationProject/data/raw/main_data/data_patents
+global REGDTA C:/Users/laura/Desktop/InnovationProject/data/temp/
+
+global RESULTS C:/Users/laura/Desktop/InnovationProject/results
 
 }
 

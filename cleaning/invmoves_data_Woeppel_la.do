@@ -5,9 +5,11 @@
 /// LAST UPDATE: 11-01-2024
 /// DATA: Woeppel patent data
 
+if user ==2 {
 *Set environment
-global PATENTDTA "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Data\Patent Data US_Woeppel"
+global PATENTDTA "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Data\Patent Data US_Woeppel\Temp"
 global REGDTA "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data"
+} 
 
 *A. ****************************************************************************
 *Generate dataset with inventor movements **************************************
@@ -15,11 +17,14 @@ global REGDTA "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillo
 use patnum citation_count withdrawn date_filing date_grant app_year ///
 	inventor_id first_name last_name male location_id state_fips_inventor county_fips_inventor ///
 	assignee_id state_fips_assignee county_fips_assignee  ///
-	using "$PATENTDTA\Temp\inventor_applications.dta", clear
+	using "$PATENTDTA\inventor_applications.dta", clear
 
+* @Theresa nur um sicherzugehen, du hast hier 4560803 unique Patent Numbers und 9936681 records
 *Cleaning	
 drop if withdrawn==1 
 drop withdrawn
+
+
 *-Drop if missings in important variables
 drop if app_year == .
 drop if county_fips_inventor == .
@@ -36,7 +41,7 @@ drop tag
 tab ndistinct // keep ndistinct as tag for multiple loction changes within a year
 
 	//If multiple states are observed, 
-	//A. use mode of state-fips (most frequent location in data)
+	//A. use mode of state-fips (most frequent location in data); several observations had multiple modes. How should we handle them? 139,099 for which this is the case
 	bysort inventor_id app_year: egen county_inv = mode(county_fips_inventor)	
 	bysort inventor_id app_year: egen state_inv = mode(state_fips_inventor)
 	
@@ -64,12 +69,12 @@ label var county_inv "County of Residence in t"
 label var state_inv "State of Residence in t"
 label var n_patents "Number of Patents"
 
-save "$PATENTDTA\Temp\inventor_applic_collapse.dta", replace
+save "$PATENTDTA/inventor_applic_collapse.dta", replace
 
 *B. ****************************************************************************
 *Calculate migration flows *****************************************************
 
-use "$PATENTDTA\Temp\inventor_applic_collapse.dta", clear
+use "$PATENTDTA/inventor_applic_collapse.dta", clear
 
 /*
 drop if ndistinct > 2	//see note above
@@ -77,7 +82,18 @@ drop if ndistinct > 2	//see note above
 
 *Add commuting zones data
 rename county_inv county_fips
-	merge m:1 county_fips using "Temp\CZ_combined.dta"
+	merge m:1 county_fips using "${IN}/var_CommutingZones/CZ_combined.dta"
+	
+  /*  Result                      Number of obs
+    -----------------------------------------
+    Not matched                        65,661
+        from master                    65,593  (_merge==1)
+        from using                         68  (_merge==2)
+
+    Matched                         4,619,363  (_merge==3)
+    -----------------------------------------
+	*/
+
 drop if _merge == 2
 rename county_fips county_inv
 drop county_name_UScensus county_name_depagri _merge
@@ -135,46 +151,69 @@ foreach geo in "state" "CZ_depagri_2000" "CZ_UScensus"{
 		//if ndistinct =max(1): 9%-14% of inventors move at least once
 }
 
-save "$PATENTDTA\Stata\woeppel_inventor_moves.dta", replace
+save "$PATENTDTA/woeppel_inventor_moves.dta", replace
 
 *C. ****************************************************************************
 *Generate reg sample *******************************************************************
+if ${user}==1 {
+ import excel "${IN}/indep_var/var_ITC/ITC_Data_28.07..xlsx", sheet("ITC_Vergleich") firstrow clear
+
+save "${IN}/indep_var/var_ITC/ITC_final.dta", replace
+
+
+ import excel "${IN}/indep_var/var_RDcredits/RD_credits_final.xlsx",  firstrow clear
+ duplicates drop year fips_state, force 
+save "${IN}/indep_var/var_RDcredits/RD_credits_final.dta", replace
+} 
+
 
 *Combine RHS variables
-use "$REGDTA\raw\var_other\data_statepairs.dta", clear
+use "${IN}/var_other/data_statepairs.dta", clear
 	drop *_dest
 	duplicates drop year fips_state_orig, force
 	rename fips_state_orig fip_state
-merge 1:1 year fip_state using "$REGDTA\raw\indep var\var_ITC\ITC_final.dta", nogen
+merge 1:1 year fip_state using "${IN}/indep_var/var_ITC/ITC_final.dta", nogen keepusing(itc_1 itc_2)
 	rename fip_state fips_state
-merge 1:1 year fips_state using "$REGDTA\raw\indep var\var_R&Dcredits\R&D_credits_final.dta", nogen
+merge 1:1 year fips_state using "${IN}/indep_var/var_RDcredits/RD_credits_final.dta", nogen keepusing(DT1lowesttier)
 
+
+if ${user}==1 {
+rename itc_1 ITC_rate_orig
+destring ITC_rate_orig, replace 
+rename DT1lowesttier rd_credit_orig
+destring rd_credit_orig, replace force 
+}
+
+if ${user}==2 {
 rename ITC_rate ITC_rate_orig
 rename rd_credit rd_credit_orig
-rename fips_state state_fips
+}
 
-drop state_orig state F State 
-
-save "$REGDTA\final\controls_orig.dta", replace
+drop state_orig state   
+*dropping F drops the Franchise Tax 
+save "${TEMP}/controls_orig.dta", replace
 
 rename *_orig *
-save "$REGDTA\final\controls.dta", replace
+tempfile controls 
+save `controls'
+
+
 
 *Merge movement data set with controls
-use "$PATENTDTA\Stata\woeppel_inventor_moves.dta", clear
+use "$PATENTDTA/woeppel_inventor_moves.dta", clear
 	rename app_year year
+	rename state_inv fips_state
+merge m:1 year fips_state using `controls'
+	drop if _merge == 2
+	drop _merge
+	rename fips_state state_inv
+	rename origin_state_inv fips_state
+merge m:1 year fips_state using "${TEMP}/controls_orig.dta"
+	drop if _merge == 2
+	drop _merge
+	rename fips_state origin_state_inv
 	rename state_inv state_fips
-merge m:1 year state_fips using "$REGDTA\final\controls.dta"
-	drop if _merge == 2
-	drop _merge
-	rename state_fips state_inv
-	rename origin_state_inv state_fips
-merge m:1 year state_fips using "$REGDTA\final\controls_orig.dta"
-	drop if _merge == 2
-	drop _merge
-	rename state_fips origin_state_inv
-	rename state_inv state_fips 
-merge m:1 state_fips using "$REGDTA\raw\var_other\raw_states_abbr.dta"	
+merge m:1 state_fips using "${IN}/var_other/raw_states_abbr.dta"	
 	// The missing matches are 72 (Puerto Rico; 1058 obs) and 78 (Virgin Islands; 40 obs)
 	keep if _merge == 3
 	drop _merge
@@ -187,7 +226,7 @@ foreach var in "corprate" "t_pinc_rate" "ITC_rate" "rd_credit" {
 	
 label var year "Year"
 
-save "$REGDTA\final\reg_data_patent_invmoves.dta", replace	
+save "${OUT}/reg_data_patent_invmoves.dta", replace	
 
 
 
