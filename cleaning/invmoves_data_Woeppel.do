@@ -5,7 +5,6 @@
 /// LAST UPDATE: 01-02-2024
 /// DATA: Woeppel patent data
 
-<<<<<<< HEAD
 *Set environment
 global PATENTDTA "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Data\Patent Data US_Woeppel"
 global REGDTA "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data"

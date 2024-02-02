@@ -19,6 +19,10 @@ global controls GDP corprate rev_totaltaxes rev_corptax revsh_indinctax revsh_co
 *Descriptives ******************************************************************
 
 use "$OUT\reg_data_patent_invmoves.dta", clear	
+
+* Generate a variable name for the Commuting Zone in 1990 
+
+
 keep if year >= 1992 & year <= 2018
 
 collapse (mean) inmigr_CZ_UScensus inmigr_super_CZ_UScensus firm_move_CZ_UScensus, by(year)
@@ -47,6 +51,39 @@ twoway bar inmigr_CZ_UScensus state_inv1, yaxis(1) color(blue%30) barw(0.4) ///
 	legend(position(6) label(1 "Inventor moves") label(2 "Within-firm movers") label(3 "Superstar moves")) 
 		
 	graph export "$RESULTS\count_invmoves_state.png", replace
+	
+	
+	
+********************************************************************************
+* Commuting Zone Heat Map 
+********************************************************************************
+
+
+shp2dta using "$IN/maps/cz/cz1990", database("$IN/maps/cz/usdb_cz.dta") coordinates("$IN/maps/cz/uscoord_cz.dta") genid(id)	replace 
+
+
+use "$OUT\reg_data_patent_invmoves.dta", clear	
+*gen cz=CZ_depagri_1990
+drop if state_inv==2 | state_inv==15
+keep if year >= 1992 & year <= 2018
+
+
+collapse (sum) inmigr_CZ_UScensus inmigr_super_CZ_UScensus firm_move_CZ_UScensus ///
+	n_inv_total_CZ_UScensus n_inv_totalsuper_CZ_UScensus n_inv_new_CZ_UScensus n_inv_newsuper_CZ_UScensus ///
+	outmigr_CZ_UScensus outmigr_super_CZ_UScensus, by(state_inv) 
+
+merge 1:1 cz using "$IN/maps/cz/usdb_cz.dta", nogen keep(3)
+save "$TEMP\map_woeppel_inv_cz.dta", replace
+
+
+foreach var in inmigr_CZ_UScensus inmigr_super_CZ_UScensus firm_move_CZ_UScensus ///
+	n_inv_total_CZ_UScensus n_inv_totalsuper_CZ_UScensus n_inv_new_CZ_UScensus n_inv_newsuper_CZ_UScensus ///
+	outmigr_CZ_UScensus outmigr_super_CZ_UScensus {
+spmap `var' using "$IN/maps/cz/uscoord_cz.dta", id(id) fcolor(Blues)
+graph export "$RESULTS\heatmap_`var'_cz.png", replace
+}
+
+
 	
 //This would be better as heat map
 	/*

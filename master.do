@@ -5,7 +5,7 @@
 // Goal: Master 
 
 clear
-set maxvar 120000
+*set maxvar 120000
 set more off
 
 /*
@@ -19,11 +19,11 @@ ssc install mif2dta
 */
 
 * Set the global so the paths adjust quickly
-global user 2 
+global user 1 
 
 *ssc install outreg2
 
-if $user==1 {
+if c(username) == "laura" {
 * G:\.shortcut-targets-by-id\1WdgNEyGs57PgSqqCPP_B2s_Inzx7SKst\Spillover migration data
 global IN  C:/Users/laura/Desktop/InnovationProject/data/raw
 global code C:/Users/laura/Desktop/InnovationProject/code_git
