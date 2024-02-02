@@ -28,6 +28,8 @@ drop withdrawn
 *-Drop if missings in important variables
 drop if app_year == .
 drop if county_fips_inventor == .
+
+
 *-Drop duplicates (we only want to count inventors once per recorded patent)
 sort inventor_id patnum county_fips_inventor
 duplicates drop patnum inventor_id county_fips_inventor, force 
@@ -41,7 +43,7 @@ drop tag
 tab ndistinct // keep ndistinct as tag for multiple loction changes within a year
 
 	//If multiple states are observed, 
-	//A. use mode of state-fips (most frequent location in data); several observations had multiple modes. How should we handle them? 139,099 for which this is the case
+	//A. use mode of state-fips (most frequent location in data); several observations had multiple modes. How should we handle them? 139,099 for which this is the case. I think the best thing is to try out different things and see if results change 
 	bysort inventor_id app_year: egen county_inv = mode(county_fips_inventor)	
 	bysort inventor_id app_year: egen state_inv = mode(state_fips_inventor)
 	
@@ -161,9 +163,10 @@ if ${user}==1 {
 save "${IN}/indep_var/var_ITC/ITC_final.dta", replace
 
 
- import excel "${IN}/indep_var/var_RDcredits/RD_credits_final.xlsx",  firstrow clear
- duplicates drop year fips_state, force 
-save "${IN}/indep_var/var_RDcredits/RD_credits_final.dta", replace
+* I will read in this data in cleaning inventors 
+ *import excel "${IN}/indep_var/var_RDcredits/RD_credits_final.xlsx",  firstrow clear
+ *duplicates drop year fips_state, force 
+* save "${IN}/indep_var/var_RDcredits/RD_credits_final.dta", replace
 } 
 
 

@@ -12,7 +12,7 @@
 
 * Importing Compustat data 
 
-import delimited "${IN}/compustat_1950_2023.csv", clear
+import delimited "${IN}/main_data/data_compustat/compustat_1950_2023.csv", clear
 *keep if fyear==2020
 *drop if indfmt=="FS"
 duplicates drop gvkey, force
@@ -85,4 +85,11 @@ clear
 forvalues i=1/18 {
 	append using "${TEMP}/geocoding_done/compustat/compustat_geocoded_`i'.dta", clear
 }
+
+
 save "${TEMP}/geocoding_done/compustat/compustat_geocoded_final.dta"
+
+
+
+use "${TEMP}/compustat.dta"
+merge 1:1 gvkey using "${TEMP}/geocoding_done/compustat/compustat_geocoded_final.dta"

@@ -1,13 +1,25 @@
 // Project: Inventor Relocation
 // Creation Date: 20/11/2023
-// Last Update: 20/11/2023
+// Last Update: 02/02/2024
 // Author: Laura Arnemann 
 // Goal: Master 
 
+clear
+set maxvar 120000
+set more off
+
+/*
+*Programs
+ssc install rangestat
+
+// Maps: https://www.stata.com/support/faqs/graphics/spmap-and-maps/
+ssc install spmap
+ssc install shp2dta
+ssc install mif2dta
+*/
+
 * Set the global so the paths adjust quickly
-
-global user 1 
-
+global user 2 
 
 *ssc install outreg2
 
@@ -28,20 +40,26 @@ global RESULTS C:/Users/laura/Desktop/InnovationProject/results
 
 }
 
+if c(username) == "tbuehrle" {
+	
+	global IN "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data\raw"
+	global TEMP "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data\temp"
+	global OUT  "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data\final"
+	global LINKING  "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data\linking_tables"
+	global PATENTDTA "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Data\Patent Data US_Woeppel"
+	
+	global code "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_2_Code"
+	
+	global RESULTS "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_3_Results"
+} 
 
-else {
+*-------------------------------------------------------------------------------
+*1. MATCHING
+*-------------------------------------------------------------------------------
 	
-	global IN C:\Users\tbuehrle\Desktop\Work\Projects\Spillover inventors\
-	global TEMP
-	global OUT
-	
-	
-}
-
 ********************************************************************************
 * Matching NETS + Patent Data via Compustat
 ********************************************************************************
-
 
 do "${code}/01_cleaning_compustat.do" 
 do "${code}/02_cleaning_NETS.do"
@@ -84,3 +102,26 @@ do "${code}/checking_RD_expenditure.do"
 
 * Old dofile using only companies from 2020 
 * name_matching_2020
+
+
+*-------------------------------------------------------------------------------
+*2. ANALYSIS
+*-------------------------------------------------------------------------------
+
+********************************************************************************
+* Ummatched patent data
+********************************************************************************
+
+*Generate CZ-level dataset with inventor moves based on Woeppel patent data
+do "${code}/cleaning/invmoves_data_Woeppel.do" 
+
+*Analysis
+do "${code}/analysis/invmoves_reg.do" 
+
+
+
+
+
+
+
+
