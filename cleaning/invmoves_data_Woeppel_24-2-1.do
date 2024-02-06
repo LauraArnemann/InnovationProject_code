@@ -5,9 +5,6 @@
 /// LAST UPDATE: 01-02-2024
 /// DATA: Woeppel patent data
 
-*A. ****************************************************************************
-*Inventor aggregation **********************************************************
-
 *-------------------------------------------------------------------------------	
 *Generation inventor panel
 *-------------------------------------------------------------------------------
@@ -61,6 +58,37 @@ rename citation_count n_cite_inv
 
 gen av_cite_inv = n_cite_inv / n_patents_inv
 
+label var app_year "Application year"
+label var ndistinct "Number of moves within a year"
+label var county_inv "County of Residence in t, inventor"
+label var state_inv "State of Residence in t, inventor"
+label var n_patents_inv "Number of Patents, inventor"
+label var county_firm "County of Residence in t, firm"
+label var state_firm "State of Residence in t, firm"
+
+save "$IN\main_data\data_patent\inventor_applic_collapse.dta", replace
+
+*-------------------------------------------------------------------------------	
+*Migration flows 
+*-------------------------------------------------------------------------------
+
+use "$IN\main_data\data_patent\inventor_applic_collapse.dta", clear
+
+/*
+drop if ndistinct > 2	//see note above
+*/
+
+*Add commuting zones data
+rename county_inv county_fips
+	//Broomfild county in Colarado (8014) was part of Boulder County (8013) until 2001 and is recorded as such in old cenzus data
+	replace county_fips = 8013 if county_fips == 8014
+merge m:1 county_fips using "$IN\var_CommutingZones\CZ_combined.dta"
+	//Non-matched master: Puerto Rico, Virgin Islands, Alaska
+keep if _merge == 3
+rename county_fips county_inv
+drop county_name_UScensus county_name_depagri _merge
+drop if county_inv == .	// interim check; should be zero
+
 *# observations per inventor
 bysort inventor_id: egen inv_obs = count(inventor_id)
 label var inv_obs "# observations per inventor in sample"
@@ -79,48 +107,9 @@ bysort inventor_id: egen max_superstar=max(superstar)
 gen nonstar = 0
 	replace nonstar = 1 if superstar == 0
 
+
 sort inventor_id app_year
 duplicates report inventor_id app_year	// interim check; has to be unique!
-
-label var app_year "Application Year"
-label var ndistinct "Number of Moves Within a Year"
-label var county_inv "County of Residence in t, Inventor"
-label var state_inv "State of Residence in t, Inventor"
-label var n_patents_inv "Proportionate Number of Patents, Inventor"
-label var county_firm "County of Residence in t, Firm"
-label var state_firm "State of Residence in t, firm"
-
-*Add commuting zones data
-rename county_inv county_fips
-	//Broomfild county in Colarado (8014) was part of Boulder County (8013) until 2001 and is recorded as such in old cenzus data
-	replace county_fips = 8013 if county_fips == 8014
-merge m:1 county_fips using "$IN\var_CommutingZones\CZ_combined.dta"
-	//Non-matched master: Puerto Rico, Virgin Islands, Alaska
-keep if _merge == 3
-rename county_fips county_inv
-drop county_name_UScensus county_name_depagri _merge
-drop if county_inv == .	// interim check; should be zero
-
-*Generate alternative firm_id that needs less disk space
-egen firm_id2 = group(firm_id)
-drop firm_id
-
-save "$IN\main_data\data_patent\inventor_applic_collapse.dta", replace
-//This is the inventor-level panel.
-
-*-------------------------------------------------------------------------------	
-*Generate variables aggregated at CZ-level 
-*-------------------------------------------------------------------------------
-
-use "$IN\main_data\data_patent\inventor_applic_collapse.dta", clear
-
-/*
-drop if ndistinct > 2	//see note above
-*/
-
-*Migration flows x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
-
-*Movements into commuting zone
 
 /*
 NOTE:
@@ -150,7 +139,7 @@ foreach geo in "state_inv" "CZ_depagri_2000" "CZ_UScensus"{
 	gen firm_move_`geo' = . 
 		label var firm_move_`geo' "Dummy Within Firm Migration, `geo'"
 	replace firm_move_`geo'=0 if inmigr_`geo' == 1
-	replace firm_move_`geo'=1 if inmigr_`geo' == 1 & firm_id2==firm_id2[_n-1]
+	replace firm_move_`geo'=1 if inmigr_`geo' == 1 & firm_id==firm_id[_n-1]
 	tab firm_move_`geo'
 	//state: 34% of 95,910 move within firms
 	//depagri: 40% of 121,135 move within firm
@@ -164,43 +153,6 @@ foreach geo in "state_inv" "CZ_depagri_2000" "CZ_UScensus"{
 	replace ever_migrated_`geo'=1 if n_moves_`geo'>0	
 	tab ever_migrated_`geo'
 	//10%-16% of inventors move at least once
-}
-
-*Movements out of commuting zone
-foreach geo in "state_inv" "CZ_depagri_2000" "CZ_UScensus"{
-	gen destin_`geo'= .
-		label var destin_`geo' "Destination in t+1, `geo'"
-	bysort inventor_id: replace destin_`geo'=`geo'[_n+1] 
-	bysort inventor_id: replace destin_`geo'= . if app_year[_n+1]!=app_year+1
-	replace destin_`geo'= . if inventor_id[_n+1] != inventor_id
-	
-	gen outmigr_`geo' = 0 if `geo'!= . & destin_`geo'!= .
-	replace outmigr_`geo' = 1 if `geo'!=destin_`geo' & `geo'!= . & destin_`geo'!= .
-		label var outmigr_`geo' "Dummy Outmigration, `geo'"
-	tab outmigr_`geo'
-	
-	gen outmigr_super_`geo'= .
-		replace outmigr_super_`geo'= 0 if outmigr_`geo' == 1 & superstar == 0
-		replace outmigr_super_`geo'= 1 if outmigr_`geo' == 1 & superstar == 1
-}
-
-*Innovative activity	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
-
-*Patent count in commuting zone
-foreach geo in "state_inv" "CZ_depagri_2000" "CZ_UScensus"{
-	
-	*Patent count in commuting zone
-	bysort `geo' app_year: egen n_patents_inv_`geo' = sum(n_patents_inv)
-	label var n_patents_inv_`geo' "Number of Patents, `geo'"
-		
-	*Patent quality
-	*-Total citations
-	bysort `geo' app_year: egen n_cite_inv_`geo' = sum(n_cite_inv)
-	label var n_cite_inv_`geo' "Weighted Citation Count, `geo'"
-
-	*-Av citation per patent
-	bysort `geo' app_year: egen av_cite_inv_`geo' = mean(av_cite_inv)
-	label var av_cite_inv_`geo' "Average Citation Count, `geo'"     
 }
 
 *Inventor count in commuting zone
@@ -226,33 +178,77 @@ foreach geo in "state_inv" "CZ_depagri_2000" "CZ_UScensus"{
 	// There is an additional number of inventors we don't observe in the previous year	
 }
 
+*Movements out of commuting zone
+foreach geo in "state_inv" "CZ_depagri_2000" "CZ_UScensus"{
+	gen destin_`geo'= .
+		label var destin_`geo' "Destination in t+1, `geo'"
+	bysort inventor_id: replace destin_`geo'=`geo'[_n+1] 
+	bysort inventor_id: replace destin_`geo'= . if app_year[_n+1]!=app_year+1
+	replace destin_`geo'= . if inventor_id[_n+1] != inventor_id
+	
+	gen outmigr_`geo' = 0 if `geo'!= . & destin_`geo'!= .
+	replace outmigr_`geo' = 1 if `geo'!=destin_`geo' & `geo'!= . & destin_`geo'!= .
+		label var outmigr_`geo' "Dummy Outmigration, `geo'"
+	tab outmigr_`geo'
+	
+	gen outmigr_super_`geo'= .
+		replace outmigr_super_`geo'= 0 if outmigr_`geo' == 1 & superstar == 0
+		replace outmigr_super_`geo'= 1 if outmigr_`geo' == 1 & superstar == 1
+}
+
+*-------------------------------------------------------------------------------	
+*Patenting activity 
+*-------------------------------------------------------------------------------
+
+foreach geo in "state_inv" "CZ_depagri_2000" "CZ_UScensus"{
+	
+	*Patent count in commuting zone
+	bysort `geo' app_year: egen n_patents_inv_`geo' = sum(n_patents_inv)
+	label var n_patents_inv_`geo' "Number of Patents, `geo'"
+		
+	*Patent quality
+	*-Total citations
+	bysort `geo' app_year: egen n_cite_inv_`geo' = sum(n_cite_inv)
+	label var n_cite_inv_`geo' "Weighted Citation Count, `geo'"
+
+	*-Av citation per patent
+	bysort `geo' app_year: egen av_cite_inv_`geo' = mean(av_cite_inv)
+	label var av_cite_inv_`geo' "Average Citation Count, `geo'"     
+}
+
 save "$IN\main_data\data_patent\woeppel_inventor_moves.dta", replace
-//This is the inventor-level panel with additional variables on CZ-level migration and activity.
-
-
 
 *B. ****************************************************************************
 *Company presence across CZs ***************************************************
 
+//For now, we focus on US Cenzus CZ (highest # of moves)
+
 use "$IN\main_data\data_patent\inventor_applic_collapse.dta", clear
 
-*For now, we focus on US Cenzus CZ (highest # of moves)
-drop  CZ_depagri_2000 CZ_depagri_1990 CZ_depagri_1980 
+*Add commuting zones data
+rename county_inv county_fips
+	//Broomfild county in Colarado (8014) was part of Boulder County (8013) until 2001 and is recorded as such in old cenzus data
+	replace county_fips = 8013 if county_fips == 8014
+merge m:1 county_fips using "$IN\var_CommutingZones\CZ_combined.dta"
+	
+keep if _merge == 3
+rename county_fips county_inv
+drop county_name_UScensus county_name_depagri CZ_depagri_2000 CZ_depagri_1990 CZ_depagri_1980 _merge
 rename CZ_UScensus CZ_inv
 
 *Drop if missing firm info
-drop if firm_id2 == .
+drop if firm_id == ""
 *drop if state_firm == .	// We assume subs at inventor locations, officially recorded firm location is irrelevant
 
 *Define mode for firm location
 // Around 5% of firms report multiple locations within one year
-bysort firm_id2 app_year: egen county_firm_mode = mode(county_firm), maxmode	
-bysort firm_id2 app_year: egen state_firm_mode = mode(state_firm), maxmode	
+bysort firm_id app_year: egen county_firm_mode = mode(county_firm), maxmode	
+bysort firm_id app_year: egen state_firm_mode = mode(state_firm), maxmode	
 
 *Inventor and patent count per firm-year at CZ of inventor
-bysort firm_id2 CZ_inv app_year: egen n_inv_firm = count(inventor_id)
-bysort firm_id2 CZ_inv app_year: egen n_patent_firm = sum(n_patents_inv)
-bysort firm_id2 CZ_inv app_year: egen n_cite_firm = sum(citation_share_inv)
+bysort firm_id CZ_inv app_year: egen n_inv_firm = count(inventor_id)
+bysort firm_id CZ_inv app_year: egen n_patent_firm = sum(n_patents_inv)
+bysort firm_id CZ_inv app_year: egen n_cite_firm = sum(citation_share_inv)
 gen av_cite_firm = n_cite_firm / n_patent_firm if n_cite_firm != . & n_patent_firm != .
 
 label var CZ_inv "Inventor CZ"
@@ -263,33 +259,13 @@ label var av_cite_firm "Av Citation per Patent, per Firm-year and Inv CZ"
 label var county_firm_mode "County of Residence in t, firm"
 
 *Drop duplicates (we only need distinct firm_id-state_inv-year pairs)
-sort firm_id2 app_year CZ_inv 
-duplicates drop firm_id2 app_year CZ_inv , force
-keep firm_id2 state_firm_mode county_firm_mode CZ_inv state_inv app_year n_inv_firm n_patent_firm n_cite_firm av_cite_firm
-order app_year firm_id2 state_firm_mode county_firm_mode CZ_inv state_inv n_inv_firm n_patent_firm n_cite_firm av_cite_firm
+sort firm_id app_year CZ_inv 
+duplicates drop firm_id app_year CZ_inv , force
+keep firm_id state_firm_mode county_firm_mode CZ_inv state_inv app_year n_inv_firm n_patent_firm n_cite_firm av_cite_firm
+order app_year firm_id state_firm_mode county_firm_mode CZ_inv state_inv n_inv_firm n_patent_firm n_cite_firm av_cite_firm
 
 save "$IN\main_data\data_patent\woeppel_firm_invCZ_aggr.dta", replace
 
-*Generate data set with all states the firm was ever present in
-use "$IN\main_data\data_patent\woeppel_firm_invCZ_aggr.dta", clear
-/* COMMENTS
-- Controls are state-level. Move to CZ level if controls at CZ level are added
-- Difficult to appoint CZ to specific state! Might need to add CZ controls seperately.
-- More refined measure: presence at least 2x, presence assumed +/-5 years around obs...	
-*/
-
-keep firm_id2 state_inv
-duplicates drop, force	
-
-sort firm_id2 state_inv
-
-*Add years
-expand 51	// 1970 - 2021
-bysort firm_id2 state_inv: gen count_obs = _n
-gen app_year = 1969+count_obs
-drop count_obs
-
-save "$IN\main_data\data_patent\woeppel_firm_presence.dta", replace
 
 *C. ****************************************************************************
 *Generate reg sample ***********************************************************
@@ -298,84 +274,79 @@ save "$IN\main_data\data_patent\woeppel_firm_presence.dta", replace
 *RHS variables/ controls
 *-------------------------------------------------------------------------------
 use "$IN\var_other\data_statepairs.dta", clear
-	// 1980-2012/2015
-
 	drop *_dest
 	duplicates drop year fips_state_orig, force
 	rename fips_state_orig fip_state
 merge 1:1 year fip_state using "$IN\indep_var\var_ITC\ITC_final.dta", nogen
-	// 1963-2018
 	rename fip_state fips_state
 merge 1:1 year fips_state using "$IN\indep_var\var_R&Dcredits\R&D_credits_final.dta", nogen
-	// 1963-2018
 
-replace state_orig = state_abbr if state_orig == ""
-drop state_abbr state F State 
+rename ITC_rate ITC_rate_orig
+rename rd_credit rd_credit_orig
+rename fips_state state_fips
 
-rename *_orig * 
+drop state_orig state F State 
 
-rename state residence_state
-rename year app_year 
+save "$OUT\controls_orig.dta", replace
 
-sort fips_state
-duplicates drop app_year residence_state, force
-
-merge 1:1 app_year residence_state using "$IN\var_other\moretti_controls_basic.dta", nogen	
-// data covers only 1977-2009
-
-rename residence_state state_abbr
-drop if fips_state == .
-
-save "$OUT\controls_basic.dta", replace
-
-use "$OUT\controls_basic.dta", clear
-rename * *_inv
-rename app_year_inv app_year
-drop state_abbr_inv
-save "$OUT\controls_basic_inv.dta", replace
-
-use "$OUT\controls_basic.dta", clear
-rename * *_net
-rename app_year_net app_year
-drop state_abbr_net
-save "$OUT\controls_basic_network.dta", replace
-
+rename *_orig *
+save "$OUT\controls.dta", replace
 
 *-------------------------------------------------------------------------------	
 *Merge all
 *-------------------------------------------------------------------------------
-/*
+
 //For now, we focus on US Cenzus CZ (highest # of moves)
 
 *First stage	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	
 
-*Merge firm presence dataset with controls
-use "$IN\main_data\data_patent\woeppel_firm_presence.dta", clear
+**Merge inventor dataset with controls
+use "$IN\main_data\data_patent\woeppel_inventor_moves.dta", clear
+	rename app_year year
+	rename state_inv state_fips
+merge m:1 year state_fips using "$OUT\controls.dta"
+	keep if _merge == 3	// nonmatched: year > 2018
+	drop _merge
+	rename state_fips state_inv
+	rename origin_state_inv state_fips
+merge m:1 year state_fips using "$OUT\controls_orig.dta"
+	drop if _merge == 2
+	drop _merge
+	rename state_fips origin_state_inv
+	rename state_inv state_fips 
+merge m:1 state_fips using "$IN\var_other\raw_states_abbr.dta", nogen keep(3)	
+	rename state_fips state_inv
 
-rename state_inv fips_state_net
-merge m:1 app_year fips_state_net using "$OUT\controls_basic_network.dta", nogen keep(3)
+*Calculate difference in controls
+foreach var in "corprate" "t_pinc_rate" "ITC_rate" "rd_credit" {
+	gen diff_`var' = `var' - `var'_orig
+	label var diff_`var' "Difference `var' residency - origin state"
+}
+	
+rename year app_year
 
-compress
-save "$IN\main_data\data_patent\woeppel_firm_presence_controls.dta", replace
+save "$IN\main_data\data_patent\woeppel_invCZ_controls.dta", replace	
 
-*Merge firm dataset with inventor CZs with controls
-
+*Merge firm dataset with controls
 use "$IN\main_data\data_patent\woeppel_firm_invCZ_aggr.dta", clear
-//unique identifier: app_year firm_id2 CZ_inv
+	rename app_year year
+	rename state_inv state_fips
+merge m:1 year state_fips using "$OUT\controls.dta"
+	keep if _merge == 3	// nonmatched: year > 2018; state_fips = 72 (Puerto Ric) & 78 (Virgin Islands)
+	drop _merge
+	rename CZ_inv CZ_firmlocations
+	
+	xxxx
+	/// Across all years
+	
+save "$IN\main_data\data_patent\woeppel_firm_invCZ_controls.dta", replace
 
-rename state_inv fips_state_inv
-merge m:1 app_year fips_state_inv using "$OUT\controls_basic_inv.dta", nogen keep(3)
-	// Nonmatched from using: years before 1974
-	// Nonmatched from master: years after 2018		
-	
-merge m:1 	
-	
-compress
-save "$IN\main_data\data_patent\woeppel_firm_invCZ_aggr_controls.dta", replace
-	
-	
-	
+*Merge inventor with firm dataset
+use "$IN\main_data\data_patent\woeppel_invCZ_controls.dta", replace	
 
+duplicates report inventor_id firm_id app_year	// check; should be unique ID
+
+merge m:m firm_id app_year using "$IN\main_data\data_patent\woeppel_firm_invCZ_controls.dta"
 
 
 

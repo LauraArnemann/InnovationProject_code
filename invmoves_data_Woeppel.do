@@ -278,7 +278,7 @@ use "$IN\main_data\data_patent\woeppel_firm_invCZ_aggr.dta", clear
 - More refined measure: presence at least 2x, presence assumed +/-5 years around obs...	
 */
 
-keep firm_id2 state_inv
+keep firm_id2 state_inv 
 duplicates drop, force	
 
 sort firm_id2 state_inv
@@ -326,6 +326,7 @@ merge 1:1 app_year residence_state using "$IN\var_other\moretti_controls_basic.d
 rename residence_state state_abbr
 drop if fips_state == .
 
+compress
 save "$OUT\controls_basic.dta", replace
 
 use "$OUT\controls_basic.dta", clear
@@ -344,7 +345,7 @@ save "$OUT\controls_basic_network.dta", replace
 *-------------------------------------------------------------------------------	
 *Merge all
 *-------------------------------------------------------------------------------
-/*
+
 //For now, we focus on US Cenzus CZ (highest # of moves)
 
 *First stage	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	
@@ -358,6 +359,11 @@ merge m:1 app_year fips_state_net using "$OUT\controls_basic_network.dta", nogen
 compress
 save "$IN\main_data\data_patent\woeppel_firm_presence_controls.dta", replace
 
+//Reduced version
+keep firm_id2 app_year fips_state_net ///
+	ITC_rate_net rd_credit_net GDP_net corprate_net t_pinc_rate_net RA_net
+save "$IN\main_data\data_patent\woeppel_firm_presence_controls_red.dta", replace
+
 *Merge firm dataset with inventor CZs with controls
 
 use "$IN\main_data\data_patent\woeppel_firm_invCZ_aggr.dta", clear
@@ -366,24 +372,31 @@ use "$IN\main_data\data_patent\woeppel_firm_invCZ_aggr.dta", clear
 rename state_inv fips_state_inv
 merge m:1 app_year fips_state_inv using "$OUT\controls_basic_inv.dta", nogen keep(3)
 	// Nonmatched from using: years before 1974
-	// Nonmatched from master: years after 2018		
+	// Nonmatched from master: years after 2018	
 	
-merge m:1 	
+merge m:m firm_id2 app_year using "$IN\main_data\data_patent\woeppel_firm_presence_controls_red.dta", nogen keep(3)
 	
 compress
-save "$IN\main_data\data_patent\woeppel_firm_invCZ_aggr_controls.dta", replace
+save "$IN\main_data\data_patent\woeppel_finalsample.dta", replace
 	
+duplicates report app_year firm_id2 CZ_inv fips_state_net	
 	
+*Calculate averages in other locations of the firm
+//Weighted by # inventors?
+
+*- Set variables to missing in state of inventor	
+foreach var in "ITC_rate_net" "rd_credit_net" "GDP_net" "corprate_net" "t_pinc_rate_net" "RA_net" {
+	replace `var' = . if fips_state_inv == fips_state_net
+}	
 	
+*- Calculate averages	
+foreach var in "ITC_rate_net" "rd_credit_net" "GDP_net" "corprate_net" "t_pinc_rate_net" "RA_net" {
+bysort app_year CZ_inv: egen `var'_other = mean(`var')
+}
 
+save "$OUT\woeppel_regsample.dta", replace	
 
-
-
-
-// CALCULATE AVERAGE RATES IN OTHER ESTABLISHMENTS
-
-
-
+	
 
 
 *Second stage	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	

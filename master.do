@@ -16,12 +16,10 @@ ssc install rangestat
 ssc install spmap
 ssc install shp2dta
 ssc install mif2dta
+ssc install outreg2
 */
 
 * Set the global so the paths adjust quickly
-global user 1 
-
-*ssc install outreg2
 
 if c(username) == "laura" {
 * G:\.shortcut-targets-by-id\1WdgNEyGs57PgSqqCPP_B2s_Inzx7SKst\Spillover migration data
@@ -52,6 +50,8 @@ if c(username) == "tbuehrle" {
 	
 	global RESULTS "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_3_Results"
 } 
+
+/*
 
 *-------------------------------------------------------------------------------
 *1. MATCHING
