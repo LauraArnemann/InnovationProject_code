@@ -197,7 +197,7 @@ one state with this method.
 */
 
 preserve 
-* Option 1: 
+*1 Only keep patents which can be uniquely assigned to one state during a year
 bysort patnum state_fips_inventor app_year: gen state_count=_N 
 bysort patnum app_year: gen count=_N
 keep if count==state_count 
@@ -214,7 +214,7 @@ save `patents1'
 
 restore
  
-* Option 2: 
+*2 Weight patents by number of patents recorded in each state
 preserve 
 bysort patnum state_fips_inventor app_year: gen state_count=_N 
 bysort patnum app_year: gen count=_N
@@ -233,7 +233,8 @@ tempfile patents2
 save `patents2'
 
 restore 
-* Option 3: 
+
+*3 Keep observation with the highest number of patents in one year  
 bysort patnum state_fips_inventor app_year: gen state_count=_N 
 bysort patnum app_year: egen max_state=max(state_count)
 keep if max_state==state_count 
@@ -373,6 +374,73 @@ save "${TEMP}/inventorcount_state.dta", replace
 ********************************************************************************
 * Merging in the R+D data 
 ********************************************************************************
+use "${TEMP}/patentcount_state.dta", clear 
+
+duplicates drop fips_state assignee_id, force 
+keep fips_state assignee_id
+expand 51 
+bysort assignee_id fips_state: gen count_obs = _n
+gen app_year = 1969+count_obs
+drop count_obs 
+
+rename fips_state fips 
+merge m:1 fips app_year using "${IN}/indep_var/moretti_controls.dta", keepusing(RA)
+drop _merge 
+
+
+rename app_year year 
+rename fips fips_state 
+merge m:1 fips_state year using "${IN}/indep_var/var_RDcredits/RD_credits_final.dta"
+keep if _merge==3 
+drop _merge 
+
+
+destring rd_credit, replace force
+bysort assignee_id year: gen count=_N 
+
+merge m:1 fips_state year using "${TEMP}/controls_orig.dta", keepusing(t_pinc_rate_orig corprate_orig GDP_orig)
+drop _merge 
+
+rename t_pinc_rate_orig pit 
+rename corprate_orig cit 
+rename GDP_orig gdp
+
+rename year app_year 
+merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
+drop if _merge==2 
+drop _merge 
+
+replace n_inventors3=0 if missing(n_inventors3)
+bysort assignee_id app_year: egen total_inventors=total(n_inventors3)
+
+* Number of inventors in other states 
+gen total_inventors_other = total_inventors-n_inventors3
+
+ 
+foreach var of varlist rd_credit pit cit gdp RA {
+	
+gen `var'_helper = n_inventors3 * `var'
+bysort assignee_id app_year: egen `var'_other=total(`var'_helper)
+replace `var'_other =  `var'_other - `var'_helper
+replace `var'_other = `var'_other/total_inventors_other 
+}
+
+
+label var rd_credit_other "Average RD credit at other Labs"
+label var pit_other "Average PIT at other labs"
+label var cit_other "Average CIT at other labs"
+rename RA_other unemployment_other 
+rename RA unemployment 
+label var unemployment_other "Unemployment Rate at other labs"
+
+drop count *_helper n_inventors* total_inventors total_inventors_other 
+
+save "${TEMP}/rdcredits_cleaned.dta", replace 
+
+
+********************************************************************************
+* Merging things together
+********************************************************************************
 
 
 use "${TEMP}/patentcount_state.dta", clear 
@@ -381,30 +449,21 @@ drop _merge
 
 bysort assignee_id app_year: gen nstates=_N 
 
-gen multistatefirm=0 
-replace multistatefirm=1 if nstates>1
 
-rename app_year year 
+* How can I fix the number of states in which the firm has ever been present 
+gen multistatefirm_temp=0 
+replace multistatefirm_temp=1 if nstates>1
+bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
 
 
-merge m:1 fips_state year using "${IN}/indep_var/var_RDcredits/RD_credits_final.dta"
+merge 1:1 fips_state app_year assignee_id using "${TEMP}/rdcredits_cleaned.dta"
+* Observations from 2018 onwards not matched
 keep if _merge==3 
 drop _merge 
 
-* Generate the average credit rate at other states: should this be static or dynamic? 
-destring rd_credit, replace force
-gen helper = rd_credit/(nstates-1) 
-bysort assignee_id: egen avg_credit_rate = total(helper)
-replace avg_credit_rate=avg_credit_rate - helper
-
-drop helper 
-label var avg_credit_rate "Average credit rate in other states in which the firm is active"
-
+rename app_year year 
 * What should we do with New York, Ohio, Louisiana? 
 save "${TEMP}/final_state.dta", replace 
-
-
-
 
 
 

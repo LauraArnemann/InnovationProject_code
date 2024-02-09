@@ -61,29 +61,46 @@ twoway bar inmigr_CZ_UScensus state_inv1, yaxis(1) color(blue%30) barw(0.4) ///
 
 shp2dta using "$IN/maps/cz/cz1990", database("$IN/maps/cz/usdb_cz.dta") coordinates("$IN/maps/cz/uscoord_cz.dta") genid(id)	replace 
 
+use "$IN/maps/cz/usdb_cz.dta", clear 
+drop if inrange(cz, 34101, 34115)
+drop if inrange(cz, 34701, 34703)
+drop if cz==35600
+save "$IN/maps/cz/usdb_cz.dta", replace 
 
 use "$OUT\reg_data_patent_invmoves.dta", clear	
 *gen cz=CZ_depagri_1990
 drop if state_inv==2 | state_inv==15
-keep if year >= 1992 & year <= 2018
+keep if year == 1992 | year == 2009
+
+gen helper=1
+
+collapse (sum) n_patents helper, by(CZ_depagri_1990 year)
 
 
-collapse (sum) inmigr_CZ_UScensus inmigr_super_CZ_UScensus firm_move_CZ_UScensus ///
-	n_inv_total_CZ_UScensus n_inv_totalsuper_CZ_UScensus n_inv_new_CZ_UScensus n_inv_newsuper_CZ_UScensus ///
-	outmigr_CZ_UScensus outmigr_super_CZ_UScensus, by(state_inv) 
+rename helper n_inventors  
+reshape wide n_patents n_inventors, i(CZ_depagri_1990) j(year)
+rename CZ_depagri_1990 cz
 
-merge 1:1 cz using "$IN/maps/cz/usdb_cz.dta", nogen keep(3)
-save "$TEMP\map_woeppel_inv_cz.dta", replace
+merge m:1 cz using "$IN/maps/cz/usdb_cz.dta"
+drop if _merge ==1
+drop _merge 
 
-
-foreach var in inmigr_CZ_UScensus inmigr_super_CZ_UScensus firm_move_CZ_UScensus ///
-	n_inv_total_CZ_UScensus n_inv_totalsuper_CZ_UScensus n_inv_new_CZ_UScensus n_inv_newsuper_CZ_UScensus ///
-	outmigr_CZ_UScensus outmigr_super_CZ_UScensus {
-spmap `var' using "$IN/maps/cz/uscoord_cz.dta", id(id) fcolor(Blues)
-graph export "$RESULTS\heatmap_`var'_cz.png", replace
+foreach var of varlist n_patents1992 n_inventors1992 n_patents2009 n_inventors2009 {
+	replace `var'=0 if missing(`var')
 }
 
 
+spmap n_patents1992 using "$IN/maps/cz/uscoord_cz.dta", id(id) fcolor(Blues) clmethod(custom) clbreaks(0 1 10 40 10000) legend(position(5) size(medium))
+graph export "$RESULTS\heatmap_n_patents1992_cz.png", replace
+
+spmap n_patents2009 using "$IN/maps/cz/uscoord_cz.dta", id(id) fcolor(Blues) clmethod(custom) clbreaks(0 1 10 40 10000) legend(position(5) size(medium))
+graph export "$RESULTS\heatmap_n_patents2009_cz.png", replace
+
+spmap n_inventors1992 using "$IN/maps/cz/uscoord_cz.dta", id(id) fcolor(Blues) clmethod(custom) clbreaks(0 1 10 50 10000) legend(position(5) size(medium))
+graph export "$RESULTS\heatmap_n_inventors1992_cz.png", replace
+
+spmap n_inventors2009 using "$IN/maps/cz/uscoord_cz.dta", id(id) fcolor(Blues) clmethod(custom) clbreaks(0 1 10 50 10000) legend(position(5) size(medium))
+graph export "$RESULTS\heatmap_n_inventors2009_cz.png", replace
 	
 //This would be better as heat map
 	/*

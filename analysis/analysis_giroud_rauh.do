@@ -7,55 +7,114 @@
 
 use "${TEMP}/final_state.dta", clear
 
-capture log close 
-log using "${RESULTS}/log_24_02_02.log", replace
+bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
+drop multistatefirm_temp
+
 ********************************************************************************
 * Analysis without controls and without controlling for tax rates in other states 
 ********************************************************************************
 foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 {
 	gstats winsor `var', cut(1 99) gen(`var'_w1)
 	gstats winsor `var', cut(1 95) gen(`var'_w2)
+	gen ln_`var'=log(`var')
 }
 
-
+capture log close 
+log using "${RESULTS}/log_24_02_08_nocontrols.log", replace
 forvalues i = 1/3 {
 	di "Using Definition `i'"
 	
-reghdfe patents`i' rd_credit, absorb(assignee_id year)
-reghdfe patents`i'_w1 rd_credit, absorb(assignee_id year)
-reghdfe patents`i'_w2 rd_credit, absorb(assignee_id year)
+reghdfe patents`i' rd_credit, absorb(assignee_id year) cl(state)
+reghdfe patents`i'_w1 rd_credit, absorb(assignee_id year) cl(state)
+reghdfe patents`i'_w2 rd_credit, absorb(assignee_id year) cl(state)
+reghdfe ln_patents`i' rd_credit, absorb(assignee_id year) cl(state)
 
-reghdfe patents`i' rd_credit if multistatefirm==1, absorb(assignee_id year)
-reghdfe patents`i'_w1 rd_credit if multistatefirm==1, absorb(assignee_id year)
-reghdfe patents`i'_w2 rd_credit if multistatefirm==1, absorb(assignee_id year)
 
+reghdfe patents`i' rd_credit if multistatefirm_max==1, absorb(assignee_id year)
+reghdfe patents`i'_w1 rd_credit if multistatefirm_max==1, absorb(assignee_id year)
+reghdfe patents`i'_w2 rd_credit if multistatefirm_max==1, absorb(assignee_id year)
+reghdfe ln_patents`i' rd_credit if multistatefirm_max==1, absorb(assignee_id year)
 
 ppmlhdfe patents`i' rd_credit, absorb(assignee_id year)
 ppmlhdfe patents`i'_w1 rd_credit, absorb(assignee_id year)
 ppmlhdfe patents`i'_w2 rd_credit, absorb(assignee_id year)
 
-ppmlhdfe patents`i' rd_credit if multistatefirm==1, absorb(assignee_id year)
-ppmlhdfe patents`i'_w1 rd_credit if multistatefirm==1, absorb(assignee_id year)
-ppmlhdfe patents`i'_w2 rd_credit if multistatefirm==1, absorb(assignee_id year)
+ppmlhdfe patents`i' rd_credit if multistatefirm_max==1, absorb(assignee_id year)
+ppmlhdfe patents`i'_w1 rd_credit if multistatefirm_max==1, absorb(assignee_id year)
+ppmlhdfe patents`i'_w2 rd_credit if multistatefirm_max==1, absorb(assignee_id year)
 
 
 reghdfe n_inventors`i' rd_credit, absorb(assignee_id year)
 reghdfe n_inventors`i'_w1 rd_credit, absorb(assignee_id year)
 reghdfe n_inventors`i'_w2 rd_credit, absorb(assignee_id year)
+reghdfe ln_n_inventors`i' rd_credit, absorb(assignee_id year)
 
-reghdfe n_inventors`i' rd_credit if multistatefirm==1, absorb(assignee_id year)
-reghdfe n_inventors`i'_w1 rd_credit if multistatefirm==1, absorb(assignee_id year)
-reghdfe n_inventors`i'_w2 rd_credit if multistatefirm==1, absorb(assignee_id year)
-
+reghdfe n_inventors`i' rd_credit if multistatefirm_max==1, absorb(assignee_id year)
+reghdfe n_inventors`i'_w1 rd_credit if multistatefirm_max==1, absorb(assignee_id year)
+reghdfe n_inventors`i'_w2 rd_credit if multistatefirm_max==1, absorb(assignee_id year)
+reghdfe ln_n_inventors`i' rd_credit if multistatefirm_max==1, absorb(assignee_id year)
 
 ppmlhdfe n_inventors`i' rd_credit, absorb(assignee_id year)
 ppmlhdfe n_inventors`i'_w1 rd_credit, absorb(assignee_id year)
 ppmlhdfe n_inventors`i'_w2 rd_credit, absorb(assignee_id year)
 
-ppmlhdfe n_inventors`i' rd_credit if multistatefirm==1, absorb(assignee_id year)
-ppmlhdfe n_inventors`i'_w1 rd_credit if multistatefirm==1, absorb(assignee_id year)
-ppmlhdfe n_inventors`i'_w2 rd_credit if multistatefirm==1, absorb(assignee_id year)
+ppmlhdfe n_inventors`i' rd_credit if multistatefirm_max==1, absorb(assignee_id year)
+ppmlhdfe n_inventors`i'_w1 rd_credit if multistatefirm_max==1, absorb(assignee_id year)
+ppmlhdfe n_inventors`i'_w2 rd_credit if multistatefirm_max==1, absorb(assignee_id year)
 
+}
+
+
+
+
+********************************************************************************
+* Analysis with controls and without controlling for tax rates in other states 
+********************************************************************************
+capture log close 
+log using "${RESULTS}/log_24_02_07_controls.log", replace
+
+local controls corprate_orig t_pinc_rate_orig ITC_rate_orig GDP_orig avg_credit_rate
+
+forvalues i = 1/3 {
+	di "Using Definition `i'"
+	
+reghdfe patents`i' rd_credit `controls', absorb(assignee_id year)
+reghdfe patents`i'_w1 rd_credit `controls', absorb(assignee_id year)
+reghdfe patents`i'_w2 rd_credit `controls', absorb(assignee_id year)
+reghdfe ln_patents`i' rd_credit `controls', absorb(assignee_id year)
+
+
+reghdfe patents`i' rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+reghdfe patents`i'_w1 rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+reghdfe patents`i'_w2 rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+reghdfe ln_patents`i' rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+
+ppmlhdfe patents`i' rd_credit `controls', absorb(assignee_id year)
+ppmlhdfe patents`i'_w1 rd_credit `controls', absorb(assignee_id year)
+ppmlhdfe patents`i'_w2 rd_credit `controls', absorb(assignee_id year)
+
+ppmlhdfe patents`i' rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+ppmlhdfe patents`i'_w1 rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+ppmlhdfe patents`i'_w2 rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+
+
+reghdfe n_inventors`i' rd_credit `controls', absorb(assignee_id year)
+reghdfe n_inventors`i'_w1 rd_credit `controls', absorb(assignee_id year)
+reghdfe n_inventors`i'_w2 rd_credit `controls', absorb(assignee_id year)
+reghdfe ln_n_inventors`i' rd_credit `controls', absorb(assignee_id year)
+
+reghdfe n_inventors`i' rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+reghdfe n_inventors`i'_w1 rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+reghdfe n_inventors`i'_w2 rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+reghdfe ln_n_inventors`i' rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+
+ppmlhdfe n_inventors`i' rd_credit `controls', absorb(assignee_id year)
+ppmlhdfe n_inventors`i'_w1 rd_credit `controls', absorb(assignee_id year)
+ppmlhdfe n_inventors`i'_w2 rd_credit `controls', absorb(assignee_id year)
+
+ppmlhdfe n_inventors`i' rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+ppmlhdfe n_inventors`i'_w1 rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
+ppmlhdfe n_inventors`i'_w2 rd_credit `controls' if multistatefirm_max==1, absorb(assignee_id year)
 
 }
 
@@ -63,27 +122,33 @@ ppmlhdfe n_inventors`i'_w2 rd_credit if multistatefirm==1, absorb(assignee_id ye
 ********************************************************************************
 * Analysis without controls and with controls for credit rates in other states 
 ********************************************************************************
+capture log close 
+log using "${RESULTS}/log_24_02_08_controls_rdcredit.log", replace
 
+local controls1
+local controls2 cit gdp pit 
 
-reghdfe patents1 rd_credit avg_credit_rate if multistatefirm==1, absorb(assignee_id year)
-reghdfe patents2 rd_credit avg_credit_rate if multistatefirm==1, absorb(assignee_id year)
-reghdfe patents3 rd_credit avg_credit_rate if multistatefirm==1, absorb(assignee_id year)
+forvalues y=2/2 {
+forvalues i = 1/3 {
+	di "Using Definition `i' and Controls `y'"
 
+reghdfe patents`i' rd_credit total_credit_other `controls`y'', absorb(assignee_id year)
+reghdfe patents`i'_w1 rd_credit total_credit_other `controls`y'' , absorb(assignee_id year)
+reghdfe patents`i'_w2 rd_credit total_credit_other `controls`y'' , absorb(assignee_id year)
+reghdfe ln_patents`i' rd_credit total_credit_other `controls`y''  , absorb(assignee_id year)
 
-reghdfe n_inventors1 rd_credit avg_credit_rate if multistatefirm==1, absorb(assignee_id year)
-reghdfe n_inventors2 rd_credit avg_credit_rate if multistatefirm==1, absorb(assignee_id year)
-reghdfe n_inventors3 rd_credit avg_credit_rate if multistatefirm==1, absorb(assignee_id year)
+ppmlhdfe patents`i' rd_credit total_credit_other `controls`y'' , absorb(assignee_id year)
+ppmlhdfe patents`i'_w1 rd_credit total_credit_other `controls`y'', absorb(assignee_id year)
+ppmlhdfe patents`i'_w2 rd_credit total_credit_other `controls`y'', absorb(assignee_id year)
 
-* This finding is very weird for some reason there is also a positive effect on the number of patents in one state of the average credit rate in other states 
+reghdfe n_inventors`i' rd_credit total_credit_other `controls`y'', absorb(assignee_id year)
+reghdfe n_inventors`i'_w1 rd_credit total_credit_other `controls`y'', absorb(assignee_id year)
+reghdfe n_inventors`i'_w2 rd_credit total_credit_other `controls`y'', absorb(assignee_id year)
+reghdfe ln_n_inventors`i' rd_credit total_credit_other `controls`y'' , absorb(assignee_id year)
 
+ppmlhdfe n_inventors`i' rd_credit total_credit_other `controls`y'' , absorb(assignee_id year)
+ppmlhdfe n_inventors`i'_w1 rd_credit total_credit_other `controls`y'', absorb(assignee_id year)
+ppmlhdfe n_inventors`i'_w2 rd_credit total_credit_other `controls`y'' , absorb(assignee_id year)
 
-********************************************************************************
-* Analysis without controls and controlling for tax rates in other states 
-********************************************************************************
-
-
-
-
-********************************************************************************
-* Analysis without controls and with controls for credit rates in other states 
-********************************************************************************
+}
+}
