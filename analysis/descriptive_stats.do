@@ -17,8 +17,7 @@ replace n_inventors3=0 if missing(n_inventors3)
 
 replace gdp=gdp/1000000000
 replace gdp_other=gdp_other/1000000000
-replace rd_credit=100*rd_credit
-replace rd_credit_other=100*rd_credit_other
+
 
 label var nstates "Active States"
 label var multistatefirm_temp "Share Multi State Firms"
@@ -56,9 +55,8 @@ drop if inrange(cz, 34701, 34703)
 drop if cz==35600
 save "$IN/maps/cz/usdb_cz.dta", replace 
 
-use "$OUT\woeppel_regsample_firm.dta", clear	
+use "$OUT\reg_data_patent_invmoves.dta", clear	
 *gen cz=CZ_depagri_1990
-drop if state_inv==2 | state_inv==15
 keep if year == 1992 | year == 2009
 
 gen helper=1
@@ -77,7 +75,6 @@ drop _merge
 foreach var of varlist n_patents1992 n_inventors1992 n_patents2009 n_inventors2009 {
 	replace `var'=0 if missing(`var')
 }
-
 
 spmap n_patents1992 using "$IN/maps/cz/uscoord_cz.dta", id(id) fcolor(Blues) clmethod(custom) clbreaks(0 1 10 40 10000) legend(position(5) size(medium))
 graph export "$RESULTS\heatmap_n_patents1992_cz.png", replace

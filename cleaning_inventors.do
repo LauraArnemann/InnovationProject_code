@@ -423,6 +423,7 @@ gen `var'_helper = n_inventors3 * `var'
 bysort assignee_id app_year: egen `var'_other=total(`var'_helper)
 replace `var'_other =  `var'_other - `var'_helper
 replace `var'_other = `var'_other/total_inventors_other 
+
 }
 
 
@@ -441,7 +442,7 @@ save "${TEMP}/rdcredits_cleaned.dta", replace
 ********************************************************************************
 * Merging things together
 ********************************************************************************
-
+* Only records active years 
 
 use "${TEMP}/patentcount_state.dta", clear 
 merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
@@ -457,15 +458,37 @@ bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
 
 
 merge 1:1 fips_state app_year assignee_id using "${TEMP}/rdcredits_cleaned.dta"
+keep if _merge==3
 * Observations from 2018 onwards not matched
-keep if _merge==3 
 drop _merge 
+
+/*
+* Generate alternative variable for RD other 
+bysort assignee_id app_year: egen total_inventors=total(n_inventors3)
+gen total_inventors_other=total_inventors-n_inventors3 
+
+gen rd_weight=n_inventors3*rd_credit 
+bysort assignee_id app_year: egen rd_weight_total=total(rd_weight)
+gen rd_credit_other_alternative = (rd_weight_total - rd_weight)/total_inventors_other 
+*/ 
+
+foreach var of varlist rd_credit pit cit gdp unemployment {
+bysort assignee_id app_year: egen total_`var'=total(`var')
+replace total_`var'=(total_`var' -`var')/(nstates-1)
+replace total_`var'=0 if total_`var'<0
+}
+* For some reason stata does really weird things with the RD Credit
+
+replace rd_credit=100*rd_credit
+replace rd_credit_other=100*rd_credit_other
+replace total_rd_credit = 100* total_rd_credit
+
 
 rename app_year year 
 * What should we do with New York, Ohio, Louisiana? 
 save "${TEMP}/final_state.dta", replace 
 
-
+* Also add in zeros for inactive years 
 
 
 

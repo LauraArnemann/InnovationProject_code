@@ -31,7 +31,7 @@ global OUT C:/Users/laura/Desktop/InnovationProject/data/final
 global LINKING  C:/Users/laura/Desktop/InnovationProject/data/linking_table
 
 
-global PATENTDTA C:/Users/laura/Desktop/InnovationProject/data/raw/main_data/data_patents
+global PATENTDTA C:/Users/laura/Desktop/InnovationProject/data/raw/main_data/data_patent
 global REGDTA C:/Users/laura/Desktop/InnovationProject/data/temp/
 
 global RESULTS C:/Users/laura/Desktop/InnovationProject/results
