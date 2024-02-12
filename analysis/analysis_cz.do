@@ -41,7 +41,7 @@ esttab reg1 reg2 reg3 using "${RESULTS}/tables/poissonreg_inventors_cz.tex", rep
 
 
 
-ppmlhdfe patents_cz3_w1 rd_credit rd_credit_other_w1 if year>=1992 & multistatefirm_max==0, absorb(assignee_id year) cl(czone)
+ppmlhdfe patents_cz3_w1 rd_credit rd_credit_other_w1 if year>=1992 & multistatefirm_temp==0, absorb(assignee_id year) cl(czone)
 est sto reg1
 estadd local yearfe "\checkmark", replace
 estadd local czonefe "\checkmark", replace

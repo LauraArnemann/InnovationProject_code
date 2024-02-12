@@ -1,6 +1,6 @@
 // Project: Inventor Relocation
 // Creation Date: 20/11/2023
-// Last Update: 02/02/2024
+// Last Update: 12/02/2024
 // Author: Laura Arnemann 
 // Goal: Master 
 
@@ -17,6 +17,7 @@ ssc install spmap
 ssc install shp2dta
 ssc install mif2dta
 ssc install outreg2
+ssc install gtools
 */
 
 * Set the global so the paths adjust quickly
@@ -44,7 +45,7 @@ if c(username) == "tbuehrle" {
 	global TEMP "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data\temp"
 	global OUT  "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data\final"
 	global LINKING  "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data\linking_tables"
-	global PATENTDTA "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Data\Patent Data US_Woeppel"
+	global PATENTDTA "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Data\Patent Data US_Woeppel\Temp"
 	
 	global code "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_2_Code"
 	
