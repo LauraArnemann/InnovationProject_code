@@ -398,12 +398,16 @@ drop _merge
 destring rd_credit, replace force
 bysort assignee_id year: gen count=_N 
 
-merge m:1 fips_state year using "${TEMP}/controls_orig.dta", keepusing(t_pinc_rate_orig corprate_orig GDP_orig)
+merge m:1 fips_state year using "${TEMP}/controls_orig.dta", keepusing(GDP_orig)
 drop _merge 
 
-rename t_pinc_rate_orig pit 
-rename corprate_orig cit 
 rename GDP_orig gdp
+
+merge m:1 fips_state year using "${IN}/indep_var/var_tax/taxdata_CIT_PIT.dta", keepusing(PIT_state CIT_state)
+drop _merge 
+
+rename PIT_state pit 
+rename CIT_state cit 
 
 rename year app_year 
 merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
