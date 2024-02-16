@@ -375,13 +375,19 @@ save "${TEMP}/inventorcount_state.dta", replace
 * Merging in the R+D data 
 ********************************************************************************
 use "${TEMP}/patentcount_state.dta", clear 
+bysort assignee_id fips_state: egen min_year=min(app_year)
+bysort assignee_id fips_state: egen max_year=max(app_year)
+
 
 duplicates drop fips_state assignee_id, force 
-keep fips_state assignee_id
+keep fips_state assignee_id min_year max_year
 expand 51 
 bysort assignee_id fips_state: gen count_obs = _n
 gen app_year = 1969+count_obs
 drop count_obs 
+
+* Fill in observations with zeros inbetween the max year and the minimum year
+keep if inrange(app_year, min_year, max_year)
 
 rename fips_state fips 
 merge m:1 fips app_year using "${IN}/indep_var/moretti_controls.dta", keepusing(RA)
@@ -394,6 +400,7 @@ merge m:1 fips_state year using "${IN}/indep_var/var_RDcredits/RD_credits_final.
 keep if _merge==3 
 drop _merge 
 
+* Replace the data for New York with a zero 
 
 destring rd_credit, replace force
 bysort assignee_id year: gen count=_N 
@@ -442,26 +449,40 @@ save "${TEMP}/rdcredits_cleaned.dta", replace
 ********************************************************************************
 * Merging things together
 ********************************************************************************
-* Only records active years 
 
 use "${TEMP}/patentcount_state.dta", clear 
 merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
 * With states this is not such a huge problem
 drop _merge 
 
+merge 1:1 fips_state app_year assignee_id using "${TEMP}/rdcredits_cleaned.dta"
+/*
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                       768,276
+        from master                    43,632  (_merge==1)
+        from using                    724,644  (_merge==2)
+
+    Matched                           946,076  (_merge==3)
+
+*/ 
+	
+* Observations from 2018 onwards not matched
+drop if _merge==1 
+
+forvalues i=1/3 {
+	replace patents`i'=0 if missing(patents`i') & _merge==2 
+	replace n_inventors`i'=0 if missing(n_inventors`i') & _merge==2 
+} 
+
+
+drop _merge 
 bysort assignee_id app_year: gen nstates=_N 
 
-
-* How can I fix the number of states in which the firm has ever been present 
 gen multistatefirm_temp=0 
 replace multistatefirm_temp=1 if nstates>1
 bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
-
-
-merge 1:1 fips_state app_year assignee_id using "${TEMP}/rdcredits_cleaned.dta"
-keep if _merge==3
-* Observations from 2018 onwards not matched
-drop _merge 
 
 /*
 * Generate alternative variable for RD other 
@@ -487,7 +508,7 @@ replace total_rd_credit = 100* total_rd_credit
 
 rename app_year year 
 * What should we do with New York, Ohio, Louisiana? 
-save "${TEMP}/final_state.dta", replace 
+save "${TEMP}/final_state_zeros.dta", replace 
 
 * Also add in zeros for inactive years 
 
