@@ -5,151 +5,17 @@
 // Goal: Merging the data set using the number of inventors in a state employed by the respective firm as outcome variable 
 
 
-********************************************************************************
-* Merging the dataset 
-********************************************************************************
-* Merging the RD Credits
-
-import excel "${IN}/indep_var/var_RDcredits/RD_credits_final.xlsx", sheet("rd_summary") firstrow clear 
-drop if missing(fips_state)
-
-rename DT1lowesttier rd_credit 
-keep fips_state year rd_credit 
-
-save "${IN}/indep_var/var_RDcredits/RD_credits_final.dta", replace 
-
-
-
-/*
-* Cleaning the Crosswalk from the Dyevre Paper 
-
-
-forvalues i=1/8 {
-import delimited "${IN}/crosswalk/staticTranche`i'.csv", clear 
-tempfile static`i'
-save `static`i''
-}
-
-clear
-
-forvalues i =1/8 {
-	append using `static`i''
-}
-
-
-drop if missing(gvkeyuo)
-* (457,383 observations deleted)
-duplicates drop patent_id gvkeyuo, force 
-*(28 observations deleted)
-* Usually these duplicates arise between patents were assigned to different entitities (allegedly after they merged) 
-rename gvkeyuo gvkey
-
-bysort patent_id: gen count=_n
-
-keep patent_id appyear gvkey count
-
-reshape wide gvkey*, i(patent_id) j(count)
-
-rename patent_id patnum 
-rename gvkey1 gvkeyuo 
-
-destring patnum, replace force 
-drop if missing(patnum)
-*(137038 missing values generated), most of them start with a letter. Don't really know what to do with that. 
-
-/*
-I used this code to check the match between the Dorn linking table and the dyevre linking table, there was a discrepancy between the dorn gvkey and the dyevre gvkey for 10% of the patents filed. I manually checked some of the patents which had multiple gvkey myself, usually the dyevre provided the better match. In some instances an M&A was not reported in other instances the match was wrong. Would be interesting to see if results change if we change the assignment
-gen patent=patent_id 
-tostring patent, replace 
-replace  patent = "0" + patent 
-merge m:1 patent using "${IN}/crosswalk/cw_patent_compustat_adhps.dta"
-
-keep if _merge==3 
-drop _merge 
-
-destring gvkey, replace 
-gen tag=1 if gvkey==gvkeyuo
-
-bysort patent_id: egen max_tag=max(tag)
-gen indicator=1 if missing(tag)
-
-bysort patent_id: egen max_indicator=max(indicator)
-
-* When checking some of the patents the dyevre database provides a better fit than the Dorn database 
-*/
-
-save "${IN}/crosswalk/static_match.dta", replace 
-*/
-* Overall 3051406 different patents
-
 use patnum citation_count withdrawn date_filing date_grant app_year ///
 	inventor_id first_name last_name male location_id state_fips_inventor county_fips_inventor ///
 	assignee_id state_fips_assignee county_fips_assignee  ///
 	using "$PATENTDTA\inventor_applications.dta", clear
 
-/*	
-******************************************************************************
-* Match the Patent Data with the linking tables from Dyevre and Dorn; 
-******************************************************************************
-gen patent=patnum 
-tostring patent, replace 
-replace  patent = "0" + patent 
-merge m:1 patent using "${IN}/crosswalk/cw_patent_compustat_adhps.dta"
-drop if _merge==2 
-drop _merge 
-rename gvkey gvkey_dorn 
-destring gvkey, replace 
 
-
-
-    Result                      Number of obs
-    -----------------------------------------
-    Not matched                     7,271,714
-        from master                 6,594,319  (_merge==1)
-        from using                    677,395  (_merge==2)
-
-    Matched                         3,342,362  (_merge==3)
-    -----------------------------------------
-
-
-
-merge m:1 patnum using "${IN}/crosswalk/static_match.dta"
-drop if _merge==2
-drop _merge 
-
-/*
-    Result                      Number of obs
-    -----------------------------------------
-    Not matched                     6,322,092
-        from master                 5,172,336  (_merge==1)
-        from using                  1,149,756  (_merge==2)
-
-    Matched                         4,764,345  (_merge==3)
-    -----------------------------------------
-*/ 
-* 3341403 patents have the same gvkey in both datasets 
-* Not all variables are matched for some reason 
-
-/* Amount of variation in the data set*/ 
-
-*unique(assignee_id appyear): 335268
-*unique(assignee_id appyear state_fips_assignee): 388358
-*unique(assignee_id appyear state_fips_assignee state_fips_inventor): 720222
-
-* I think for now it might be better to continue with the USPTO sample.
-However, at one point in time we might decide to do this with the other merge.
-Just to get an understanding of the differences in the data sets: In the USPTO data set, 
-patents are assigned for example to AMVAC Chemical Corporation, while in the Dyevre data set 
-they are assigned to American Vanguard Corporation. American Vanguard Corporation is a daughter 
-of Amvac Chemical corporation
-
-*/
 
 ********************************************************************************
 * Similar cleaning steps as in Theresas data set 
 ********************************************************************************
 
-	
 drop if withdrawn==1 
 drop withdrawn
 
@@ -364,10 +230,7 @@ merge 1:1 state_fips_inventor assignee_id app_year using `inventors2', keepusing
 drop _merge 
 
 rename state_fips_inventor fips_state 
-
-
 save "${TEMP}/inventorcount_state.dta", replace 
-
 
 
 
@@ -383,27 +246,32 @@ bysort assignee_id fips_state: gen count_obs = _n
 gen app_year = 1969+count_obs
 drop count_obs 
 
-rename fips_state fips 
-merge m:1 fips app_year using "${IN}/indep_var/moretti_controls.dta", keepusing(RA)
-drop _merge 
-
-
+* Merging the control variables 
 rename app_year year 
-rename fips fips_state 
+
 merge m:1 fips_state year using "${IN}/indep_var/var_RDcredits/RD_credits_final.dta"
 keep if _merge==3 
 drop _merge 
-
-
 destring rd_credit, replace force
 bysort assignee_id year: gen count=_N 
 
-merge m:1 fips_state year using "${TEMP}/controls_orig.dta", keepusing(t_pinc_rate_orig corprate_orig GDP_orig)
+* Unemployment
+merge m:1 fips_state year using "${IN}/indep_var/var_state/unemployment.dta"
+drop if _merge==2 
+*1970-1975 not merged from master, 2019-2021 from using not matched  
 drop _merge 
 
-rename t_pinc_rate_orig pit 
-rename corprate_orig cit 
-rename GDP_orig gdp
+* GDP
+merge m:1 fips_state year using "${IN}/indep_var/var_state/gdp.dta"
+drop if _merge==2 
+drop _merge 
+
+* PIT and CIT
+merge m:1 fips_state year using "${IN}/indep_var/var_tax/tax_final.dta"
+* Year 2019 not matched 
+drop if _merge==2 
+drop _merge 
+
 
 rename year app_year 
 merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
@@ -417,7 +285,7 @@ bysort assignee_id app_year: egen total_inventors=total(n_inventors3)
 gen total_inventors_other = total_inventors-n_inventors3
 
  
-foreach var of varlist rd_credit pit cit gdp RA {
+foreach var of varlist rd_credit pit cit gdp unemployment_rate {
 	
 gen `var'_helper = n_inventors3 * `var'
 bysort assignee_id app_year: egen `var'_other=total(`var'_helper)
@@ -426,12 +294,11 @@ replace `var'_other = `var'_other/total_inventors_other
 
 }
 
-
 label var rd_credit_other "Average RD credit at other Labs"
 label var pit_other "Average PIT at other labs"
 label var cit_other "Average CIT at other labs"
-rename RA_other unemployment_other 
-rename RA unemployment 
+rename unemployment_rate unemployment
+rename unemployment_rate_other unemployment_other
 label var unemployment_other "Unemployment Rate at other labs"
 
 drop count *_helper n_inventors* total_inventors total_inventors_other 
@@ -448,7 +315,6 @@ use "${TEMP}/patentcount_state.dta", clear
 merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
 * With states this is not such a huge problem
 drop _merge 
-
 bysort assignee_id app_year: gen nstates=_N 
 
 
@@ -456,7 +322,6 @@ bysort assignee_id app_year: gen nstates=_N
 gen multistatefirm_temp=0 
 replace multistatefirm_temp=1 if nstates>1
 bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
-
 
 merge 1:1 fips_state app_year assignee_id using "${TEMP}/rdcredits_cleaned.dta"
 keep if _merge==3
@@ -478,7 +343,6 @@ bysort assignee_id app_year: egen total_`var'=total(`var')
 replace total_`var'=(total_`var' -`var')/(nstates-1)
 replace total_`var'=0 if total_`var'<0
 }
-* For some reason stata does really weird things with the RD Credit
 
 replace rd_credit=100*rd_credit
 replace rd_credit_other=100*rd_credit_other
@@ -489,109 +353,137 @@ rename app_year year
 * What should we do with New York, Ohio, Louisiana? 
 save "${TEMP}/final_state.dta", replace 
 
-* Also add in zeros for inactive years 
 
 
 
 
-
-
-
+********************************************************************************
+* Old Stuff 
+********************************************************************************
 
 
 
 /*
-
-bysort gvkey inventor_id appyear: gen patents=_N 
-bysort state_fips_inventor gvkey inventor_id appyear: gen statepatents=_N 
+* Cleaning the Crosswalk from the Dyevre Paper 
 
 
-gen share_statepatents=statepatents/patents 
-bysort gvkey inventor_id appyear: egen max_stateshare=max(share_statepatents)
+forvalues i=1/8 {
+import delimited "${IN}/crosswalk/staticTranche`i'.csv", clear 
+tempfile static`i'
+save `static`i''
+}
 
-* (23,843 observations deleted)
+clear
 
-drop patents 
-
-bysort inventor_id appyear: gen patents=_N 
-bysort gvkey inventor_id appyear: gen firmpatents=_N
-gen share_firmpatents=firmpatents/patents 
-
-bysort inventor_id appyear: egen max_firmshare=max(share_firmpatents)
-keep if share_firmpatents==max_firmshare
-
-duplicates drop inventor_id appyear gvkey state_fips_inventor, force 
-duplicates tag inventor_id appyear gvkey, gen(dup)
-
-gen state_weight=1
-replace state_weight = share_statepatents if dup>0 
-drop dup
-
-duplicates tag inventor_id state_fips_inventor appyear, gen(dup)
-
-gen firm_weight=1 
-replace firm_weight = share_firmpatents if dup>0 
-drop dup 
-
-gen weight=firm_weight*state_weight 
-
-gen inventors=1 
-
-collapse (sum) n_inventors=inventors n_patents=firmpatents [pw=weight], by(gvkey appyear state_fips_inventor)
-
-* Only keep companies with inventors present in multiple states 
-bysort gvkey appyear: gen count=_N 
-keep if count >1 
-
-rename state_fips_inventor fips_state 
-rename appyear year 
+forvalues i =1/8 {
+	append using `static`i''
+}
 
 
+drop if missing(gvkeyuo)
+* (457,383 observations deleted)
+duplicates drop patent_id gvkeyuo, force 
+*(28 observations deleted)
+* Usually these duplicates arise between patents were assigned to different entitities (allegedly after they merged) 
+rename gvkeyuo gvkey
 
-********************************************************************************
-* Merging the data set with the RD Tax Credits 
-********************************************************************************
+bysort patent_id: gen count=_n
 
+keep patent_id appyear gvkey count
 
-merge m:1 fips_state year using `rd_credit_long'
+reshape wide gvkey*, i(patent_id) j(count)
+
+rename patent_id patnum 
+rename gvkey1 gvkeyuo 
+
+destring patnum, replace force 
+drop if missing(patnum)
+*(137038 missing values generated), most of them start with a letter. Don't really know what to do with that. 
+
+/*
+I used this code to check the match between the Dorn linking table and the dyevre linking table, there was a discrepancy between the dorn gvkey and the dyevre gvkey for 10% of the patents filed. I manually checked some of the patents which had multiple gvkey myself, usually the dyevre provided the better match. In some instances an M&A was not reported in other instances the match was wrong. Would be interesting to see if results change if we change the assignment
+gen patent=patent_id 
+tostring patent, replace 
+replace  patent = "0" + patent 
+merge m:1 patent using "${IN}/crosswalk/cw_patent_compustat_adhps.dta"
+
 keep if _merge==3 
 drop _merge 
 
-rename count n_labs
+destring gvkey, replace 
+gen tag=1 if gvkey==gvkeyuo
 
-* Generate the average credit rate at other states
-gen weighted_labs = rd_credit/(n_labs-1) 
-bysort gvkey: egen avg_credit_rate = total(weighted_labs)
-replace avg_credit_rate=avg_credit_rate-weighted_labs/(n_labs-1) 
+bysort patent_id: egen max_tag=max(tag)
+gen indicator=1 if missing(tag)
 
-label var avg_credit_rate "Average credit rate in other states in which the firm is active"
+bysort patent_id: egen max_indicator=max(indicator)
 
-drop n_labs 
-drop weighted_labs
+* When checking some of the patents the dyevre database provides a better fit than the Dorn database 
+*/
 
-* Credit rate weighted by number of inventors
+save "${IN}/crosswalk/static_match.dta", replace 
+*/
+* Overall 3051406 different patents
 
-bysort appyear gvkey: egen total_inventors=total(inventors)
-
-gen rd_credit_w1=n_inventors*rd_credit_rate 
-
-bysort appyear gvkey: gen avg_credit_rate_w=total(rd_credit_w1)
-replace avg_credit_rate_w1 = (avg_credit_rate_w1 - rd_credit_w1)/(total_inventors -n_inventors)
-
-
-
-* Credit rate weighted by share of patents in the respective state 
-
-bysort appyear gvkey: egen total_patents=total(patents)
-
-gen rd_credit_w2=n_patents*rd_credit_rate 
-
-bysort appyear gvkey: gen avg_credit_rate_w=total(rd_credit_w1)
-replace avg_credit_rate_w2 = (avg_credit_rate_w2 - rd_credit_w2)/(total_patents -n_patents)
+/*	
+******************************************************************************
+* Match the Patent Data with the linking tables from Dyevre and Dorn; 
+******************************************************************************
+gen patent=patnum 
+tostring patent, replace 
+replace  patent = "0" + patent 
+merge m:1 patent using "${IN}/crosswalk/cw_patent_compustat_adhps.dta"
+drop if _merge==2 
+drop _merge 
+rename gvkey gvkey_dorn 
+destring gvkey, replace 
 
 
 
-save "${TEMP}/"
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                     7,271,714
+        from master                 6,594,319  (_merge==1)
+        from using                    677,395  (_merge==2)
+
+    Matched                         3,342,362  (_merge==3)
+    -----------------------------------------
+
+
+
+merge m:1 patnum using "${IN}/crosswalk/static_match.dta"
+drop if _merge==2
+drop _merge 
+
+/*
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                     6,322,092
+        from master                 5,172,336  (_merge==1)
+        from using                  1,149,756  (_merge==2)
+
+    Matched                         4,764,345  (_merge==3)
+    -----------------------------------------
+*/ 
+* 3341403 patents have the same gvkey in both datasets 
+* Not all variables are matched for some reason 
+
+/* Amount of variation in the data set*/ 
+
+*unique(assignee_id appyear): 335268
+*unique(assignee_id appyear state_fips_assignee): 388358
+*unique(assignee_id appyear state_fips_assignee state_fips_inventor): 720222
+
+* I think for now it might be better to continue with the USPTO sample.
+However, at one point in time we might decide to do this with the other merge.
+Just to get an understanding of the differences in the data sets: In the USPTO data set, 
+patents are assigned for example to AMVAC Chemical Corporation, while in the Dyevre data set 
+they are assigned to American Vanguard Corporation. American Vanguard Corporation is a daughter 
+of Amvac Chemical corporation
+
+*/
+
+
 
 
 

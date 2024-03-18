@@ -52,6 +52,9 @@ if c(username) == "tbuehrle" {
 	global RESULTS "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_3_Results"
 } 
 
+
+
+
 /*
 
 *-------------------------------------------------------------------------------
