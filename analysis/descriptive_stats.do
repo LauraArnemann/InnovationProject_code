@@ -1,7 +1,7 @@
 // Project: Inventor Relocation
 // Creation Date: 08/02/2024
-// Last Update: 08/02/2024
-// Author: Laura Arnemann 
+// Last Update: 18/03/2024
+// Author: Laura Arnemann, Theresa Bührle 
 // Goal: Descriptive Statistics and Heat Maps
 
 use "${TEMP}/final_state.dta", clear
@@ -163,5 +163,61 @@ graph export "$RESULTS\heatmap_rd_credit2018.png", replace
 
 spmap rd_credit1992 using "$IN\maps\states\us_coord.dta", id(id) fcolor(Blues) clmethod(custom) clbreaks(0 0.1 5 10 15 30) legend(position(5) size(medium)) 
 graph export "$RESULTS\heatmap_rd_credit1992.png", replace
+
+
+********************************************************************************
+* R&D incentives
+********************************************************************************
+
+*Graph development R&D incentives
+
+use "$IN\indep_var\var_RDcredits\RD_credits_final.dta", clear
+
+gen rd_credit_pos = 1 if rd_credit > 0
+
+bysort year: egen rd_count = count(rd_credit_pos)
+bysort year: egen rd_avrate = mean(rd_credit)
+
+keep if year >= 1992 & year <= 2018
+
+twoway (bar rd_avrate year, yaxis(2)  color(gs10%20) barw(0.85) ytitle("Average tax credit rate (line)", axis(2))) ///
+		(line rd_count year, yaxis(1)  color(black) ytitle("Number of states with tax credit (bars)")), ///
+		legend(off) xlabel(1992[4]2018) graphregion(style(none) color(white))
+		graph export "$RESULTS\graph_dev_rdcredits.png", replace
+
+*Graph changes R&D incentives		
+
+use "$IN\indep_var\var_RDcredits\RD_credits_final.dta", clear
+
+sort fips_state year
+by fips_state: gen change_rd = rd_credit - rd_credit[_n-1] if fips_state == fips_state[_n-1]
+
+keep if year >= 1992 & year <= 2018
+
+sum change_rd
+gen change_rd_neg = change_rd if change_rd < 0 & change_rd != .
+	gen change_rd_neg_d = 1 if change_rd_neg != .
+gen change_rd_pos = change_rd if change_rd > 0 & change_rd != .
+	gen change_rd_pos_d = 1 if change_rd_pos != .
+	
+bysort year: egen rd_neg_count = count(change_rd_neg_d)	
+	replace rd_neg_count = -rd_neg_count
+bysort year: egen rd_pos_count = count(change_rd_pos_d)	
+bysort year: egen rd_neg_av = mean(change_rd_neg)	
+bysort year: egen rd_pos_av = mean(change_rd_pos)	
+
+duplicates drop year, force
+	
+twoway 	(bar rd_neg_count year, barw(0.85) color(gs10%50) yaxis(1) ytitle("Number of R&D credit changes (bars)")) ///
+		(bar rd_pos_count year, barw(0.85) color(black%70) yaxis(1)) ///
+		(line rd_neg_av year, yaxis(2) color(red) ytitle("Mean R&D credit change (lines)", axis(2))) ///
+		(line rd_pos_av year, yaxis(2) color(green)) ///
+		, xlabel(1992[2]2018) ylabel(-0.2(0.2)0.6, axis(2)) graphregion(style(none) color(white)) ///
+		legend(pos(6) rows(2) order(1 "# decreases" 2 "# increases" 3 "av. decrease" 4 "av. increase"))
+	graph export "$RESULTS\graph_changes_rdcredits.png", replace
+
+
+	
+
 
 
