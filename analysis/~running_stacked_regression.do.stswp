@@ -4,6 +4,9 @@
 // Author: Laura Arnemann 
 // Goal: Running Stacked Regression
 
+global controls gdp unemployment
+global controls_other gdp_other unemployment_other
+
 foreach direction in "incr" "decr" {
 
 	foreach indepvar in "credit" "pit" "cit" {
@@ -44,9 +47,24 @@ foreach direction in "incr" "decr" {
 		coefplot inventorreg, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 		xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 		yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-		title("`indepvar', `direction'") xtitle("Years since Change") graphregion(color(white))
-
-		graph export "$RESULTS\graphs\stacked_`indepvar'_`direction'.png", replace  
+		title("`indepvar', `direction' - no controls") xtitle("Years since Change") graphregion(color(white))
+			graph export "$RESULTS\graphs\stacked_`indepvar'_`direction'.png", replace  
+		
+		reghdfe patents3_w1 f4_binary f3_binary f2_binary zero_1 l?_binary $controls, absorb(estab#event year#event) cl(fips_state#event)
+		est sto inventorreg
+		coefplot inventorreg, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
+		xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
+		yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+		title("`indepvar', `direction' - controls") xtitle("Years since Change") graphregion(color(white))
+			graph export "$RESULTS\graphs\stacked_`indepvar'_`direction'_c1.png", replace  
+			
+		reghdfe patents3_w1 f4_binary f3_binary f2_binary zero_1 l?_binary $controls $controls_other, absorb(estab#event year#event) cl(fips_state#event)
+		est sto inventorreg
+		coefplot inventorreg, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
+		xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
+		yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+		title("`indepvar', `direction' - controls (incl other)") xtitle("Years since Change") graphregion(color(white))
+			graph export "$RESULTS\graphs\stacked_`indepvar'_`direction'_c2.png", replace  
 
 		********************************************************************************
 		* Credit Changes at other locations 
@@ -84,9 +102,24 @@ foreach direction in "incr" "decr" {
 		coefplot inventorreg, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 		xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 		yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-		title("`indepvar', other, `direction'") xtitle("Years since Change") graphregion(color(white))
-
-		graph export "$RESULTS\graphs\stacked_other_`indepvar'_`direction'.png", replace  
+		title("`indepvar', other, `direction' - no controls") xtitle("Years since Change") graphregion(color(white))
+			graph export "$RESULTS\graphs\stacked_other_`indepvar'_`direction'.png", replace  
+		
+		reghdfe patents3_w1 f4_binary f3_binary f2_binary zero_1 l?_binary $controls, absorb(estab#event year#event) cl(fips_state#event)
+		est sto inventorreg
+		coefplot inventorreg, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
+		xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
+		yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+		title("`indepvar', other, `direction' - controls") xtitle("Years since Change") graphregion(color(white))
+			graph export "$RESULTS\graphs\stacked_other_`indepvar'_`direction'_c1.png", replace  
+			
+		reghdfe patents3_w1 f4_binary f3_binary f2_binary zero_1 l?_binary $controls $controls_other, absorb(estab#event year#event) cl(fips_state#event)
+		est sto inventorreg
+		coefplot inventorreg, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
+		xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
+		yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+		title("`indepvar', other, `direction' - controls (incl other)") xtitle("Years since Change") graphregion(color(white))
+			graph export "$RESULTS\graphs\stacked_other_`indepvar'_`direction'_c2.png", replace  
 
 	}
 }
