@@ -86,6 +86,10 @@ est sto inventorreg
 coefplot inventorreg, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black))  keep(f?_binary zero_1 l?_binary) yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
 
 
+********************************************************************************
+* Loop: Stacked regressions for cchanges at (other) locations
+********************************************************************************
+
 global controls gdp unemployment
 global controls_other gdp_other unemployment_other
 
@@ -93,7 +97,8 @@ foreach direction in "incr" "decr" {
 
 	foreach indepvar in "credit" "pit" "cit" {
 
-		* Stacked Regression for a change in RD Tax Credits 
+		*Change in location
+		*-----------------------------------------------------------------------
 
 		use "${TEMP}/final_state_stacked_`indepvar'_`direction'.dta", clear 
 
@@ -148,9 +153,9 @@ foreach direction in "incr" "decr" {
 		title("`indepvar', `direction' - controls (incl other)") xtitle("Years since Change") graphregion(color(white))
 			graph export "$RESULTS\graphs\stacked_`indepvar'_`direction'_c2.png", replace  
 
-		********************************************************************************
-		* Credit Changes at other locations 
-		********************************************************************************
+			
+		*Change at other locations
+		*-----------------------------------------------------------------------
 
 		use "${TEMP}/final_state_stacked_other_`indepvar'_`direction'.dta", replace 
 		egen assignee = group(assignee_id)

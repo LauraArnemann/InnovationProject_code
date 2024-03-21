@@ -1,6 +1,6 @@
 // Project: Inventor Relocation
 // Creation Date: 19/03/2024
-// Last Update: 19/03/2024
+// Last Update: 21/03/2024
 // Author: Laura Arnemann 
 // Goal: Creating stacked event studies for changes in other states 
 
@@ -8,10 +8,10 @@
 * Stacked Regression for tax changes at establishment location
 ********************************************************************************
 
+use  "${TEMP}/final_state_zeros.dta", clear 
+
 global lead=4 	// set leads
 global lag=4	// set lags
-
-use  "${TEMP}/final_state.dta", clear 
 
 drop if assignee_id == ""
 
@@ -42,7 +42,7 @@ replace change_cit = 0 if inrange(change_cit, -1, 1)
 
 drop if missing(change_credit) & missing(change_pit) & missing(change_cit)
 
-save  "${TEMP}/final_state_stacked.dta", replace 
+save  "${TEMP}/final_state_stacked_zeros.dta", replace 
 
 foreach var in "credit" "pit" "cit" {
 
@@ -57,7 +57,7 @@ preserve
 	di `change_final'
 
 	foreach v in `change' {
-		use  "${TEMP}/final_state_stacked.dta", clear 
+		use  "${TEMP}/final_state_stacked_zeros.dta", clear 
 		local a = `v' - ${lead} 
 		local b = `v' + ${lag}
 		
@@ -133,7 +133,7 @@ preserve
 	di `change_final'
 
 	foreach v in `change' {
-		use  "${TEMP}/final_state_stacked.dta", clear 
+		use  "${TEMP}/final_state_stacked_zeros.dta", clear 
 		local a = `v' - ${lead} 
 		local b = `v' + ${lag}
 		
@@ -204,7 +204,7 @@ restore
 * Stacked Regression for tax changes at other establishment location
 ********************************************************************************
 
-use  "${TEMP}/final_state.dta", clear 
+use  "${TEMP}/final_state_zeros.dta", clear 
 
 tostring fips_state, gen(str_state)
 gen estab_id = assignee_id + str_state
@@ -227,7 +227,10 @@ replace change_other_cit = 0 if inrange(change_other_cit, -1, 1)
 
 drop if missing(change_other_credit) & missing(change_other_pit) & missing(change_other_cit)
 
-save  "${TEMP}/final_state_stacked_other.dta", replace 
+save  "${TEMP}/final_state_stacked_other_zeros.dta", replace 
+
+levelsof year if year>= 1992 & year<=2018, local(years_final)
+di `years_final'
 
 foreach var in "credit" "pit" "cit"  {
 
@@ -239,7 +242,7 @@ preserve
 	di `years_final'
 
 	forvalues i = 1992/2018 { 
-		use  "${TEMP}/final_state_stacked_other.dta", clear 
+		use  "${TEMP}/final_state_stacked_other_zeros.dta", clear 
 		local a = `i' - ${lead} 
 		local b = `i' + ${lag}
 		
@@ -312,7 +315,7 @@ preserve
 	di `years_final'
 
 	forvalues i = 1992/2018 { 
-		use  "${TEMP}/final_state_stacked_other.dta", clear 
+		use  "${TEMP}/final_state_stacked_other_zeros.dta", clear 
 		local a = `i' - ${lead} 
 		local b = `i' + ${lag}
 		
@@ -377,3 +380,4 @@ preserve
 	 
 restore	
 }
+
