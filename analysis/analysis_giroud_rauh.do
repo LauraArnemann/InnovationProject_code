@@ -5,8 +5,8 @@
 // Goal Similar analysis as in Giroud and Rauh 2019 paper 
 
 
-use "${TEMP}/final_state.dta", clear
-*use "${TEMP}/final_state_withzeros.dta", clear 
+*use "${TEMP}/final_state.dta", clear
+use "${TEMP}/final_state_zeros.dta", clear 
 
 foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 {
 	gstats winsor `var', cut(1 99) gen(`var'_w1)
@@ -34,22 +34,22 @@ label var total_rd_credit "R\&D Credit, other"
 
 foreach var of varlist patents3_w1 n_inventors3_w1 {
 
-ppmlhdfe `var' rd_credit  if year>=1992  , absorb(assignee_id year) cl(fips_state)
+ppmlhdfe `var' rd_credit  if year>=1992  , absorb(estab_id year) cl(fips_state)
 est sto reg1
 estadd local yearfe "\checkmark", replace
 estadd local firmfe "\checkmark", replace
 
-ppmlhdfe `var' rd_credit total_rd_credit if year>=1992 , absorb(assignee_id year) cl(fips_state)
+ppmlhdfe `var' rd_credit total_rd_credit if year>=1992 , absorb(estab_id year) cl(fips_state)
 est sto reg2
 estadd local yearfe "\checkmark", replace
 estadd local firmfe "\checkmark", replace
 
-ppmlhdfe `var' rd_credit total_rd_credit pit cit ln_gdp if year>=1992   , absorb(assignee_id year) cl(fips_state)
+ppmlhdfe `var' rd_credit total_rd_credit pit cit ln_gdp if year>=1992   , absorb(estab_id year) cl(fips_state)
 est sto reg3
 estadd local yearfe "\checkmark", replace
 estadd local firmfe "\checkmark", replace
 
-ppmlhdfe `var' rd_credit total_rd_credit pit cit total_pit total_cit ln_total_gdp if year>=1992  , absorb(assignee_id year) cl(fips_state)
+ppmlhdfe `var' rd_credit total_rd_credit pit cit total_pit total_cit ln_total_gdp if year>=1992  , absorb(estab_id year) cl(fips_state)
 est sto reg4
 estadd local yearfe "\checkmark", replace
 estadd local firmfe "\checkmark", replace

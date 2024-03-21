@@ -8,7 +8,7 @@
 * Stacked Regression for Increases in R&D Tax Credits at other establishments 
 ********************************************************************************
 
-use  "${TEMP}/final_state.dta", clear 
+use  "${TEMP}/final_state_zeros.dta", clear 
 
 tostring fips_state, gen(str_state)
 gen estab_id = assignee_id + str_state
@@ -21,7 +21,7 @@ replace change_credit = 0 if inrange(change_credit, -1, 1)
 drop if missing(change_credit)
 * 14,875 positive changes;  3,394  negative changes 
 
-save  "${TEMP}/final_state_stacked.dta", replace 
+save  "${TEMP}/final_state_stacked_zeros.dta", replace 
 
 levelsof year if change_credit>0 & year>=1992 & change_credit!=. , local(change)
 di `change'
@@ -31,7 +31,7 @@ levelsof year if change_credit > 0 & year>=1992 & change_credit!=. , local(chang
 di `change_final'
 
 foreach v in `change' {
-	 use  "${TEMP}/final_state_stacked.dta", clear 
+	 use  "${TEMP}/final_state_stacked_zeros.dta", clear 
 	 local a = `v' -4 
 	 local b = `v' + 4
 	
@@ -92,7 +92,7 @@ foreach v in `change_final' {
 	append using `stacked_`v''
 }
 
-save "${TEMP}/final_state_stacked.dta", replace 
+save "${TEMP}/final_state_stacked_zeros.dta", replace 
 	 
 	
 
@@ -100,7 +100,7 @@ save "${TEMP}/final_state_stacked.dta", replace
 * Stacked Regression for Changes in R&D Tax Credits at other establishments 
 ********************************************************************************
 
-use  "${TEMP}/final_state.dta", clear 
+use  "${TEMP}/final_state_zeros.dta", clear 
 
 tostring fips_state, gen(str_state)
 gen estab_id = assignee_id + str_state
@@ -113,7 +113,7 @@ replace change_other_credit = 0 if inrange(change_other_credit, -1, 1)
 drop if missing(change_other_credit)
 * 66,574 observations for which this is the case 
 
-save  "${TEMP}/final_state_stacked_other.dta", replace 
+save  "${TEMP}/final_state_stacked_other_zeros.dta", replace 
 
 levelsof year if year>= 1992 & year<=2018, local(years_final)
 di `years_final'
@@ -121,7 +121,7 @@ di `years_final'
 * Stacked Regression for 
 forvalues i = 1992/2018 { 
 	
-	 use  "${TEMP}/final_state_stacked_other.dta", clear 
+	 use  "${TEMP}/final_state_stacked_other_zeros.dta", clear 
 	 local a = `i' -4 
 	 local b = `i' + 4
 	
@@ -180,4 +180,4 @@ foreach v in `years_final' {
 	append using `stacked_`v''
 }
 
-save "${TEMP}/final_state_stacked_other.dta", replace 
+save "${TEMP}/final_state_stacked_other_zeros.dta", replace 

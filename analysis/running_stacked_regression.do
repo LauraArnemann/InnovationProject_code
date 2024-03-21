@@ -6,8 +6,8 @@
 
 
 * Stacked Regression for a change in RD Tax Credits 
-
-use "${TEMP}/final_state_stacked.dta", clear 
+*use "${TEMP}/final_state_stacked.dta", clear 
+use "${TEMP}/final_state_stacked_zeros.dta", clear 
 
 egen assignee = group(assignee_id)
 
@@ -17,12 +17,16 @@ foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_in
 	gen ln_`var'=log(`var')
 }
 
+gen patenting_activity = 0 
+replace patenting_activity = 1 if patents3>0
+
+
 gen ln_gdp=log(gdp)
 gen ln_total_gdp=log(total_gdp)
 
 *Generate the event indicators
 
-forvalues i=1/4{
+forvalues i=1/4 {
 	gen f`i'_binary = ry_increase==-`i'
 	label var f`i'_binary "- `i'"
 }
@@ -36,8 +40,9 @@ drop f1_binary
 gen zero_1=1
 label var zero_1 "-1" 
 
+bysort assignee_id year event: egen n_patents = total(patents3)
 
-reghdfe patents3_w1 f4_binary f3_binary f2_binary zero_1 l?_binary, absorb(estab#event year#event) cl(fips_state#event)
+ppmlhdfe patents3 f4_binary f3_binary f2_binary zero_1 l?_binary  if inrange(year, 1988, 2013) & n_patents <=5 , absorb(estab#event year#event) cl(fips_state#event)
 est sto inventorreg
 coefplot inventorreg, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black))  keep(f?_binary zero_1 l?_binary) yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
 
@@ -45,7 +50,7 @@ coefplot inventorreg, vertical  levels(95)  recast(connected)  omitted graphregi
 * Credit Changes at other locations 
 ********************************************************************************
 
-use  "${TEMP}/final_state_stacked_other.dta", replace 
+use  "${TEMP}/final_state_stacked_other_zeros.dta", replace 
 egen assignee = group(assignee_id)
 
 foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 {
@@ -74,6 +79,8 @@ drop f1_binary
 gen zero_1=1
 label var zero_1 "-1" 
 
-reghdfe patents3_w1 f4_binary f3_binary f2_binary zero_1 l?_binary, absorb(estab#event year#event) cl(fips_state#event)
+bysort assignee_id year event: egen n_patents = total(patents3)
+
+ppmlhdfe patents3_w1 f4_binary f3_binary f2_binary zero_1  l?_binary rd_credit if inrange(year, 1988, 2013) & n_patents >5, absorb(estab#event year#event) cl(fips_state#event)
 est sto inventorreg
 coefplot inventorreg, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black))  keep(f?_binary zero_1 l?_binary) yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
