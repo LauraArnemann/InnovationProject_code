@@ -92,13 +92,13 @@ coefplot inventorreg, vertical  levels(95)  recast(connected)  omitted graphregi
 * Loop: Stacked regressions for cchanges at (other) locations
 ********************************************************************************
 
-global controls gdp unemployment
-global controls_other gdp_other unemployment_other
+global controls gdp unemployment state_rd_exp
+global controls_other gdp_other unemployment_other state_rd_exp_other
 
 global controls2 $controls rd_credit pit cit
 global controls_other2 $controls_other rd_credit_other pit_other cit_other 
 
-local set_drop = 1	// Set 1 if we want to focus on > 5 patents
+local set_drop = 0	// Set 1 if we want to focus on > 5 patents
 
 foreach direction in "incr" "decr" {
 

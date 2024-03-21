@@ -315,7 +315,7 @@ gen total_inventors_other = total_inventors-n_inventors3
 
 rename unemployment_rate unemployment 
  
-foreach var of varlist rd_credit pit cit gdp unemployment {
+foreach var of varlist rd_credit pit cit gdp unemployment state_rd_exp {
 	
 gen `var'_helper = n_inventors3 * `var'
 bysort assignee_id app_year: egen `var'_other=total(`var'_helper)
@@ -328,6 +328,7 @@ label var rd_credit_other "Average RD credit at other Labs"
 label var pit_other "Average PIT at other labs"
 label var cit_other "Average CIT at other labs"
 label var unemployment_other "Unemployment Rate at other labs"
+label var state_rd_exp_other "State gov R&D expenditure at other labs"
 
 drop count *_helper n_inventors* total_inventors total_inventors_other 
 
