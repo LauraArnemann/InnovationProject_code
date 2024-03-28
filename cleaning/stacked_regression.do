@@ -22,7 +22,7 @@ xtset estab year
 * Changes in R&D credits
 gen change_rd_credit = rd_credit - l.rd_credit
 // Keep only if at least 1% change
-replace change_rd_credit = 0 if inrange(change_credit, -1, 1)
+replace change_rd_credit = 0 if inrange(change_rd_credit, -1, 1)
 // keep only obs with at least two consecutive years
 *drop if missing(change_credit)	// let's leave this out for now; also need changes in other main variables
 // 14,875 positive changes;  3,394  negative changes 
@@ -39,6 +39,10 @@ replace change_cit = 0 if inrange(change_cit, -1, 1)
 
 drop if missing(change_rd_credit) & missing(change_pit) & missing(change_cit)
 
+drop max_year min_year nstates multistatefirm_temp multistatefirm_max
+drop unemployment_l* state_rd_exp_l* gdp_l*
+
+compress
 save  "${TEMP}/final_state_stacked_zeros.dta", replace 
 
 foreach var in "rd_credit" "pit" "cit" {
@@ -114,7 +118,9 @@ preserve
 	foreach v in `change_final' {
 		append using `stacked_`v''
 	}
-
+	
+	keep fips_state estab year assignee_id treated max_treated max_change min_change multiple_events ry_increase event 
+	compress
 	save "${TEMP}/final_state_stacked_`var'_incr.dta", replace 
 	 
 restore	
@@ -190,7 +196,9 @@ preserve
 	foreach v in `change_final' {
 		append using `stacked_`v''
 	}
-
+	
+	keep fips_state estab year assignee_id treated max_treated max_change min_change multiple_events ry_decrease event 
+	compress
 	save "${TEMP}/final_state_stacked_`var'_decr.dta", replace 
 	 
 restore	
@@ -220,9 +228,16 @@ foreach var in "rd_credit" "pit" "cit" {
 }
 	
 drop if missing(change_oth_total_rd_credit) & missing(change_oth_total_cit) & missing(change_oth_total_pit)
-	
+
+drop max_year min_year nstates multistatefirm_temp multistatefirm_max
+drop unemployment_l* state_rd_exp_l* gdp_l*
+
+compress	
 save  "${TEMP}/final_state_stacked_other_zeros.dta", replace 
 
+use  "${TEMP}/final_state_stacked_other_zeros.dta", clear 
+
+*Split incr and decr for other due to I/O error (too little space for tempfiles)
 
 foreach var in "rd_credit" "pit" "cit"  {
 	
@@ -298,10 +313,22 @@ foreach var in "rd_credit" "pit" "cit"  {
 		foreach v in `years_final' {
 			append using `stacked_`v''
 		}
-
-		save "${TEMP}/final_state_stacked_other_`var'_incr.dta", replace 
+		
+		keep fips_state estab year assignee_id treated max_treated max_change min_change multiple_events ry_increase event
+		compress
+		save "${TEMP}/final_state_stacked_other_`var2'_incr.dta", replace 
 		 
 	restore	
+	}
+}
+
+use  "${TEMP}/final_state_stacked_other_zeros.dta", clear 
+
+foreach var in "rd_credit" "pit" "cit"  {
+	
+	foreach var2 of varlist total_`var'  `var'_other `var'_other_b ///
+		`var'_l1_other `var'_l2_other `var'_l3_other `var'_l4_other ///
+		`var'_l1_other_b `var'_l2_other_b `var'_l3_other_b `var'_l4_other_b {
 
 	*Decreases	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
@@ -371,7 +398,9 @@ foreach var in "rd_credit" "pit" "cit"  {
 		foreach v in `years_final' {
 			append using `stacked_`v''
 		}
-
+		
+		keep fips_state estab year assignee_id treated max_treated max_change min_change multiple_events ry_decrease event
+		compress
 		save "${TEMP}/final_state_stacked_other_`var2'_decr.dta", replace 
 		 
 	restore	

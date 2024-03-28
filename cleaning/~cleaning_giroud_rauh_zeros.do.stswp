@@ -3,12 +3,12 @@
 // Last Update: 06/12/2023
 // Author: Laura Arnemann 
 // Goal: Merging the data set using the number of inventors in a state employed by the respective firm as outcome variable 
-/*
+
 
 ********************************************************************************
 *Reduce file size by assigning numerical IDs
 ********************************************************************************
-
+/*
 use "$PATENTDTA\inventor_applications.dta", clear
 compress
 
@@ -481,7 +481,7 @@ drop _merge
 	}
 	
 	
-	replace n_inventors3b=0 if missing(n_inventors3)
+	replace n_inventors3b=0 if missing(n_inventors3b)
 		*Inventor count per year per firm across all locations:
 	bysort assignee_id app_year: egen total_inventorsb=total(n_inventors3b)	
 		*Inventor count per year per firm at all other locations:
