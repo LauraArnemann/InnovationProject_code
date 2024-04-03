@@ -53,6 +53,7 @@ if c(username) == "tbuehrle" {
 
 
 * Creating the distinct data files 
+
 /*
 use "C:/Users/laura/Desktop/InnovationProject/data/matched_with_miles.dta", clear 
 gen count =_n 
