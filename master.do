@@ -52,11 +52,21 @@ if c(username) == "tbuehrle" {
 } 
 
 
+* Creating the distinct data files 
 /*
+use "C:/Users/laura/Desktop/InnovationProject/data/matched_with_miles.dta", clear 
+gen count =_n 
+keep if count>20000
+drop count
+save "C:/Users/laura/Desktop/InnovationProject/data/matched_with_miles_theresa.dta", replace
+
+
 
 *-------------------------------------------------------------------------------
 *0. MATCHING
 *-------------------------------------------------------------------------------
+	
+	
 	
 ********************************************************************************
 * Matching NETS + Patent Data via Compustat

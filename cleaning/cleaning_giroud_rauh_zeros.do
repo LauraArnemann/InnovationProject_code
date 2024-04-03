@@ -124,7 +124,6 @@ drop _merge
 
 rename state_fips_inventor fips_state 
 
-
 save "${TEMP}/patentcount_state.dta", replace 
 
 
@@ -199,6 +198,8 @@ bysort state_fips_inventor assignee_id inventor_id: egen min_year = min(min_help
 
 keep if inrange(app_year, min_year, max_year)
 
+gen new_inventor = 1 if app_year==min_year 
+
 replace n_patents = 0 if _merge==2 
 drop _merge 
 
@@ -207,9 +208,10 @@ duplicates tag inventor_id app_year, gen(dup)
 drop if dup>0
 
 bysort state_fips_inventor assignee_id app_year: gen count=_N
-collapse (count) n_inventors1=count, by(state_fips_inventor assignee_id app_year)
+collapse (count) n_inventors1=count n_newinventors1=new_inventor, by(state_fips_inventor assignee_id app_year)
 
 label var n_inventors1 "Number of Inventors, 1"
+label var n_newinventors1 "Number of New Inventors, 1"
 save "${TEMP}/inventor_1.dta", replace
 
 
@@ -223,6 +225,7 @@ gen inventor= 1 * share_patents
 collapse (sum) n_inventors2=inventor, by(state_fips_inventor assignee_id app_year)
 
 label var n_inventors2 "Number of Inventors, 2"
+
 
 save "${TEMP}/inventor_2.dta", replace
 
@@ -255,6 +258,8 @@ bysort state_fips_inventor assignee_id inventor_id: egen min_year = min(min_help
 
 keep if inrange(app_year, min_year, max_year)
 
+gen new_inventor = 1 if app_year==min_year 
+
 drop _merge 
 drop count 
 duplicates tag app_year inventor_id, gen(dup)
@@ -262,16 +267,17 @@ drop if dup>0
 
 bysort inventor_id app_year: gen count=_N
 
-collapse (count) n_inventors3=count, by(state_fips_inventor assignee_id app_year)
+collapse (count) n_inventors3=count n_newinventors3 = new_inventor, by(state_fips_inventor assignee_id app_year)
 
 label var n_inventors3 "Number of Inventors, 3"
+label var n_newinventors3 "Number of New Inventors, 3"
 save "${TEMP}/inventor_3.dta", replace
 
 
 
 use "${TEMP}/inventor_3.dta", clear 
 
-merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_1.dta", keepusing(n_inventors1)
+merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_1.dta", keepusing(n_inventors1 n_newinventors1)
 drop _merge 
 
 merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_2.dta", keepusing(n_inventors2)
@@ -382,7 +388,7 @@ drop _merge
 merge 1:1 fips_state app_year assignee_id using "${TEMP}/rdcredits_cleaned.dta"
 drop if _merge==1 
 
-/*
+/* For the inventors there are a lot of non-matches. This is plausible since there might be new inventors? 
     Result                      Number of obs
     -----------------------------------------
     Not matched                       443,686
