@@ -81,8 +81,9 @@ foreach direction in `direction'  {
 		local sample4 if inrange(year, 1988, 2014) & rd_credit_other!=. 
 		local sample5 if inrange(year, 1988, 2014) & rd_credit_other==. 
 		local sample6 if inrange(year, 1988, 2005)
+		local sample7 if inrange(year, 1988, 2018)
 		
-		forvalues i =1/6 {
+		forvalues i =1/7 {
 
 			foreach outc in `outcome' {
 	
@@ -122,22 +123,22 @@ foreach direction in `direction'  {
 			*DiD
 			ppmlhdfe `outc' max_treated##post_tr `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 				outreg2 using "$RESULTS\tables\`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
-				replace dec(1) stats(coef se) adjr2 noni nodepvar tex(frag) ///
+				replace dec(1) stats(coef se) r2_p noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
 		
 			ppmlhdfe `outc' max_treated##post_tr $controls `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 				outreg2 using "$RESULTS\tables\`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
-				append dec(2) stats(coef se) adjr2 noni nodepvar tex(frag) ///
+				append dec(2) stats(coef se) r2_p noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
 				
 			ppmlhdfe `outc' max_treated##post_tr $controls $controls_other `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 				outreg2 using "$RESULTS\tables\`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
-				append dec(3) stats(coef se) adjr2 noni nodepvar tex(frag) ///
+				append dec(3) stats(coef se) r2_p noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
 			
 			ppmlhdfe `outc' max_treated##post_tr $controls2 $controls_other2 `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 				outreg2 using "$RESULTS\tables\`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
-				append dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
+				append dec(4) stats(coef se) r2_p noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
 
 			}
@@ -203,8 +204,9 @@ foreach direction in `direction' {
 		    local sample2 if inrange(year, 1988, 2014)  & n_patents>5 
 		    local sample3 if inrange(year, 1988, 2014)  & n_patents!=0 
 		    local sample4 if inrange(year, 1988, 2005)
+			local sample5 if inrange(year, 1988, 2018)
 			
-			forvalues i =1/4 {
+			forvalues i =1/5 {
 				
 				foreach outc in `outcome'  {
 				
@@ -244,22 +246,22 @@ foreach direction in `direction' {
 				*DiD
 				ppmlhdfe `outc' max_treated##post_tr `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 					outreg2 using "$RESULTS\tables\`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
-					replace dec(1) stats(coef se) adjr2 noni nodepvar tex(frag) ///
+					replace dec(1) stats(coef se) r2_p noni nodepvar tex(frag) ///
 					ctitle("`outc'") lab
 		
 				ppmlhdfe `outc' max_treated##post_tr $controls `sample`i'' , absorb(estab#event year#event) cl(fips_state#event)
 					outreg2 using "$RESULTS\tables\`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
-					append dec(2) stats(coef se) adjr2 noni nodepvar tex(frag) ///
+					append dec(2) stats(coef se) r2_p noni nodepvar tex(frag) ///
 					ctitle("`outc'") lab
 				
 				ppmlhdfe `outc' max_treated##post_tr $controls $controls_other `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 					outreg2 using "$RESULTS\tables\`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
-					append dec(3) stats(coef se) adjr2 noni nodepvar tex(frag) ///
+					append dec(3) stats(coef se) r2_p noni nodepvar tex(frag) ///
 					ctitle("`outc'") lab
 			
 				ppmlhdfe `outc' max_treated##post_tr $controls2 $controls_other2 `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 					outreg2 using "$RESULTS\tables\`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
-					append dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
+					append dec(4) stats(coef se) r2_p noni nodepvar tex(frag) ///
 					ctitle("`outc'") lab
 
 				}
