@@ -13,7 +13,7 @@ global lag=4	// set lags
 ********************************************************************************
 
 use  "${TEMP}/final_state_zeros.dta", clear 
-drop if assignee_id == .
+drop if missing(assignee_id)
 
 egen estab = group(assignee_id fips_state)
 
@@ -210,21 +210,18 @@ restore
 ********************************************************************************
 
 use  "${TEMP}/final_state_zeros.dta", clear 
-drop if assignee_id == .
+drop if missing(assignee_id)
 
 egen estab = group(assignee_id fips_state)
 xtset estab year 
-
+* `var'_other_b  `var'_l1_other_b `var'_l2_other_b `var'_l3_other_b `var'_l4_other_b 
 * (Weighted) levels at other locations:
 foreach var in "rd_credit" "pit" "cit" {
-	foreach var2 of varlist total_`var'  `var'_other `var'_other_b ///
-		`var'_l1_other `var'_l2_other `var'_l3_other `var'_l4_other ///
-		`var'_l1_other_b `var'_l2_other_b `var'_l3_other_b `var'_l4_other_b {
-
+	
 		* Changes in R&D credits
-		gen change_oth_`var2' = `var2' - l.`var2'
-		replace change_oth_`var2' = 0 if inrange(change_oth_`var2', -1, 1)
-	}
+		gen change_oth_total_`var'  = total_`var' - l.total_`var'
+		replace  change_oth_total_`var' = 0 if inrange(change_oth_total_`var', -1, 1)
+	
 }
 	
 drop if missing(change_oth_total_rd_credit) & missing(change_oth_total_cit) & missing(change_oth_total_pit)
@@ -238,12 +235,9 @@ save  "${TEMP}/final_state_stacked_other_zeros.dta", replace
 use  "${TEMP}/final_state_stacked_other_zeros.dta", clear 
 
 *Split incr and decr for other due to I/O error (too little space for tempfiles)
-
+*	`var'_l1_other_b `var'_l2_other_b `var'_l3_other_b `var'_l4_other_b `var'_other_b
 foreach var in "rd_credit" "pit" "cit"  {
 	
-	foreach var2 of varlist total_`var'  `var'_other `var'_other_b ///
-		`var'_l1_other `var'_l2_other `var'_l3_other `var'_l4_other ///
-		`var'_l1_other_b `var'_l2_other_b `var'_l3_other_b `var'_l4_other_b {
 
 	*Increases	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
@@ -261,18 +255,18 @@ foreach var in "rd_credit" "pit" "cit"  {
 			 
 			* Generate an indicator for being treated
 			gen treated = 0 
-			replace treated = 1 if year == `i' & change_oth_`var2' > 0 
+			replace treated = 1 if year == `i' & change_oth_total_`var' > 0 
 			 
 			bysort estab: egen max_treated = max(treated)
-			bysort estab: egen max_change = max(change_oth_`var2')
-			bysort estab: egen min_change = min(change_oth_`var2')
+			bysort estab: egen max_change = max(change_oth_total_`var')
+			bysort estab: egen min_change = min(change_oth_total_`var')
 			
 			* Drop all observations which were not treated and experienced a tax change in any other year 
 			drop if max_change!=0 & max_treated==0 
 			 
 			* Drop treated units if they experienced a tax change four years prior to the reform
 			generate helper = 0 
-			replace helper = 1 if change_oth_`var2'!=0 & change_oth_`var2'!=. & year>=`a' & year<`i'
+			replace helper = 1 if change_oth_total_`var'!=0 & change_oth_total_`var'!=. & year>=`a' & year<`i'
 			bysort estab: egen max_helper = max(helper)
 			drop if max_helper ==1 
 			drop helper max_helper
@@ -285,7 +279,7 @@ foreach var in "rd_credit" "pit" "cit"  {
 			drop max_taxreversal taxreversal 
 			
 			* Generate a variable that indicates that the observed change was the first in a series of tax changes 
-			gen indicator = 1 if change_oth_`var2'!=0  & change_oth_`var2'!= .
+			gen indicator = 1 if change_oth_total_`var'!=0  & change_oth_total_`var'!= .
 			bysort estab : egen total_change = total(indicator)
 			gen multiple_events = 1 if total_change >1
 			drop indicator total_change 
@@ -316,7 +310,7 @@ foreach var in "rd_credit" "pit" "cit"  {
 		
 		keep fips_state estab year assignee_id treated max_treated max_change min_change multiple_events ry_increase event
 		compress
-		save "${TEMP}/final_state_stacked_other_`var2'_incr.dta", replace 
+		save "${TEMP}/final_state_stacked_other_total_`var'_incr.dta", replace 
 		 
 	restore	
 	}
@@ -324,11 +318,9 @@ foreach var in "rd_credit" "pit" "cit"  {
 
 use  "${TEMP}/final_state_stacked_other_zeros.dta", clear 
 
+*
 foreach var in "rd_credit" "pit" "cit"  {
 	
-	foreach var2 of varlist total_`var'  `var'_other `var'_other_b ///
-		`var'_l1_other `var'_l2_other `var'_l3_other `var'_l4_other ///
-		`var'_l1_other_b `var'_l2_other_b `var'_l3_other_b `var'_l4_other_b {
 
 	*Decreases	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
@@ -346,18 +338,18 @@ foreach var in "rd_credit" "pit" "cit"  {
 			 
 			* Generate an indicator for being treated
 			gen treated = 0 
-			replace treated = 1 if year == `i' & change_oth_`var2' < 0 
+			replace treated = 1 if year == `i' & change_oth_total_`var' < 0 
 			 
 			bysort estab: egen max_treated = max(treated)
-			bysort estab: egen max_change = max(change_oth_`var2')
-			bysort estab: egen min_change = min(change_oth_`var2')
+			bysort estab: egen max_change = max(change_oth_total_`var')
+			bysort estab: egen min_change = min(change_oth_total_`var')
 			
 			* Drop all observations which were not treated and experienced a tax change in any other year 
 			drop if max_change!=0 & max_treated==0 
 			 
 			* Drop treated units if they experienced a tax change four years prior to the reform
 			generate helper = 0 
-			replace helper = 1 if change_oth_`var2'!=0 & change_oth_`var2'!=. & year>=`a' & year<`i'
+			replace helper = 1 if change_oth_total_`var'!=0 & change_oth_total_`var'!=. & year>=`a' & year<`i'
 			bysort estab: egen max_helper = max(helper)
 			drop if max_helper ==1 
 			drop helper max_helper
@@ -370,7 +362,7 @@ foreach var in "rd_credit" "pit" "cit"  {
 			drop max_taxreversal taxreversal 
 			
 			* Generate a variable that indicates that the observed change was the first in a series of tax changes 
-			gen indicator = 1 if change_oth_`var2'!=0 & change_oth_`var2'!= .
+			gen indicator = 1 if change_oth_total_`var'!=0 & change_oth_total_`var'!= .
 			bysort estab : egen total_change = total(indicator)
 			gen multiple_events = 1 if total_change >1
 			drop indicator total_change 
@@ -401,7 +393,7 @@ foreach var in "rd_credit" "pit" "cit"  {
 		
 		keep fips_state estab year assignee_id treated max_treated max_change min_change multiple_events ry_decrease event
 		compress
-		save "${TEMP}/final_state_stacked_other_`var2'_decr.dta", replace 
+		save "${TEMP}/final_state_stacked_other_total_`var'_decr.dta", replace 
 		 
 	restore	
 	}

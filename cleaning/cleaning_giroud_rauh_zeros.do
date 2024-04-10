@@ -57,7 +57,7 @@ save "${TEMP}/inventor_applications.dta", replace
 use patnum citation_count withdrawn date_filing date_grant app_year ///
 	inventor_id first_name last_name male location_id state_fips_inventor county_fips_inventor ///
 	assignee_id state_fips_assignee county_fips_assignee  ///
-	using "${TEMP}\inventor_applications.dta", clear
+	using "${PATENTDTA}/inventor_applications.dta", clear
 	
 drop if withdrawn==1 
 drop withdrawn
@@ -179,7 +179,7 @@ save "${TEMP}/patentcount_state.dta", replace
 * Helper data set for the inventors: balanced panel from 1970 - 2020 
 *-------------------------------------------------------------------------------
 
-use inventor_id state_fips_inventor assignee_id using "${TEMP}\inventor_applications.dta", clear
+use inventor_id state_fips_inventor assignee_id using "${PATENTDTA}/inventor_applications.dta", clear
 duplicates drop state_fips_inventor assignee_id inventor_id, force
 drop if state_fips == . 
 
@@ -194,7 +194,7 @@ save "${TEMP}/helper.dta", replace
 use patnum withdrawn app_year ///
 	inventor_id  state_fips_inventor county_fips_inventor ///
 	assignee_id state_fips_assignee county_fips_assignee  ///
-	using "${TEMP}\inventor_applications.dta", clear
+	using "${PATENTDTA}/inventor_applications.dta", clear
 	
 drop if withdrawn==1 
 drop withdrawn
@@ -250,7 +250,6 @@ preserve
 
 
 gen new_inventor = 1 if app_year==min_year 
-
 
 replace n_patents = 0 if _merge==2 
 drop _merge 
@@ -319,14 +318,15 @@ preserve
 	drop if dup>0
 	gen new_inventor = 1 if app_year==min_year 
 	
-	
+bysort state_fips_inventor assignee_id app_year: gen count=_N
+
 	collapse (count) n_inventors3=count n_newinventors3 = new_inventor, by(state_fips_inventor assignee_id app_year)
 
 label var n_inventors3 "Number of Inventors, 3"
 label var n_newinventors3 "Number of New Inventors, 3"
 save "${TEMP}/inventor_3.dta", replace
 
-restore
+/*restore
 
 
 *3b Keep observation with the highest number of patents in one year 
@@ -393,7 +393,7 @@ restore
 
 	label var n_inventors3b "Number of Inventors, 3b"
 	save "${TEMP}/inventor_3b.dta", replace
-
+*/
 
 merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_1.dta", keepusing(n_inventors1 n_newinventors1)
 drop _merge 
@@ -401,14 +401,12 @@ drop _merge
 merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_2.dta", keepusing(n_inventors2)
 drop _merge 
 
-merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_3.dta", keepusing(n_inventors3)
-drop _merge 
 
-merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_3b.dta", keepusing(n_inventors3)
-drop _merge 
+*merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_3b.dta", keepusing(n_inventors3b)
+*drop _merge 
 
-order n_inventors1 n_inventors2 n_inventors3 n_inventors3b
-
+order n_inventors1 n_inventors2 n_inventors3 
+*n_inventors3b
 rename state_fips_inventor fips_state 
 save "${TEMP}/inventorcount_state.dta", replace 
 
@@ -496,9 +494,9 @@ drop _merge
 	}
 	
 	
-	replace n_inventors3b=0 if missing(n_inventors3b)
+	/*replace n_inventors3b=0 if missing(n_inventors3b)
 		*Inventor count per year per firm across all locations:
-	bysort assignee_id app_year: egen total_inventorsb=total(n_inventors3b)	
+	*bysort assignee_id app_year: egen total_inventorsb=total(n_inventors3b)	
 		*Inventor count per year per firm at all other locations:
 	gen total_inventors_otherb = total_inventorsb-n_inventors3b
 		*Weighting:
@@ -508,10 +506,10 @@ drop _merge
 			replace `var'_other_b =  `var'_other_b - `var'_helperb
 			replace `var'_other_b = `var'_other/total_inventors_otherb 
 	}
-
+*/
 * - Weighted by lagged number of inventors in other states 
 
-	forvalues lag = 1/4 {
+	forvalues lag = 1/1 {
 		
 		foreach var of varlist n_inventors3 total_inventors_other {
 		gen `var'_l`lag' = .
@@ -530,6 +528,7 @@ drop _merge
 		}	
 	}
 
+	/*
 	forvalues lag = 1/4 {
 		
 		foreach var of varlist n_inventors3b total_inventors_otherb {
@@ -549,7 +548,7 @@ drop _merge
 		}	
 	}
 
-
+*/
 * Var labels
 label var rd_credit_other "Average RD credit at other Labs"
 label var pit_other "Average PIT at other labs"
