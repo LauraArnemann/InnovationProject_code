@@ -1,8 +1,11 @@
-// Project: Inventor Relocation
-// Creation Date: 06/12/2023
-// Last Update: 06/12/2023
-// Author: Laura Arnemann 
-// Goal: Merging the data set using the number of inventors in a state employed by the respective firm as outcome variable 
+////////////////////////////////////////////////////////////////////////////////
+// Project:        	Moving innovation
+// Creation Date:  	06/12/2023
+// Last Update:    	10/04/2024
+// Authors:         Laura Arnemann
+//					Theresa Bührle
+// Goal: 			Merging the data set using the number of inventors in a state employed by the respective firm as outcome variable 
+////////////////////////////////////////////////////////////////////////////////
 
 
 ********************************************************************************
@@ -143,6 +146,7 @@ preserve
 restore 
 
 *3 Keep observation with the highest number of patents in one year  
+preserve
 	bysort patnum state_fips_inventor app_year: gen state_count=_N 
 	bysort patnum app_year: egen max_state=max(state_count)
 	keep if max_state==state_count 
@@ -160,12 +164,39 @@ restore
 
 	tempfile patents3 
 	save `patents3'
+restore
+	
+*4 Count number of multistate patents, assign to state with highest number of patents
+	bysort patnum state_fips_inventor app_year: gen state_count=_N 
+	bysort patnum app_year: gen count_inv=_N
+	bysort patnum app_year: egen max_state=max(state_count)
+	
+	keep if max_state==state_count 
+	keep if count_inv>state_count 
+
+	bysort patnum: gen count=_N 
+	drop if count!=state_count
+	
+	duplicates drop patnum, force 
+
+	collapse (count) patnum, by(state_fips_inventor assignee_id app_year)
+
+	rename patnum patents3_multistate
+	label var patents3_multistate "Multi-state patent count, using Option 3"
+
+	tempfile patents3_multistate
+	save `patents3_multistate'
 
 merge 1:1 state_fips_inventor assignee_id app_year using `patents1', keepusing(patents1)
 drop _merge 
 
 merge 1:1 state_fips_inventor assignee_id app_year using `patents2', keepusing(patents2)
 drop _merge 
+
+merge 1:1 state_fips_inventor assignee_id app_year using `patents3', keepusing(patents3)
+drop _merge 
+
+gen share_patents3_multistate = patents3_multistate / patents3
 
 rename state_fips_inventor fips_state 
 
@@ -327,7 +358,6 @@ label var n_newinventors3 "Number of New Inventors, 3"
 save "${TEMP}/inventor_3.dta", replace
 
 /*restore
-
 
 *3b Keep observation with the highest number of patents in one year 
 *	But: Keep inv 1 years prior to patent application and 1 year after
