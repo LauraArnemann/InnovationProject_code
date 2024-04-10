@@ -86,7 +86,7 @@ foreach direction in `direction'  {
 		forvalues i =1/7 {
 
 			foreach outc in `outcome' {
-	
+		
 			*Event studies
 			ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 			est sto inventorreg1
@@ -122,23 +122,23 @@ foreach direction in `direction'  {
 				
 			*DiD
 			ppmlhdfe `outc' max_treated##post_tr `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
-				outreg2 using "$RESULTS\tables\`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
-				replace dec(1) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
+				outreg2 using "$RESULTS/tables/`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
+				replace dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
 		
 			ppmlhdfe `outc' max_treated##post_tr $controls `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
-				outreg2 using "$RESULTS\tables\`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
-				append dec(2) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
+				outreg2 using "$RESULTS/tables/`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
+				append dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
 				
 			ppmlhdfe `outc' max_treated##post_tr $controls $controls_other `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
-				outreg2 using "$RESULTS\tables\`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
+				outreg2 using "$RESULTS/tables/`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
 				append dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
 			
 			ppmlhdfe `outc' max_treated##post_tr $controls2 $controls_other2 `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
-				outreg2 using "$RESULTS\tables\`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
-				append dec(4) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
+				outreg2 using "$RESULTS/tables/`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
+				append dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
 
 			}
@@ -245,23 +245,23 @@ foreach direction in `direction' {
 						
 				*DiD
 				ppmlhdfe `outc' max_treated##post_tr `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
-					outreg2 using "$RESULTS\tables\`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
-					replace dec(1) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
+					outreg2 using "$RESULTS/tables/`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
+					replace dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 					ctitle("`outc'") lab
 		
 				ppmlhdfe `outc' max_treated##post_tr $controls `sample`i'' , absorb(estab#event year#event) cl(fips_state#event)
-					outreg2 using "$RESULTS\tables\`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
-					append dec(2) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
+					outreg2 using "$RESULTS/tables/`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
+					append dec(4) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 					ctitle("`outc'") lab
 				
 				ppmlhdfe `outc' max_treated##post_tr $controls $controls_other `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
-					outreg2 using "$RESULTS\tables\`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
+					outreg2 using "$RESULTS/tables/`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
 					append dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 					ctitle("`outc'") lab
 			
 				ppmlhdfe `outc' max_treated##post_tr $controls2 $controls_other2 `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
-					outreg2 using "$RESULTS\tables\`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
-					append dec(4) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
+					outreg2 using "$RESULTS/tables/`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
+					append dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 					ctitle("`outc'") lab
 
 				}
