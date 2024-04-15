@@ -10,6 +10,7 @@
 * Stacked Regression for a change in RD Tax Credits 
 *use "${TEMP}/final_state_stacked.dta", clear 
 
+
 global controls pit cit 
 global controls_other rd_credit_other pit_other cit_other
 
@@ -71,8 +72,7 @@ foreach direction in `direction'  {
 		
 		
 		*Post dummy for DiD
-		gen post_tr = 1 if ry_`direction'ease >= 0 & ry_`direction'ease != .
-			replace post_tr = 0 if post_tr == .
+		gen byte post_tr = (year>=event)
 		
 		* Set different sample restrictions as well 
 		local sample1 if inrange(year, 1988, 2014) 
@@ -86,7 +86,7 @@ foreach direction in `direction'  {
 		forvalues i =1/7 {
 
 			foreach outc in `outcome' {
-		
+		/*
 			*Event studies
 			capture ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 			capture est sto inventorreg1
@@ -119,24 +119,24 @@ foreach direction in `direction'  {
 			yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 			title("`indepvar', `direction' - controls (incl other , incl gdp unemployment)") xtitle("Years since Change") graphregion(color(white))
 				capture graph export "${RESULTS}/graphs/`outc'/stacked_`indepvar'_`direction'_c3_sample`i'.png", replace  
-				
+			*/
 			*DiD
-			capture ppmlhdfe `outc' max_treated##post_tr `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
+			capture ppmlhdfe `outc' max_treated#post_tr `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 				capture outreg2 using "$RESULTS/tables/`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
 				replace dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
 		
-			capture ppmlhdfe `outc' max_treated##post_tr $controls `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
+			capture ppmlhdfe `outc' max_treated#post_tr $controls `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 				capture outreg2 using "$RESULTS/tables/`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
 				append dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
 				
-			capture ppmlhdfe `outc' max_treated##post_tr $controls $controls_other `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
+			capture ppmlhdfe `outc' max_treated#post_tr $controls $controls_other `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 				capture outreg2 using "$RESULTS/tables/`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
 				append dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
 			
-			capture ppmlhdfe `outc' max_treated##post_tr $controls2 $controls_other2 `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
+			capture ppmlhdfe `outc' max_treated#post_tr $controls2 $controls_other2 `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 				capture outreg2 using "$RESULTS/tables/`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
 				append dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
@@ -196,8 +196,7 @@ foreach direction in `direction' {
 			label var zero_1 "-1" 
 			
 			*Post dummy for DiD
-			gen post_tr = 1 if ry_`direction'ease >= 0 & ry_`direction'ease != .
-			replace post_tr = 0 if post_tr == .
+			gen byte post_tr = (year>=event)
 			
 			* Set different sample restrictions as well 
 		 	local sample1 if inrange(year, 1988, 2014) 
@@ -244,6 +243,7 @@ foreach direction in `direction' {
 					capture graph export "${RESULTS}/graphs/`outc'/stacked_other_`var2'_`direction'_c3_sample`i'.png", replace 
 						
 				*DiD
+				/*
 				capture ppmlhdfe `outc' max_treated##post_tr `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 					capture outreg2 using "$RESULTS/tables/`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
 					replace dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
@@ -263,6 +263,7 @@ foreach direction in `direction' {
 					capture outreg2 using "$RESULTS/tables/`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
 					append dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 					ctitle("`outc'") lab
+					*/
 
 				}
 			}

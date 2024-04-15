@@ -47,7 +47,7 @@ drop unemployment_l* state_rd_exp_l* gdp_l*
 compress
 save  "${TEMP}/final_state_stacked_zeros.dta", replace 
 
-foreach var in "rd_credit" "pit" "cit" {
+foreach var in "rd_credit" {
 
 *Increases	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
@@ -170,7 +170,7 @@ preserve
 		drop max_taxreversal taxreversal 
 		
 		* Generate a variable that indicates that the observed change was the first in a series of tax changes 
-		gen indicator = 1 if change_`var'!=0 & change_`var'!= .
+		gen indicator = 1 if change_`var'!=0 & change_`var'!=.
 		bysort estab : egen total_change = total(indicator)
 		gen multiple_events = 1 if total_change >1
 		drop indicator total_change 

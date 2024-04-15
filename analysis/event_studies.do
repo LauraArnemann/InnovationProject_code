@@ -9,7 +9,7 @@
 * Event Studies without Zeros 
 ********************************************************************************
 
-use  "${TEMP}/final_state.dta", clear 
+use "${TEMP}/final_state_stacked_zeros.dta", clear 
 
 foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 {
 	gstats winsor `var', cut(1 99) gen(`var'_w1)
@@ -19,7 +19,7 @@ foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_in
 
 tostring fips_state, gen(strate_str) 
 gen estab_id = assignee_id + strate_str
-egen estab = group(estab_id)
+*egen estab = group(estab_id)
 
 xtset estab year 
 
@@ -41,14 +41,19 @@ foreach x in change_other_credit increase_credit decrease_credit {
 }
 
 
+		gen ln_gdp=log(gdp)
+		gen ln_gdp_other=log(total_gdp)
+
 drop F1* 
 gen zero_1=1
 label var zero_1 "-1"
 
-ppmlhdfe patents3_w1 rd_credit F?_change_other_credit zero_1 L?_change_other_credit pit cit total_pit total_cit if year>=1992 , absorb(assignee_id year) cl(fips_state)
+ppmlhdfe patents3 rd_credit F?_change_other_credit zero_1 L?_change_other_credit rd_credit ln_gdp ln_gdp_other unemployment unemployment_other pit cit total_pit total_cit if year>=1988, absorb(estab year) cl(fips_state)
 est sto patreg
 coefplot patreg, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black))  keep(F?_change_other_credit zero_1 L?_change_other_credit) yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
-graph export "${RESULTS}/figures/eventstudy_patents.pdf", replace
+capture noisily graph export "${OVERLEAF}/graphs/eventstudies/patents_heterogeneity1.png", replace
+
+*graph export "${RESULTS}/figures/eventstudy_patents.pdf", replace
 
 
 ppmlhdfe n_inventors3_w1 rd_credit F?_change_other_credit L?_change_other_credit pit cit total_pit total_cit if year>=1992 , absorb(assignee_id year) cl(fips_state)
