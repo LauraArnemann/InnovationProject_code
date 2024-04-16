@@ -8,8 +8,23 @@
 ********************************************************************************
 * Event Studies without Zeros 
 ********************************************************************************
+use "C:/Users/laura/Desktop/final_state_stacked_zeros.dta", clear 
+merge m:1 assignee_id using "C:/Users/laura/Desktop/match_assignee.dta"
+keep if _merge==3 
+drop _merge 
+rename assignee_id assignee_id_code 
+rename assignee_id_string assignee_id 
 
-use "${TEMP}/final_state_stacked_zeros.dta", clear 
+rename rd_credit rd_credit_old 
+rename total_rd_credit total_rd_credit_old 
+rename total_pit total_pit_old 
+rename total_cit total_cit_old 
+rename total_gdp total_gdp_old 
+
+
+merge 1:1 fips_state assignee_id year using "${TEMP}/final_state_zeros_new.dta"
+
+use "${TEMP}/final_state_zeros_new.dta", clear 
 
 foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 {
 	gstats winsor `var', cut(1 99) gen(`var'_w1)
@@ -19,7 +34,7 @@ foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_in
 
 tostring fips_state, gen(strate_str) 
 gen estab_id = assignee_id + strate_str
-*egen estab = group(estab_id)
+egen estab = group(estab_id)
 
 xtset estab year 
 

@@ -113,10 +113,10 @@ save "${IN}/indep_var/var_tax/tax_final.dta", replace
 *R&D credits -------------------------------------------------------------------
 
 * Merging the RD Credits
-import excel "${IN}/indep_var/var_RDcredits/RD_credits_final.xlsx", sheet("rd_summary") firstrow clear 
+import excel "${IN}/main_data/indep_var/var_RDcredits/RD_credits_final.xlsx", sheet("rd_summary") firstrow clear
+
 drop if missing(fips_state)
 
-rename DT1lowesttier rd_credit 
 keep fips_state year rd_credit 
 
 save "${IN}/indep_var/var_RDcredits/RD_credits_final.dta", replace 

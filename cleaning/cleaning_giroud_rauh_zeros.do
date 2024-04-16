@@ -655,9 +655,10 @@ rename app_year year
 
 duplicates drop assignee_id fips_state year, force // sanity check; shouldn't drop anything
 compress
-save "${TEMP}/final_state_zeros.dta", replace 
+save "${TEMP}/final_state_zeros_new.dta", replace 
 
-
+use "${TEMP}/final_state_zeros_new.dta"
+merge 1:1 assignee_id fips_state year using "${TEMP}/final_state_zeros.dta"
 
 
 
