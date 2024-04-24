@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	06/12/2023
-// Last Update:    	24/04/2024
+// Last Update:    	10/04/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Merging the data set using the number of inventors in a state employed by the respective firm as outcome variable 
@@ -501,177 +501,11 @@ foreach var of varlist rd_credit cit {
 	replace `var'=100*`var'
 }
 
-rename year app_year
-
-save "${TEMP}/rdcredits_cleaned.dta", replace 
-
-
-********************************************************************************
-* Merging things together
-********************************************************************************
-* Only records active years 
-
-use "${TEMP}/patentcount_state.dta", clear 
+*Inventor count per firm - state - year
+rename year app_year 
 merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
-* With states this is not such a huge problem
-drop if _merge==2 // locations with inventors where we do not assign patents
+drop if _merge==2 
 drop _merge 
-
-* How can I fix the number of states in which the firm has ever been present 
-
-merge 1:1 fips_state app_year assignee_id using "${TEMP}/rdcredits_cleaned.dta"
-drop if _merge==1 
-
-/* For the inventors there are a lot of non-matches. This is plausible since there might be new inventors? 
-    Result                      Number of obs
-    -----------------------------------------
-    Not matched                       443,686
-        from master                    46,136  (_merge==1)
-        from using                    397,550  (_merge==2)
-
-    Matched                         1,272,113  (_merge==3)
-    -----------------------------------------
-	
-*After adding drop if _merge == 2 on previous match:
-    Result                      Number of obs
-    -----------------------------------------
-    Not matched                       767,205
-        from master                    43,631  (_merge==1)
-        from using                    723,574  (_merge==2)
-
-    Matched                           946,077  (_merge==3)
-    -----------------------------------------	
-*/
-
-* Actually quite a lot of observations that were not merged
-
-bysort assignee_id app_year: gen nstates=_N 
-
-gen multistatefirm_temp=0 
-replace multistatefirm_temp=1 if nstates>1
-bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
-
-foreach var of varlist patents1 patents2 patents3 {
-	replace `var' = 0 if _merge==2
-}
-
-* For the inventors this method is not correct  
-drop _merge 
-
-********************************************************************************
-* Variables at other locations
-********************************************************************************
-
-* Without weights (total) ------------------------------------------------------
-
-/*
-* Generate alternative variable for RD other 
-bysort assignee_id app_year: egen total_inventors=total(n_inventors3)
-gen total_inventors_other=total_inventors-n_inventors3 
-
-gen rd_weight=n_inventors3*rd_credit 
-bysort assignee_id app_year: egen rd_weight_total=total(rd_weight)
-gen rd_credit_other_alternative = (rd_weight_total - rd_weight)/total_inventors_other 
-*/ 
-
-foreach var of varlist rd_credit pit cit gdp unemployment {
-bysort assignee_id app_year: egen total_`var'=total(`var')
-	replace total_`var'=(total_`var' -`var')/(nstates-1)
-	replace total_`var'=0 if total_`var'<0
-}
-* For some reason stata does really weird things with the RD Credit
-
-*Only at first location
-bysort assignee_id: egen firstyear =min(app_year)
-gen firstlocation = 1 if firstyear == app_year
-bysort assignee_id fips_state: egen firstlocation_max = max(firstlocation)
-
-bysort assignee_id: egen nstates_first= count(firstlocation) 
-	replace nstates_first = nstates if nstates_first > nstates
-	// Reduce denominator if initial states are not observed anymore later
-	
-	*IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	*We need to extend dataset to unobseerved years to add variables on pit etc. to solve this (balanced panel)
-	*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	
-	/*
-	*How big is the problem of firms expanding across many states over time?
-	gen diff_first_yearly_n = nstates - nstates_first
-	sum diff_first_yearly_n, d
-	
-		/*								 diff_first_yearly_n
-		-------------------------------------------------------------
-			  Percentiles      Smallest
-		 1%            0              0
-		 5%            0              0
-		10%            0              0       Obs           1,669,651
-		25%            0              0       Sum of wgt.   1,669,651
-
-		50%            0                      Mean           4.119237
-								Largest       Std. dev.      7.817846
-		75%            4             50
-		90%           15             50       Variance       61.11871
-		95%           23             50       Skewness       2.517254
-		99%           35             50       Kurtosis       9.336707
-		*/
-	*/
-
-drop firstlocation
-
-foreach var of varlist rd_credit pit cit gdp unemployment {
-	
-gen `var'_first = `var' if firstlocation_max == 1	// only consider firstlocation states
-bysort assignee_id app_year: egen total_`var'_first=total(`var'_first)
-	replace total_`var'_first=(total_`var'_first -`var'_first)/(nstates_first-1)
-	replace total_`var'_first=0 if total_`var'_first<0
-}
-
-* Min 10% of overall patenting across all years
-bysort assignee_id fips_state: egen patentsum_state = sum(patents3)
-bysort assignee_id: egen patentsum_assign = sum(patents3)
-gen patenterloc10 = 1 if patentsum_state / patentsum_assign >= 0.1
-
-bysort assignee_id fips_state: egen firstyear_10pat =min(app_year)
-	replace firstyear_10pat = . if  patenterloc10 != 1 
-gen patenterloc10_counter = 1 if app_year == firstyear_10pat
-drop firstyear_10pat
-bysort assignee_id: egen nstates_10pat= count(patenterloc10_counter) 
-	replace nstates_10pat = nstates if nstates_10pat > nstates
-
-foreach var of varlist rd_credit pit cit gdp unemployment {
-	
-gen `var'_10pat = `var' if patenterloc10 == 1	// only consider states with at least 10% patenting
-bysort assignee_id app_year: egen total_`var'_10pat=total(`var'_10pat)
-	replace total_`var'_10pat=(total_`var'_10pat -`var'_10pat)/(nstates_10pat-1)
-	replace total_`var'_10pat=0 if total_`var'_10pat<0
-}
-
-* 3 biggest locations across all years 
-// Ideally by employee count, we go by inventors for now
-bysort assignee_id fips_state: egen n_inventors3_statemean = mean(-n_inventors3)
-sort assignee_id n_inventors3_statemean 
-
-bysort assignee_id (n_inventors3_statemean): gen rank = n_inventors3_statemean != n_inventors3_statemean[_n-1]
-by assignee_id: replace rank = sum(rank)
-replace rank = . if n_inventors3_statemean == .
-
-bysort assignee_id fips_state: egen firstyear_rank =min(app_year)
-	replace firstyear_rank = . if  rank > 3 
-gen rank_counter = 1 if app_year == firstyear_rank
-drop firstyear_rank
-bysort assignee_id: egen nstates_rank= count(rank_counter) 
-	replace nstates_rank = nstates if nstates_rank > nstates
-
-foreach var of varlist rd_credit pit cit gdp unemployment {
-	
-gen `var'_rank = `var' if rank <= 3	// only consider top 3 states
-bysort assignee_id app_year: egen total_`var'_rank=total(`var'_rank)
-	replace total_`var'_rank=(total_`var'_rank -`var'_rank)/(nstates_rank-1)
-	replace total_`var'_rank=0 if total_`var'_rank<0
-}
-
-
-* Weighted (other) -------------------------------------------------------------
 
 * Weighted variables in other states
 
@@ -689,8 +523,8 @@ bysort assignee_id app_year: egen total_`var'_rank=total(`var'_rank)
 			replace `var'_other = `var'_other/total_inventors_other 
 	}
 	
-/*	
-	replace n_inventors3b=0 if missing(n_inventors3b)
+	
+	/*replace n_inventors3b=0 if missing(n_inventors3b)
 		*Inventor count per year per firm across all locations:
 	*bysort assignee_id app_year: egen total_inventorsb=total(n_inventors3b)	
 		*Inventor count per year per firm at all other locations:
@@ -702,7 +536,7 @@ bysort assignee_id app_year: egen total_`var'_rank=total(`var'_rank)
 			replace `var'_other_b =  `var'_other_b - `var'_helperb
 			replace `var'_other_b = `var'_other/total_inventors_otherb 
 	}
-
+*/
 * - Weighted by lagged number of inventors in other states 
 
 	forvalues lag = 1/1 {
@@ -724,6 +558,7 @@ bysort assignee_id app_year: egen total_`var'_rank=total(`var'_rank)
 		}	
 	}
 
+	/*
 	forvalues lag = 1/4 {
 		
 		foreach var of varlist n_inventors3b total_inventors_otherb {
@@ -744,7 +579,6 @@ bysort assignee_id app_year: egen total_`var'_rank=total(`var'_rank)
 	}
 
 */
-
 * Var labels
 label var rd_credit_other "Average RD credit at other Labs"
 label var pit_other "Average PIT at other labs"
@@ -752,23 +586,82 @@ label var cit_other "Average CIT at other labs"
 label var unemployment_other "Unemployment Rate at other labs"
 label var state_rd_exp_other "State gov R&D expenditure at other labs"
 
-drop count *_helper* total_inventors* total_inventors_other* 
+drop count *_helper* n_inventors* total_inventors* total_inventors_other* 
+
+save "${TEMP}/rdcredits_cleaned.dta", replace 
+
+
+********************************************************************************
+* Merging things together
+********************************************************************************
+* Only records active years 
+
+use "${TEMP}/patentcount_state.dta", clear 
+merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
+* With states this is not such a huge problem
+drop _merge 
+
+* How can I fix the number of states in which the firm has ever been present 
+
+merge 1:1 fips_state app_year assignee_id using "${TEMP}/rdcredits_cleaned.dta"
+drop if _merge==1 
+
+/* For the inventors there are a lot of non-matches. This is plausible since there might be new inventors? 
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                       443,686
+        from master                    46,136  (_merge==1)
+        from using                    397,550  (_merge==2)
+
+    Matched                         1,272,113  (_merge==3)
+    -----------------------------------------
+*/
+
+* Actually quite a lot of observations that were not merged
+
+bysort assignee_id app_year: gen nstates=_N 
+
+gen multistatefirm_temp=0 
+replace multistatefirm_temp=1 if nstates>1
+bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
+
+foreach var of varlist patents1 patents2 patents3 {
+	replace `var' = 0 if _merge==2
+}
+
+* For the inventors this method is not correct  
+drop _merge 
+
+/*
+* Generate alternative variable for RD other 
+bysort assignee_id app_year: egen total_inventors=total(n_inventors3)
+gen total_inventors_other=total_inventors-n_inventors3 
+
+gen rd_weight=n_inventors3*rd_credit 
+bysort assignee_id app_year: egen rd_weight_total=total(rd_weight)
+gen rd_credit_other_alternative = (rd_weight_total - rd_weight)/total_inventors_other 
+*/ 
+
+foreach var of varlist rd_credit pit cit gdp unemployment {
+bysort assignee_id app_year: egen total_`var'=total(`var')
+	replace total_`var'=(total_`var' -`var')/(nstates-1)
+	replace total_`var'=0 if total_`var'<0
+}
+* For some reason stata does really weird things with the RD Credit
 
 rename app_year year 
 * What should we do with New York, Ohio, Louisiana? 
 
+
 duplicates drop assignee_id fips_state year, force // sanity check; shouldn't drop anything
 compress
-save "${TEMP}/final_state_zeros_new.dta", replace 
+save "${TEMP}/final_state_zeros.dta", replace 
 
 
 
 
 
 
-
-use "${TEMP}/final_state_zeros_new.dta"
-merge 1:1 assignee_id fips_state year using "${TEMP}/final_state_zeros.dta"
 
 
 

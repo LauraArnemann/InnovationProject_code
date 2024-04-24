@@ -19,8 +19,8 @@ ssc install rangestat
 ssc install spmap, replace
 ssc install shp2dta, replace
 ssc install mif2dta, replace
-ssc install outreg2, replace
-ssc install gtools, replace
+ssc install outreg2
+ssc install gtools
 */
 
 * Set the global so the paths adjust quickly

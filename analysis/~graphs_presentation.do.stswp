@@ -43,7 +43,7 @@ est sto `var'reg1
 coefplot `var'reg1, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 			xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 			yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-		 xtitle("Years since Change") graphregion(color(white))
+		 xtitle("Years since Change") graphregion(color(white))  ytitle("`var'")
 capture noisily graph export "${OVERLEAF}/graphs/eventstudies/stacked_rd_credit_incr_sample7_`var'.png", replace  
 
 ppmlhdfe `var' 1.max_treated#1.post_tr pit cit ln_gdp unemployment if inrange(year, 1988, 2018), absorb(estab#event year#event) cl(fips_state#event)
@@ -57,7 +57,7 @@ est sto `var'reg2
 coefplot `var'reg2, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 			xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 			yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-		 xtitle("Years since Change") graphregion(color(white))
+		 xtitle("Years since Change") graphregion(color(white))  ytitle("`var'")
 capture noisily graph export "${OVERLEAF}/graphs/eventstudies/stacked_rd_credit_incr_sample5_`var'.png", replace  
 	
 ppmlhdfe `var' 1.max_treated#1.post_tr pit cit ln_gdp unemployment if inrange(year, 1988, 2018) & rd_credit_other!=., absorb(estab#event year#event) cl(fips_state#event)
@@ -105,7 +105,7 @@ est sto `var'reg1
 coefplot `var'reg1, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 			xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 			yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-		 xtitle("Years since Change") graphregion(color(white))
+		 xtitle("Years since Change") graphregion(color(white)) ytitle("`var'")
 capture noisily graph export "${OVERLEAF}/graphs/eventstudies/stacked_rd_credit_incr_other_sample7_`var'.png", replace  
 
 ppmlhdfe `var' 1.max_treated#1.post_tr rd_credit pit cit ln_gdp unemployment pit_other cit_other ln_gdp_other unemployment_other if inrange(year, 1988, 2018), absorb(estab#event year#event) cl(fips_state#event)
@@ -118,7 +118,7 @@ ppmlhdfe `var' 1.max_treated#1.post_tr rd_credit pit cit ln_gdp unemployment pit
 		 
 		 
 		 
-		 /*
+
 		 
 		 
 		 
