@@ -34,6 +34,7 @@ if c(username) == "laura" {
 	global OUT C:/Users/laura/Desktop/InnovationProject/data/final
 	global LINKING  C:/Users/laura/Desktop/InnovationProject/data/linking_table
 	global OVERLEAF C:/Users/laura/Desktop/InnovationProject/overleaf
+	global CODE C:/Users/laura/Desktop/InnovationProject/code_git/analysis
 
 
 	global PATENTDTA C:/Users/laura/Desktop/InnovationProject/data/raw/main_data/data_patent

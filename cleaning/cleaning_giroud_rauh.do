@@ -306,6 +306,8 @@ drop count *_helper n_inventors* total_inventors total_inventors_other
 save "${TEMP}/rdcredits_cleaned.dta", replace 
 
 
+
+
 ********************************************************************************
 * Merging things together
 ********************************************************************************
