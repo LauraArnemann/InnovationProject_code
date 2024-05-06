@@ -7,9 +7,10 @@
 // Goal: 			Establishment-specific other variable 
 ////////////////////////////////////////////////////////////////////////////////
 
-
+*set max_memory 80g, permanently
 * Generating the Helper data set 
 
+/*
 use "${TEMP}/patentcount_state.dta", clear 
 merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
 drop if _merge==2 // locations with inventors where we do not assign patents
@@ -49,8 +50,8 @@ forvalues i =1/51 {
 }
 
 keep assignee_id app_year states_present new_states 
-
 save "${TEMP}/helper_dataset.dta", replace 
+*/
 
 use "${TEMP}/helper_dataset.dta", clear 
 rename app_year min_year_estab 
@@ -79,13 +80,21 @@ tempfile patents
 save `patents'
 
 
-/*
+
 * Merging based on whether there was RD activity in the state when the establishment was first active 
 use "${TEMP}/patentcount_state.dta", clear 
 merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
 drop if _merge==2 // locations with inventors where we do not assign patents
 drop _merge 
 drop if missing(assignee_id)
+
+
+* Only keep multi state firms 
+bysort assignee_id app_year: gen count =_N 
+bysort assignee_id: egen max_count = max(count)
+
+keep if max_count>1 
+drop max_count count 
 
 bysort fips_state assignee_id: egen min_year_estab = min(app_year)
 bysort fips_state assignee_id: egen max_year_estab = max(app_year)
@@ -129,7 +138,7 @@ keep if count==1
 keep fips_state assignee_id year other_first 
 save "${TEMP}/other_first.dta", replace 
 
-*/
+
 ********************************************************************************
 * RD Credit at other locations based on presence during the time period in which we  
 * observe patenting activity at this establishment
@@ -139,7 +148,15 @@ use "${TEMP}/patentcount_state.dta", clear
 merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
 drop if _merge==2 // locations with inventors where we do not assign patents
 drop _merge 
+drop if missing(assignee_id)
 
+
+* Only keep multi state firms 
+bysort assignee_id app_year: gen count =_N 
+bysort assignee_id: egen max_count = max(count)
+
+keep if max_count>1 
+drop max_count count 
 
 bysort fips_state assignee_id: egen min_year_estab = min(app_year)
 bysort fips_state assignee_id: egen max_year_estab = max(app_year)
@@ -160,7 +177,7 @@ drop _merge
 gen states_total = states_present if app_year == min_year_estab 
 
 bysort assignee_id fips_state (app_year): replace states_total = states_total[_n-1] + new_states
-split states_present, parse(,) generate(other_fips_state)
+split states_total, parse(,) generate(other_fips_state)
 drop other_fips_state1 
 
 forvalues i=2/52 {
@@ -175,46 +192,71 @@ forvalues i =2/52 {
 rename app_year year 
 egen id = group(fips_state assignee_id year)
 
+gen count = _n
+drop other_fips_state*
+
+save "${TEMP}/helper_other.dta", replace 
+
+local b = 1 
+
+forvalues i =1/10 {
+	
+	use  "${TEMP}/helper_other.dta", clear 
+	local a = `b'
+	local b = `i' *100000
+	keep if inrange(count, `a', `b')
+	save "${TEMP}/helper_other`i'.dta", replace 
+	
+}
+
+
+forvalues i =1/10 {
+	
+	use "${TEMP}/helper_other`i'.dta", clear 
+	drop count
 reshape long max_fips_state, i(id) j(count)
 drop if missing(max_fips_state)
+drop if fips_state==max_fips_state
 
 rename max_fips_state other_fips_state 
 
-merge m:1 other_fips_state year using `rdcredit'
-drop if _merge ==3 
+merge m:1 other_fips_state year using `rdcredit', keepusing(rd_credit)
+drop if _merge !=3 
 drop _merge 
 
-merge m:1 other_fips_state assignee_id year using `patents'
-drop if _merge==3 
+merge m:1 other_fips_state assignee_id year using `patents', keepusing(patents3)
+drop if _merge==2
+replace patents3 = 0 if _merge ==1
+
 drop _merge 
 
 
-merge m:1 other_fips_state assignee_id year using `inventors'
-drop if _merge==3 
+/*
+merge m:1 other_fips_state assignee_id year using `inventors', keepusing(n_inventors3)
+drop if _merge==2 
 drop _merge 
+*/
 
-* Save as a tempfile to use later on
-tempfile estabs
-save `estabs'
+save "${TEMP}/helper_other`i'_cleaned.dta", replace 
 
 * Generate the different variables weighted by the patenters respective inventors 
 bysort assignee_id year fips_state: gen nstates =_N 
 bysort assignee_id year fips_state: egen total_credits = total(rd_credit)
 
-bysort assignee_id fips_state other_fips_state: gen other_patents = total(patents3) 
-bysort assignee_id fips_state: gen sum_other_patents = total(other_patents)
+bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
+bysort assignee_id fips_state year: egen sum_other_patents = total(other_patents)
 
-bysort assignee_id fips_state other_fips_state: gen other_inventors = total(inventors3) 
-bysort assignee_id fips_state: gen sum_other_inventors = total(other_inventors)
+*bysort assignee_id fips_state other_fips_state: egen other_inventors = total(n_inventors3) 
+*bysort assignee_id fips_state: egen sum_other_inventors = total(other_inventors)
 
 gen weight_patents = other_patents/sum_other_patents 
 gen rd_credit_weighted1 = weight_patents * rd_credit 
 
-gen weight_inventors = other_inventors/sum_other_inventors 
-gen rd_credit_weighted2 = weight_inventors * rd_credit 
+*gen weight_inventors = other_inventors/sum_other_inventors 
+*gen rd_credit_weighted2 = weight_inventors * rd_credit 
 
 bysort assignee_id year fips_state: egen total_credits_weighted1 = total(rd_credit_weighted1)
-bysort assignee_id year fips_state: egen total_credits_weighted2 = total(rd_credit_weighted2)
+*bysort assignee_id year fips_state: egen total_credits_weighted2 = total(rd_credit_weighted2)
 
 gen other_all = total_credits/nstates 
 label var other_all "RD Credits, all locations"
@@ -222,31 +264,41 @@ label var other_all "RD Credits, all locations"
 gen other_weighted1 = total_credits_weighted1/nstates 
 label var other_weighted1 "RD Credit, weighted by patents" 
 
-gen other_weighted2 = total_credits_weighted2/nstates 
-label var other_weighted1 "RD Credit, weighted by Inventors" 
+*gen other_weighted2 = total_credits_weighted2/nstates 
+*label var other_weighted1 "RD Credit, weighted by Inventors" 
 
-duplicates drop fips_state assignee_id year
+duplicates drop fips_state assignee_id year, force 
 
-keep fips_state assignee_id year other_all other_weighted1 other_weighted2 
+keep fips_state assignee_id year other_all other_weighted1 
+save "${TEMP}/other_all`i'.dta", replace 
+}
+
+
+clear 
+
+forvalues i = 1/10 {
+	append using "${TEMP}/other_all`i'.dta"
+}
+
 save "${TEMP}/other_all.dta", replace 
-
 
 ********************************************************************************
 * RD Credit at other locations based on presence during the time period in which we  
 * observe patenting activity at this establishment, only three largest estabs
 ********************************************************************************
+forvalues i =1/10 {
 
-use `estabs'
+use "${TEMP}/helper_other`i'_cleaned.dta", clear 
+drop count_obs count 
 
-bysort assignee_id fips_state other_fips_state: gen other_patents = total(patents3) 
-bysort assignee_id fips_state: gen sum_other_patents = total(other_patents)
+bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
+bysort assignee_id fips_state year: egen sum_other_patents = total(other_patents)
+
+
 gen weight_patents = other_patents/sum_other_patents
 
-replace weight_patents = . if year!=min_year_estab 
-
 * Keep the observations with the largest weights 
-bysort assignee_id fips_state year: egen rank = rank(weight_patents)
-replace weight_patents = . if year!=min_year_estab 
+bysort assignee_id fips_state year: egen rank = rank(-weight_patents)
 
 bysort assignee_id fips_state other_fips_state: egen max_rank = max(rank)
 keep if max_rank<=3 
@@ -257,10 +309,17 @@ bysort assignee_id year fips_state: gen nstates =_N
 gen other_threelargest = total_credits/ nstates 
 label var other_threelargest "Changes in three largest locations"
 
+save "${TEMP}/other_threelargest`i'.dta", replace 
+
+}
+
+clear 
+
+forvalues i = 1/10 {
+	append using "${TEMP}/other_threelargest`i'.dta"
+}
+
 save "${TEMP}/other_threelargest.dta", replace 
-
-
-
 
 
 

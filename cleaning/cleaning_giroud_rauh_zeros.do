@@ -172,8 +172,9 @@ preserve
 
 	tempfile patents3 
 	save `patents3'
-restore
-	
+
+
+/*	
 *4 Count number of multistate patents, assign to state with highest number of patents
 	bysort patnum state_fips_inventor app_year: gen state_count=_N 
 	bysort patnum app_year: gen count_inv=_N
@@ -195,6 +196,7 @@ restore
 
 	tempfile patents3_multistate
 	save `patents3_multistate'
+	*/
 
 merge 1:1 state_fips_inventor assignee_id app_year using `patents1', keepusing(patents1)
 drop _merge 
@@ -205,7 +207,7 @@ drop _merge
 merge 1:1 state_fips_inventor assignee_id app_year using `patents3', keepusing(patents3)
 drop _merge 
 
-gen share_patents3_multistate = patents3_multistate / patents3
+*gen share_patents3_multistate = patents3_multistate / patents3
 
 rename state_fips_inventor fips_state 
 
@@ -220,8 +222,11 @@ save "${TEMP}/patentcount_state.dta", replace
 *-------------------------------------------------------------------------------
 
 use inventor_id state_fips_inventor assignee_id using "${PATENTDTA}/inventor_applications.dta", clear
-duplicates drop state_fips_inventor assignee_id inventor_id, force
 drop if state_fips == . 
+duplicates tag state_fips_inventor assignee_id inventor_id, gen(dup)
+drop if dup!=0 
+drop dup
+
 
 expand 51 
 bysort state_fips_inventor assignee_id inventor_id: gen count_obs = _n
@@ -248,7 +253,7 @@ duplicates tag patnum inventor_id county_fips_inventor assignee_id, gen(dup)
 drop if dup!=0 
 drop dup	// 132 observations deleted
 duplicates report patnum inventor_id assignee_id // differences in geocoding (missings or two different locations recorded); 190 cases
-duplicates tag patnum inventor_id assignee_id, force 
+duplicates tag patnum inventor_id assignee_id, gen(dup)
 drop if dup!=0
 drop dup
 * Patent count by inventor - assignee - state - year
@@ -266,7 +271,7 @@ save "${TEMP}/inventor_helper.dta", replace
 
 * Generate similar options to above 
 *1 Only keep inventors which can be uniquely assigned to one state during a year
-preserve
+
 	bysort inventor_id app_year: gen count_pats=_N 
 	bysort inventor_id app_year state_fips_inventor: gen count_state=_N
 	keep if count_state==count_pats
@@ -274,7 +279,8 @@ preserve
 
 	duplicates tag inventor_id state_fips_inventor assignee_id app_year, gen(dup)
 	drop if dup!=0
-
+	drop dup 
+	
 	merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper.dta"
 	drop if _merge==1 // Observations from year 2021
 	bysort state_fips_inventor assignee_id inventor_id: egen max_merge=max(_merge)
@@ -302,6 +308,7 @@ keep if inrange(app_year, min_year, max_year)
 * Drop all observations which cannot unqiuely be assigned to a state in a given year
 	duplicates tag inventor_id app_year, gen(dup)
 	drop if dup>0
+	drop dup 
 
 bysort state_fips_inventor assignee_id app_year: gen count=_N
 collapse (count) n_inventors1=count n_newinventors1=new_inventor, by(state_fips_inventor assignee_id app_year)
@@ -310,10 +317,10 @@ label var n_inventors1 "Number of Inventors, 1"
 label var n_newinventors1 "Number of New Inventors, 1"
 save "${TEMP}/inventor_1.dta", replace
 
-restore
+
 
 *2 Weight inventors by number of patents recorded in each state
-preserve
+use "${TEMP}/inventor_helper.dta", clear 
 	bysort inventor_id app_year: egen total_patents=total(n_patents)
 	gen share_patents= n_patents/total_patents 
 
@@ -325,10 +332,11 @@ preserve
 
 save "${TEMP}/inventor_2.dta", replace
 
-restore
+
 
 *3 Keep observation with the highest number of patents in one year  
-preserve
+
+use "${TEMP}/inventor_helper.dta", clear 
 	bysort inventor_id app_year: egen max_patents=max(n_patents)
 	keep if max_patents==n_patents 
 
@@ -339,6 +347,7 @@ preserve
 	
 	duplicates tag inventor_id state_fips_inventor assignee_id app_year, gen(dup)
 	drop if dup!=0
+	drop dup 
 	bysort state_fips_inventor assignee_id app_year: gen count=_N
 
 	merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper.dta"
@@ -361,6 +370,7 @@ preserve
 	drop count 
 	duplicates tag app_year inventor_id, gen(dup)
 	drop if dup>0
+	drop dup
 	gen new_inventor = 1 if app_year==min_year 
 	
 bysort state_fips_inventor assignee_id app_year: gen count=_N
@@ -526,13 +536,12 @@ save "${TEMP}/rdcredits_cleaned.dta", replace
 * locations 
 ********************************************************************************
 
-* This dofile generates the variables based on all years the assignee is present
-do "${CODE}/gen_other_variable1.do"
+* This dofile generates the variables based on all years the assignee is present, some issues so ignore for now 
+*do "${CODE}/cleaning/gen_other_variable_old.do"
 
 
-* This dofile generates the variables based on all years the establishment is present
-do "${CODE}/gen_other_variable2.do"
-    
+*This dofile generate the variables based on all years the establishment is present 
+do "${CODE}/cleaning/gen_other_variable.do"
 ********************************************************************************
 * Merging things together
 ********************************************************************************
@@ -549,19 +558,26 @@ drop _merge
 merge 1:1 fips_state app_year assignee_id using "${TEMP}/rdcredits_cleaned.dta"
 drop if _merge==1 
 
+foreach var of varlist patents1 patents2 patents3 {
+	replace `var' = 0 if _merge==2
+}
+
 * Merging in the variables at other locations 
-merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_all.dta", keepusing(other_all other_weighted1 other_weighted2)
+merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_all.dta", keepusing(other_all other_weighted1 )
 drop if _merge==2 
+drop _merge 
 
 merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_threelargest.dta", keepusing(other_threelargest)
 drop if _merge==2 
+drop _merge 
 
 merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_first.dta", keepusing(other_first)
 drop if _merge==2 
+drop _merge 
 
-merge 1:1 app_year assignee_id using "${TEMP}/other_first.dta", keepusing(other_first)
-drop if _merge==2 
-
+foreach var of varlist other_all other_weighted1 other_threelargest other_first  {
+	replace `var'=100*`var'
+}
 
 /* For the inventors there are a lot of non-matches. This is plausible since there might be new inventors? 
     Result                      Number of obs
@@ -592,13 +608,28 @@ gen multistatefirm_temp=0
 replace multistatefirm_temp=1 if nstates>1
 bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
 
-foreach var of varlist patents1 patents2 patents3 {
-	replace `var' = 0 if _merge==2
-}
 
 * For the inventors this method is not correct  
 drop _merge 
 
+* Var labels
+label var rd_credit_other "Average RD credit at other Labs"
+label var pit_other "Average PIT at other labs"
+label var cit_other "Average CIT at other labs"
+label var unemployment_other "Unemployment Rate at other labs"
+label var state_rd_exp_other "State gov R&D expenditure at other labs"
+
+drop count *_helper* total_inventors* total_inventors_other* 
+
+rename app_year year 
+* What should we do with New York, Ohio, Louisiana? 
+
+duplicates drop assignee_id fips_state year, force // sanity check; shouldn't drop anything
+compress
+save "${TEMP}/final_state_zeros_new.dta", replace 
+
+
+* Old (wrong weighting stuff)
 ********************************************************************************
 * Variables at other locations
 ********************************************************************************
@@ -786,21 +817,7 @@ bysort assignee_id app_year: egen total_`var'_rank=total(`var'_rank)
 
 */
 
-* Var labels
-label var rd_credit_other "Average RD credit at other Labs"
-label var pit_other "Average PIT at other labs"
-label var cit_other "Average CIT at other labs"
-label var unemployment_other "Unemployment Rate at other labs"
-label var state_rd_exp_other "State gov R&D expenditure at other labs"
 
-drop count *_helper* total_inventors* total_inventors_other* 
-
-rename app_year year 
-* What should we do with New York, Ohio, Louisiana? 
-
-duplicates drop assignee_id fips_state year, force // sanity check; shouldn't drop anything
-compress
-save "${TEMP}/final_state_zeros_new.dta", replace 
 
 
 

@@ -25,19 +25,22 @@ ssc install gtools, replace
 
 * Set the global so the paths adjust quickly
 
+
 if c(username) == "laura" {
-	* G:\.shortcut-targets-by-id\1WdgNEyGs57PgSqqCPP_B2s_Inzx7SKst\Spillover migration data
-	global IN  C:/Users/laura/Desktop/InnovationProject/data/raw
-	global code C:/Users/laura/Desktop/InnovationProject/code_git
+	
+	global path C:/Users/laura/Desktop/InnovationProject
+	* 
+	global IN  ${path}/data/raw
+	global code ${path}/code
 	*global CEO_IN C:/Users/laura/Desktop/data/CEOProject/rawdata
-	global TEMP C:/Users/laura/Desktop/InnovationProject/data/temp
-	global OUT C:/Users/laura/Desktop/InnovationProject/data/final
-	global LINKING  C:/Users/laura/Desktop/InnovationProject/data/linking_table
-	global OVERLEAF C:/Users/laura/Desktop/InnovationProject/overleaf
-	global CODE C:/Users/laura/Desktop/InnovationProject/code_git/analysis
+	global TEMP ${path}/data/temp
+	global OUT ${path}/data/final
+	global LINKING  ${path}/linking_table
+	global OVERLEAF ${path}/overleaf
+	global CODE ${path}/code
 
 
-	global PATENTDTA C:/Users/laura/Desktop/InnovationProject/data/raw/main_data/data_patent
+	global PATENTDTA ${path}/raw/main_data/data_patent
 	global REGDTA C:/Users/laura/Desktop/InnovationProject/data/temp/
 
 	global RESULTS C:/Users/laura/Desktop/InnovationProject/results
@@ -56,6 +59,27 @@ if c(username) == "tbuehrle" {
 	global RESULTS "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_3_Results"
 	global OVERLEAF "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_3_Results\overleaf"
 } 
+
+
+else {
+	
+	global path H:/InnovationProject
+	* 
+	global IN  ${path}/data/raw
+	global code ${path}/code
+	*global CEO_IN C:/Users/laura/Desktop/data/CEOProject/rawdata
+	global TEMP ${path}/data/temp
+	global OUT ${path}/data/final
+	global LINKING  ${path}/linking_table
+	global OVERLEAF ${path}/overleaf
+	global CODE ${path}/code
+
+
+	global PATENTDTA ${path}/data/raw/main_data/data_patent
+	global REGDTA C:/Users/laura/Desktop/InnovationProject/data/temp/
+
+	global RESULTS C:/Users/laura/Desktop/InnovationProject/results
+}
 
 
 * Creating the distinct data files 
