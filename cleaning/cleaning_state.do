@@ -157,4 +157,44 @@ save "${IN}/var_other/rd_exp_states_us/rd_exp_states.dta", replace
 
 
 
+* Merging all the data together
+use "${IN}/indep_var/var_RDcredits/RD_credits_final.dta", clear 
+destring rd_credit, replace force
+
+* Unemployment
+merge m:1 fips_state year using "${IN}/indep_var/var_state/unemployment.dta"
+drop if _merge==2 
+*1970-1975 not merged from master, 2019-2021 from using not matched  
+drop _merge 
+rename unemployment_rate unemployment 
+
+* GDP
+merge m:1 fips_state year using "${IN}/indep_var/var_state/gdp.dta"
+drop if _merge==2 
+drop _merge 
+
+
+* PIT and CIT
+merge m:1 fips_state year using "${IN}/indep_var/var_tax/tax_final.dta"
+* Year 2019 not matched 
+drop if _merge==2 
+drop _merge 
+
+*Government R&D expenditure
+merge m:1 fips_state year using "${IN}/var_other/rd_exp_states_us/rd_exp_states.dta" 
+drop if _merge==2 
+drop _merge 
+
+foreach var of varlist rd_credit cit {
+	replace `var'=100*`var'
+}
+
+rename year app_year
+gen other_fips_state = fips_state
+
+save "${TEMP}/state_data_cleaned.dta", replace 
+
+
+
+
 

@@ -15,13 +15,11 @@ global controls rd_credit pit cit
 global controls_other pit_other cit_other
 
 foreach direction in `direction' {
-
-	foreach indepvar in `indepvar' {
 		
 		*Change at other locations
 		*-----------------------------------------------------------------------
 
-		foreach var2 of varlist `other_var' {
+		foreach var2 of varlist  {
 		
 			use "${TEMP}/final_state_stacked_other_`var2'_`direction'.dta", replace 
 			
@@ -136,5 +134,5 @@ foreach direction in `direction' {
 			}
 		}
 	}
-}
+
 

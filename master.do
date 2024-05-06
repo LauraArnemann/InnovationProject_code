@@ -40,7 +40,7 @@ if c(username) == "laura" {
 	global CODE ${path}/code
 
 
-	global PATENTDTA ${path}/raw/main_data/data_patent
+	global PATENTDTA ${path}/data/raw/main_data/data_patent
 	global REGDTA C:/Users/laura/Desktop/InnovationProject/data/temp/
 
 	global RESULTS C:/Users/laura/Desktop/InnovationProject/results

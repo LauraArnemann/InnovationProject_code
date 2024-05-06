@@ -7,23 +7,32 @@
 // Goal: 			Running Stacked Regression: Changes at current location 
 ////////////////////////////////////////////////////////////////////////////////
 
+local direction incr decr
+
+global controls pit cit 
+global controls_other rd_credit_other pit_other cit_other
+
+global controls2 $controls ln_gdp unemployment ln_state_rd_exp
+global controls_other2 $controls_other ln_gdp_other unemployment_other ln_state_rd_exp_other
+
+local outcome patents3 n_inventors3 n_newinventors3
 
 foreach direction in `direction'  {
 
-	foreach indepvar in `indepvar' {
+	foreach var in other_all other_all_weighted1 other_threelargest other_first {
 
 		*Change in location
 		*-----------------------------------------------------------------------
 
-		use "${TEMP}/final_state_stacked_`indepvar'_`direction'.dta", clear 
+	    use "${TEMP}/final_state_stacked_`var'_incr.dta", clear 
 		
-		merge m:1 estab  year using "${TEMP}/final_state_stacked_zeros.dta", nogen keep(3)
+		merge m:1 estab year using "${TEMP}/final_state_stacked_zeros.dta", nogen keep(3)
 		
 		bysort assignee_id year event: egen n_patents = total(patents3)
 		
 		* Balanced Panel: Only observations present four years before and four years after event
-		bysort estab_id: egen min_year = min(year)
-		bysort estab_id: egen max_year = max(year)
+		bysort assignee_id fips_state: egen min_year = min(year)
+		bysort assignee_id fips_state: egen max_year = max(year)
 		
 		gen balanced_panel = 0 
 		replace balanced_panel = 1 if min_year + 4 == event & max_year + 4 == event 
