@@ -216,7 +216,43 @@ twoway 	(bar rd_neg_count year, barw(0.85) color(gs10%50) yaxis(1) ytitle("Numbe
 	graph export "$RESULTS\graph_changes_rdcredits.png", replace
 
 
-	
+********************************************************************************
+* Distribution of changes in other variable 
+********************************************************************************
+use  "${TEMP}/final_state_zeros_new.dta", clear 
+drop if missing(assignee_id)
+
+egen estab = group(assignee_id fips_state)
+
+xtset estab year 
+
+*  other_rd_credit_first other_rd_credit_threelargest other_rd_credit_all other_rd_credit_weighted   
+
+foreach var in total_rd_credit {
+	*Changes in tax variable
+	gen change_`var' = `var' - l.`var'
+		}	
+
+
+* Bar Graph with the overll distribution of changes
+foreach var of varlist total_rd_credit {
+	hist change_`var', graphregion(color(white)) xtitle("Change in RD Credit, other locations")
+	sum change_`var', detail 
+ 
+	hist change_`var' if inrange(change_`var', `r(p10)', `r(p90)'), graphregion(color(white)) xtitle("Change in RD Credit, other locations")
+	hist change_`var' if change_`var'>0, graphregion(color(white)) xtitle("Change in RD Credit, other locations")
+	hist change_`var' if change_`var'<0, graphregion(color(white)) xtitle("Change in RD Credit, other locations")
+
+} 		
+
+foreach var of varlist total_rd_credit {
+gen indicator_largechange =0
+replace indicator_largechange=1  if inrange(change_`var', -1, 1)
+
+* Bar Graph with the distribution of large changes  
+graph bar (rawsum) indicator_largechange if year>=1992 , over(year, label(labsize(small) angle(forty_five))) graphregion(color(white)) bgcolor(white)  bar(1, color(dkgreen%50) ) ytitle("Number of Large Changes")
+drop indicator_largechange 
+}
 
 
 

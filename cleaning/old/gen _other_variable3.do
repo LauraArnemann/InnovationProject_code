@@ -9,12 +9,23 @@
 
 *set max_memory 80g, permanently
 * Generating the Helper data set 
+* Generating the other variables over different data sets (there is probably a more efficient way to do this; ATM I am not aware of it)
 
-/*
+foreach num of numlist 0 1 3 {
+
+if `num' == 0 {
 use "${TEMP}/patentcount_state.dta", clear 
-merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
-drop if _merge==2 // locations with inventors where we do not assign patents
-drop _merge 
+}
+
+if `num' == 1 {
+	use "${TEMP}/patents1.dta", clear 
+}
+
+
+if `num' == 3 {
+	use "${TEMP}/patents3.dta", clear 
+}
+
 drop if missing(assignee_id)
 
 bysort fips_state assignee_id: egen min_year_estab = min(app_year)
@@ -50,30 +61,37 @@ forvalues i =1/51 {
 }
 
 keep assignee_id app_year states_present new_states 
-save "${TEMP}/helper_dataset.dta", replace 
-*/
 
-use "${TEMP}/helper_dataset.dta", clear 
+
+save "${TEMP}/helper_dataset`num'.dta", replace 
+
+
+use "${TEMP}/helper_dataset`num'.dta", clear 
 rename app_year min_year_estab 
 tempfile helper1 
 save `helper1'
 
-
-* Prepare the RD credit data 
-use "${IN}/indep_var/var_RDcredits/RD_credits_final.dta", clear 
-rename fips_state other_fips_state 
-tempfile rdcredit 
-save `rdcredit'
-
+/*
 * Prepare Inventor Data to merge later on
 use "${TEMP}/inventorcount_state.dta"
 rename fips_state other_fips_state 
 rename app_year year 
 tempfile inventors 
-save `inventors'
+save `inventors'*/
 
 * Prepare Patent Data to merge later on 
-use "${TEMP}/patentcount_state.dta"
+if `num' == 0 {
+  use "${TEMP}/patentcount_state.dta", clear 
+}
+
+if `num' == 1 {
+  use "${TEMP}/patents1.dta", clear 
+}
+
+if `num' == 3 {
+  use "${TEMP}/patents3.dta", clear 
+}
+
 rename fips_state other_fips_state 
 rename app_year year 
 tempfile patents
@@ -82,10 +100,20 @@ save `patents'
 
 
 * Merging based on whether there was RD activity in the state when the establishment was first active 
-use "${TEMP}/patentcount_state.dta", clear 
-merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
-drop if _merge==2 // locations with inventors where we do not assign patents
-drop _merge 
+if `num' == 0 {
+	use "${TEMP}/patentcount_state.dta", clear 
+}
+
+if `num' == 1 {
+  use "${TEMP}/patents1.dta", clear 
+}
+
+
+if `num' == 3 {
+  use "${TEMP}/patents3.dta", clear 
+}
+
+
 drop if missing(assignee_id)
 
 
@@ -122,10 +150,9 @@ reshape long other_fips_state, i(id) j(count)
 drop if missing(other_fips_state)
 destring other_fips_state, replace 
 
-merge m:1 other_fips_state year using `rdcredit'
-drop if _merge ==3 
+merge m:1 other_fips_state year using "${TEMP}/state_vars.dta", keepusing(rd_credit cit gdp unemployment pit)
+drop if _merge!=3 
 drop _merge 
-
 
 bysort assignee_id year fips_state: gen nstates =_N 
 bysort assignee_id year fips_state: egen total_credits = total(rd_credit)
@@ -136,18 +163,26 @@ label var other_first "RD Credits, first locations"
 keep if count==1
 
 keep fips_state assignee_id year other_first 
-save "${TEMP}/other_first.dta", replace 
+save "${TEMP}/other_first`num'.dta", replace 
 
 
 ********************************************************************************
 * RD Credit at other locations based on presence during the time period in which we  
 * observe patenting activity at this establishment
 ********************************************************************************
+if `num' == 0 {
+	use "${TEMP}/patentcount_state.dta", clear 
+}
 
-use "${TEMP}/patentcount_state.dta", clear 
-merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
-drop if _merge==2 // locations with inventors where we do not assign patents
-drop _merge 
+if `num' == 1 {
+  use "${TEMP}/patents1.dta", clear 
+}
+
+
+if `num' == 3 {
+  use "${TEMP}/patents3.dta", clear 
+}
+
 drop if missing(assignee_id)
 
 
@@ -170,7 +205,7 @@ gen app_year = 1969+count_obs
 
 keep if inrange(app_year, min_year_estab, max_year_estab)
 
-merge m:1 assignee_id app_year using "${TEMP}/helper_dataset.dta"
+merge m:1 assignee_id app_year using "${TEMP}/helper_dataset`num'.dta"
 keep if _merge ==3 
 drop _merge 
 
@@ -195,24 +230,24 @@ egen id = group(fips_state assignee_id year)
 gen count = _n
 drop other_fips_state*
 
-save "${TEMP}/helper_other.dta", replace 
+save "${TEMP}/helper_other_v`num'.dta", replace 
 
 local b = 1 
 
 forvalues i =1/10 {
 	
-	use  "${TEMP}/helper_other.dta", clear 
+	use  "${TEMP}/helper_other_v`num'.dta", clear 
 	local a = `b'
 	local b = `i' *100000
 	keep if inrange(count, `a', `b')
-	save "${TEMP}/helper_other`i'.dta", replace 
+	save "${TEMP}/helper_other`i'_v`num'.dta", replace 
 	
 }
 
 
 forvalues i =1/10 {
 	
-	use "${TEMP}/helper_other`i'.dta", clear 
+	use "${TEMP}/helper_other`i'_v`num'.dta", clear 
 	drop count
 reshape long max_fips_state, i(id) j(count)
 drop if missing(max_fips_state)
@@ -220,11 +255,11 @@ drop if fips_state==max_fips_state
 
 rename max_fips_state other_fips_state 
 
-merge m:1 other_fips_state year using `rdcredit', keepusing(rd_credit)
+merge m:1 other_fips_state year using "${TEMP}/state_vars.dta", keepusing(rd_credit cit gdp unemployment pit)
 drop if _merge !=3 
 drop _merge 
 
-merge m:1 other_fips_state assignee_id year using `patents', keepusing(patents3)
+merge m:1 other_fips_state assignee_id year using `patents'
 drop if _merge==2
 replace patents3 = 0 if _merge ==1
 
@@ -237,13 +272,24 @@ drop if _merge==2
 drop _merge 
 */
 
-save "${TEMP}/helper_other`i'_cleaned.dta", replace 
+save "${TEMP}/helper_other`i'_cleaned`num'.dta", replace 
 
 * Generate the different variables weighted by the patenters respective inventors 
 bysort assignee_id year fips_state: gen nstates =_N 
 bysort assignee_id year fips_state: egen total_credits = total(rd_credit)
 
-bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
+if `patentcount' == 0 {
+	bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
+}
+
+if `patentcount'== 1 {
+	bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents1) 
+}
+
+if `patentcount' == 3 {
+	bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
+}
+
 bysort assignee_id fips_state year: egen sum_other_patents = total(other_patents)
 
 *bysort assignee_id fips_state other_fips_state: egen other_inventors = total(n_inventors3) 
@@ -270,17 +316,17 @@ label var other_weighted1 "RD Credit, weighted by patents"
 duplicates drop fips_state assignee_id year, force 
 
 keep fips_state assignee_id year other_all other_weighted1 
-save "${TEMP}/other_all`i'.dta", replace 
+save "${TEMP}/other_all`i'_`num'.dta", replace 
 }
 
 
 clear 
 
 forvalues i = 1/10 {
-	append using "${TEMP}/other_all`i'.dta"
+	append using "${TEMP}/other_all`i'_`num'.dta"
 }
 
-save "${TEMP}/other_all.dta", replace 
+save "${TEMP}/other_all_`num'.dta", replace 
 
 ********************************************************************************
 * RD Credit at other locations based on presence during the time period in which we  
@@ -288,10 +334,23 @@ save "${TEMP}/other_all.dta", replace
 ********************************************************************************
 forvalues i =1/10 {
 
-use "${TEMP}/helper_other`i'_cleaned.dta", clear 
+use "${TEMP}/helper_other`i'_cleaned`num'.dta", clear 
 drop count_obs count 
 
-bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
+
+if `num' == 0 {
+	bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
+}
+
+if `num'== 1 {
+	bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents1) 
+}
+
+if `num' == 3 {
+	bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
+}
+
+ 
 bysort assignee_id fips_state year: egen sum_other_patents = total(other_patents)
 
 
@@ -309,20 +368,29 @@ bysort assignee_id year fips_state: gen nstates =_N
 gen other_threelargest = total_credits/ nstates 
 label var other_threelargest "Changes in three largest locations"
 
-save "${TEMP}/other_threelargest`i'.dta", replace 
+save "${TEMP}/other_threelargest`i'_`num'.dta", replace 
 
 }
 
 clear 
 
 forvalues i = 1/10 {
-	append using "${TEMP}/other_threelargest`i'.dta"
+	append using "${TEMP}/other_threelargest`i'_`num'.dta"
 }
 
-save "${TEMP}/other_threelargest.dta", replace 
+save "${TEMP}/other_threelargest_`num'.dta", replace 
+
+* Erasing all the helper files I created along the way to keep storage space clean
+
+forvalues i = 1/10 {
+	
+	erase "${TEMP}/other_all`i'_`num'.dta"
+	erase "${TEMP}/helper_other`i'_v`num'.dta"
+	erase  "${TEMP}/helper_other`i'_cleaned`num'.dta"
+	
+}
 
 
-
-
+}
 
 
