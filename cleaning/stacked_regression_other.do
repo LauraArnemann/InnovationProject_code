@@ -24,8 +24,8 @@ keep if multistatefirm_max==1
 egen estab = group(assignee_id fips_state)
 xtset estab year 
 
-* (Weighted) levels at other locations:
-foreach var in other_all other_all_weighted1 other_threelargest other_first  {
+* (Weighted) levels at other locations
+foreach var in other_all1 other_all2 other_all3 other_all_weighted1 other_all_weighted2 other_all_weighted3 other_threelargest1 other_threelargest2 other_threelargest3 other_first1 other_first2 other_first3  {
 	// pit cit 
 	// Loop with `var'_other_b  `var'_l1_other_b `var'_l2_other_b `var'_l3_other_b `var'_l4_other_b 
 	
@@ -50,7 +50,7 @@ save  "${TEMP}/final_state_stacked_other_zeros.dta", replace
 ********************************************************************************
 
 
-	foreach var in other_all other_all_weighted1 other_threelargest other_first {
+	foreach var in other_all1 other_all2 other_all3 other_all_weighted1 other_all_weighted2 other_all_weighted3 other_threelargest1 other_threelargest2 other_threelargest3 other_first1 other_first2 other_first3 {
 		
 	    use  "${TEMP}/final_state_stacked_other_zeros.dta", clear 
 	    levelsof year if year>= 1992 & year<=2018, local(years_final)
@@ -132,7 +132,7 @@ save  "${TEMP}/final_state_stacked_other_zeros.dta", replace
 
 
 
-foreach var in other_all other_all_weighted1 other_threelargest other_first {
+foreach var in other_all1 other_all2 other_all3 other_all_weighted1 other_all_weighted2 other_all_weighted3 other_threelargest1 other_threelargest2 other_threelargest3 other_first1 other_first2 other_first3 {
 	// pit cit 
 	// Loop with `var'_other_b  `var'_l1_other_b `var'_l2_other_b `var'_l3_other_b `var'_l4_other_b 
 	

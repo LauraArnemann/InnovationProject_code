@@ -241,13 +241,13 @@ one state with this method.
 	 save "${TEMP}/patents3.dta", replace
 	
       
-merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/patents1.dta", keepusing(patents1)
+merge 1:1 fips_state assignee_id app_year using "${TEMP}/patents1.dta", keepusing(patents1)
 drop _merge 
 
-merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/patents2.dta", keepusing(patents2)
+merge 1:1 fips_state assignee_id app_year using "${TEMP}/patents2.dta", keepusing(patents2)
 drop _merge 
 
-merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/patents3.dta", keepusing(patents3)
+merge 1:1 fips_state assignee_id app_year using "${TEMP}/patents3.dta", keepusing(patents3)
 drop _merge  
 
 save "${TEMP}/patentcount_state.dta", replace 
@@ -289,7 +289,7 @@ duplicates tag patnum inventor_id county_fips_inventor assignee_id, gen(dup)
 drop if dup!=0 
 drop dup	// 132 observations deleted
 duplicates report patnum inventor_id assignee_id // differences in geocoding (missings or two different locations recorded); 190 cases
-duplicates tag patnum inventor_id assignee_id, force 
+duplicates tag patnum inventor_id assignee_id, gen(dup) 
 drop if dup!=0
 drop dup
 * Patent count by inventor - assignee - state - year
@@ -433,7 +433,7 @@ erase "${TEMP}/inventor_helper.dta"
 ********************************************************************************
 
 * This dofile generates all the state-level variables 
-*do "${CODE}/cleaning_state.do"
+do "${CODE}/cleaning_state.do"
  
 ********************************************************************************
 * Running the dofiles to generate the variables indicating tax changes in other
@@ -454,21 +454,37 @@ merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta
 drop _merge 
 
 * For each state assignee_id observation, expand the number of states such that they are constant 
-merge 1:1 fips_state app_year assignee_id using "${TEMP}/state_data_cleaned.dta"
+merge 1:1 fips_state app_year assignee_id using "${TEMP}/state_data_cleaned.dta", keepusing(rd_credit gdp cit pit unemployment)
 drop if _merge==2
 drop _merge
 
-
+foreach num of numlist 0 1 3 {
 * Merging in the variables at other locations 
-merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_all.dta", keepusing(other*)
+merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_all`num'.dta", keepusing(other*)
 drop if _merge==2 
 
-merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_threelargest.dta", keepusing(other*)
+foreach var of varlist rd_credit cit gdp unemployment pit {
+	rename other_`var'_all other_`var'_all`num' 
+	rename other_`var'_weighted other_`var'_weighted`num'
+}
+
+
+merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_threelargest`num'.dta", keepusing(other*)
 drop if _merge==2 
 
-merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_first.dta", keepusing(other*)
+foreach var of varlist rd_credit cit gdp unemployment pit {
+	rename other_`var'_threelargest other_`var'_threelargest`num' 
+}
+
+
+merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_first`num'.dta", keepusing(other*)
 drop if _merge==2 
 
+foreach var of varlist rd_credit cit gdp unemployment pit {
+	rename other_`var'_first other_`var'_first`num'
+}
+
+}
 
 
 /* For the inventors there are a lot of non-matches. This is plausible since there might be new inventors? 

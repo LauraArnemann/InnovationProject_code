@@ -9,6 +9,8 @@
 
 *set max_memory 80g, permanently
 * Generating the Helper data set 
+* Generating the other variables over different data sets (there is probably a more efficient way to do this; ATM I am not aware of it)
+
 foreach num of numlist 0 1 3 {
 
 if `num' == 0 {
@@ -59,6 +61,8 @@ forvalues i =1/51 {
 }
 
 keep assignee_id app_year states_present new_states 
+
+
 save "${TEMP}/helper_dataset`num'.dta", replace 
 
 
@@ -66,6 +70,14 @@ use "${TEMP}/helper_dataset`num'.dta", clear
 rename app_year min_year_estab 
 tempfile helper1 
 save `helper1'
+
+/*
+* Prepare Inventor Data to merge later on
+use "${TEMP}/inventorcount_state.dta"
+rename fips_state other_fips_state 
+rename app_year year 
+tempfile inventors 
+save `inventors'*/
 
 * Prepare Patent Data to merge later on 
 if `num' == 0 {
@@ -80,9 +92,10 @@ if `num' == 3 {
   use "${TEMP}/patents3.dta", clear 
 }
 
-********************************************************************************
-* First Location in which we observe R&D activity 
-********************************************************************************
+rename fips_state other_fips_state 
+rename app_year year 
+tempfile patents
+save `patents'
 
 
 
@@ -99,6 +112,7 @@ if `num' == 1 {
 if `num' == 3 {
   use "${TEMP}/patents3.dta", clear 
 }
+
 
 drop if missing(assignee_id)
 
@@ -136,40 +150,26 @@ reshape long other_fips_state, i(id) j(count)
 drop if missing(other_fips_state)
 destring other_fips_state, replace 
 
-merge m:1 other_fips_state year using  "${TEMP}/state_vars.dta", keepusing(rd_credit unemployment cit pit gdp)
-drop if _merge ==3 
-drop _merge
-
+merge m:1 other_fips_state year using "${TEMP}/state_vars.dta", keepusing(rd_credit cit gdp unemployment pit)
+drop if _merge!=3 
+drop _merge 
 
 bysort assignee_id year fips_state: gen nstates =_N 
+bysort assignee_id year fips_state: egen total_credits = total(rd_credit)
 
-foreach var of varlist rd_credit unemployment cit pit gdp {
-	
-bysort assignee_id year fips_state: egen total_`var' = total(`var')
-gen other_`var'_first = total_`var'/nstates
-
-} 
-
-label var other_rd_credit_first "RD Credits, first locations"
-label var other_pit_first "PIT, first locations"
-label var other_cit_first "CIT, first locations"
-label var other_gdp_first "GDP, first locations"
-label var other_unemployment_first "Unemployment, first locations"
+gen other_first = total_credits/nstates 
+label var other_first "RD Credits, first locations"
 
 keep if count==1
 
-keep fips_state assignee_id year other*
+keep fips_state assignee_id year other_first 
 save "${TEMP}/other_first`num'.dta", replace 
 
 
 ********************************************************************************
 * RD Credit at other locations based on presence during the time period in which we  
-* observe patenting activity at this establishment; 
-/* Note: At the moment this does not account for the different ways in which the
-outcome variables were constructed. (E.g. difference in patents1 and patents3)
-might address this in a robustness check   */
+* observe patenting activity at this establishment
 ********************************************************************************
-
 if `num' == 0 {
 	use "${TEMP}/patentcount_state.dta", clear 
 }
@@ -255,12 +255,14 @@ drop if fips_state==max_fips_state
 
 rename max_fips_state other_fips_state 
 
-merge m:1 other_fips_state year using "${TEMP}/state_data_cleaned.dta", keepusing(rd_credit gdp cit pit unemployment)
+merge m:1 other_fips_state year using "${TEMP}/state_vars.dta", keepusing(rd_credit cit gdp unemployment pit)
 drop if _merge !=3 
 drop _merge 
 
 merge m:1 other_fips_state assignee_id year using `patents'
 drop if _merge==2
+replace patents3 = 0 if _merge ==1
+
 drop _merge 
 
 
@@ -274,62 +276,46 @@ save "${TEMP}/helper_other`i'_cleaned`num'.dta", replace
 
 * Generate the different variables weighted by the patenters respective inventors 
 bysort assignee_id year fips_state: gen nstates =_N 
+bysort assignee_id year fips_state: egen total_credits = total(rd_credit)
 
-foreach var of varlist rd_credit gdp cit pit unemployment {
-	bysort assignee_id year fips_state: egen total_`var' = total(`var')
-}
-
-if `num' == 0 {
+if `patentcount' == 0 {
 	bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
 }
 
-if `num'== 1 {
+if `patentcount'== 1 {
 	bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents1) 
 }
 
-if `num' == 3 {
+if `patentcount' == 3 {
 	bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
 }
 
-* Generate the different variables weighted by the patenters respective inventors 
-bysort assignee_id year fips_state: gen nstates =_N 
 bysort assignee_id fips_state year: egen sum_other_patents = total(other_patents)
 
 *bysort assignee_id fips_state other_fips_state: egen other_inventors = total(n_inventors3) 
 *bysort assignee_id fips_state: egen sum_other_inventors = total(other_inventors)
 
-gen weight_patents = other_patents/sum_other_patents
+gen weight_patents = other_patents/sum_other_patents 
+gen rd_credit_weighted1 = weight_patents * rd_credit 
 
-foreach var of varlist rd_credit gdp cit pit unemployment {
-gen `var'_weighted = weight_patents * `var'
 *gen weight_inventors = other_inventors/sum_other_inventors 
 *gen rd_credit_weighted2 = weight_inventors * rd_credit 
 
-bysort assignee_id year fips_state: egen total_`var'_weighted = total(`var'_weighted)
+bysort assignee_id year fips_state: egen total_credits_weighted1 = total(rd_credit_weighted1)
 *bysort assignee_id year fips_state: egen total_credits_weighted2 = total(rd_credit_weighted2)
 
-gen other_`var'_all = total_`var'/nstates 
-gen other_`var'_weighted = total_`var'_weighted/nstates
-}
+gen other_all = total_credits/nstates 
+label var other_all "RD Credits, all locations"
 
-label var other_rd_credit_all "RD Credits, all locations"
-label var other_rd_credit_weighted "RD Credit, weighted by patents" 
-label var other_pit_all "PIT, all locations"
-label var other_pit_weighted "PIT, weighted by patents" 
-label var other_cit_all "CIT, all locations"
-label var other_cit_weighted "CIT, weighted by patents" 
-label var other_unemployment_all "Unemployment, all locations"
-label var other_unemployment_weighted "Unemployment, weighted by patents" 
-
-
+gen other_weighted1 = total_credits_weighted1/nstates 
+label var other_weighted1 "RD Credit, weighted by patents" 
 
 *gen other_weighted2 = total_credits_weighted2/nstates 
 *label var other_weighted1 "RD Credit, weighted by Inventors" 
 
 duplicates drop fips_state assignee_id year, force 
 
-
-keep fips_state assignee_id year other* 
+keep fips_state assignee_id year other_all other_weighted1 
 save "${TEMP}/other_all`i'_`num'.dta", replace 
 }
 
@@ -351,7 +337,20 @@ forvalues i =1/10 {
 use "${TEMP}/helper_other`i'_cleaned`num'.dta", clear 
 drop count_obs count 
 
-bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
+
+if `num' == 0 {
+	bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
+}
+
+if `num'== 1 {
+	bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents1) 
+}
+
+if `num' == 3 {
+	bysort assignee_id fips_state other_fips_state: egen other_patents = total(patents3) 
+}
+
+ 
 bysort assignee_id fips_state year: egen sum_other_patents = total(other_patents)
 
 
@@ -363,20 +362,11 @@ bysort assignee_id fips_state year: egen rank = rank(-weight_patents)
 bysort assignee_id fips_state other_fips_state: egen max_rank = max(rank)
 keep if max_rank<=3 
 
+bysort assignee_id year fips_state: egen total_credits = total(rd_credit)
 bysort assignee_id year fips_state: gen nstates =_N 
 
-foreach var of varlist rd_credit gdp cit pit unemployment {
-	
-bysort assignee_id year fips_state: egen total_`var' = total(`var')
-gen other_`var'_threelargest = total_`var'/ nstates
-
-}
-
-label var other_rd_credit_threelargest "RD Credit, three largest locations"
-label var other_cit_threelargest "CIT, three largest locations"
-label var other_pit_threelargest "PIT, three largest locations"
-label var other_gdp_threelargest "GDP, three largest locations"
-label var other_unemployment_threelargest "Unemployment, three largest locations"
+gen other_threelargest = total_credits/ nstates 
+label var other_threelargest "Changes in three largest locations"
 
 save "${TEMP}/other_threelargest`i'_`num'.dta", replace 
 
@@ -387,7 +377,6 @@ clear
 forvalues i = 1/10 {
 	append using "${TEMP}/other_threelargest`i'_`num'.dta"
 }
-
 
 save "${TEMP}/other_threelargest_`num'.dta", replace 
 
@@ -403,7 +392,5 @@ forvalues i = 1/10 {
 
 
 }
-
-
 
 
