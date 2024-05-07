@@ -14,15 +14,16 @@ macro drop controls controls_other
 global controls rd_credit pit cit 
 global controls_other pit_other cit_other
 
+local outcome patents3 n_inventors3 n_newinventors3
+
 foreach direction in `direction' {
 		
 		*Change at other locations
 		*-----------------------------------------------------------------------
 
-		foreach var2 of varlist  {
+		foreach var2 of varlist other_all1 other_all2 other_all3 other_all_weighted1 other_all_weighted2 other_all_weighted3 other_threelargest1 other_threelargest2 other_threelargest3 other_first1 other_first2 other_first3  {
 		
 			use "${TEMP}/final_state_stacked_other_`var2'_`direction'.dta", replace 
-			
 			merge m:1 estab year using "${TEMP}/final_state_stacked_other_zeros.dta", nogen keep(3)
 			
 			bysort assignee_id year event: egen n_patents = total(patents3)
@@ -39,6 +40,13 @@ foreach direction in `direction' {
 			gen ln_gdp_other=log(total_gdp) 
 			gen ln_state_rd_exp=log(state_rd_exp) 
 			gen ln_state_rd_exp_other=log(state_rd_exp_other)
+			
+		    * Balanced Panel: Only observations present four years before and four years after event
+		    bysort assignee_id fips_state: egen min_year = min(year)
+		    bysort assignee_id fips_state: egen max_year = max(year)
+		 
+		    gen balanced_panel = 0 
+		    replace balanced_panel = 1 if min_year + 4 == event & max_year + 4 == event 
                  
 			*Generate the event indicators
 			forvalues i=1/4{
@@ -64,8 +72,9 @@ foreach direction in `direction' {
 		    local sample3 if inrange(year, 1988, 2014)  & n_patents!=0 
 		    local sample4 if inrange(year, 1988, 2005)
 			local sample5 if inrange(year, 1988, 2018)
+			local sample6 if balanced_panel == 1 
 			
-			forvalues i =1/5 {
+			forvalues i =1/6 {
 				
 				foreach outc in `outcome'  {
 				
