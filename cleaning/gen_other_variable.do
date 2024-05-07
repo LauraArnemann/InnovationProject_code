@@ -128,15 +128,14 @@ drop _merge
 
 split states_present, parse(,) generate(other_fips_state)
 drop other_fips_state1 
-* This observation is always empty 
-rename app_year year 
+* This observation is always empty  
 egen id = group(fips_state assignee_id year)
 
 reshape long other_fips_state, i(id) j(count)
 drop if missing(other_fips_state)
 destring other_fips_state, replace 
 
-merge m:1 other_fips_state year using  "${TEMP}/state_data_cleaned.dta", keepusing(rd_credit unemployment cit pit gdp)
+merge m:1 other_fips_state app_year using  "${TEMP}/state_data_cleaned.dta", keepusing(rd_credit unemployment cit pit gdp)
 drop if _merge ==3 
 drop _merge
 
