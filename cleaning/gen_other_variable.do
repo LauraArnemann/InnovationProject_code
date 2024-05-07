@@ -136,7 +136,7 @@ reshape long other_fips_state, i(id) j(count)
 drop if missing(other_fips_state)
 destring other_fips_state, replace 
 
-merge m:1 other_fips_state year using  "${TEMP}/state_vars.dta", keepusing(rd_credit unemployment cit pit gdp)
+merge m:1 other_fips_state year using  "${TEMP}/state_data_cleaned.dta", keepusing(rd_credit unemployment cit pit gdp)
 drop if _merge ==3 
 drop _merge
 
