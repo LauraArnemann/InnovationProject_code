@@ -265,11 +265,29 @@ drop other_fips_state*
 
 save "${TEMP}/helper_other_v`num'.dta", replace 
 
+sum count, detail
+local c = `r(max)'/100000
+local c = int(`c') 
+local c = `c' + 1
+di `c'
 
+local b = 0 
+
+forvalues i =1/`c' {
 	
-use "${TEMP}/helper_other_v`num'.dta", clear 
+	use  "${TEMP}/helper_other_v`num'.dta", clear
+	local a = `b'+1
+	local b = `i' *100000
+	keep if inrange(count, `a', `b')
+	save "${TEMP}/helper_other`i'_v`num'.dta", replace 
+	
+}
 
-drop count
+
+forvalues i =1/1 {
+	
+	use "${TEMP}/helper_other`i'_v`num'.dta", clear 
+	drop count
 reshape long max_other_fips_state, i(id) j(count)
 drop if missing(max_other_fips_state)
 drop if fips_state==max_other_fips_state
@@ -292,8 +310,8 @@ drop _merge
 */
 rename app_year year
 
-save "${TEMP}/helper_other_cleaned`num'.dta", replace 
-
+save "${TEMP}/helper_other`i'_cleaned`num'.dta", replace 
+}
 
 * Generate the different variables weighted by the patenters respective inventors 
 foreach var of varlist rd_credit gdp cit pit unemployment {
@@ -352,8 +370,17 @@ duplicates drop fips_state assignee_id year, force
 
 
 keep fips_state assignee_id year other* 
-save "${TEMP}/other_all_`num'.dta", replace 
+save "${TEMP}/other_all`i'_`num'.dta", replace 
+}
 
+
+clear 
+
+forvalues i = 1/`c' {
+	append using "${TEMP}/other_all`i'_`num'.dta"
+}
+
+save "${TEMP}/other_all_`num'.dta", replace 
 
 
 
@@ -361,14 +388,11 @@ save "${TEMP}/other_all_`num'.dta", replace
 * RD Credit at other locations based on presence during the time period in which we  
 * observe patenting activity at this establishment, only three largest estabs
 ********************************************************************************
-local num = 3 
+forvalues i =1/`c' {
 
-use "${TEMP}/helper_other_cleaned`num'.dta", clear 
+use "${TEMP}/helper_other`i'_cleaned`num'.dta", clear 
 duplicates drop fips_state assignee_id year other_fips_state, force
 * This should not delete anything
-* assignee_id=="10b96cde-e590-4dfb-ba21-127c1c54214e"
-* assignee_id =="09a18b39-a0e7-4b18-aa79-2d28ed1bd4ba"
-* br if assignee_id=="031b0c9c-b4c2-4322-b3d5-bf23db86d18a" 
 drop count_obs count 
 drop if missing(assignee_id)
 
@@ -392,13 +416,9 @@ gen weight_patents = other_patents/sum_other_patents
 
 * Keep the observations with the largest weights 
 bysort assignee_id fips_state year: egen rank = rank(-weight_patents)
-drop if rank>=3
-drop if missing(rank)
-drop if rank>=3 
 
-
-* For few observations there might be more than 3 observations per assignee, year, state this can be caused if e.g. four other establishments have the same importance 
-
+bysort assignee_id fips_state other_fips_state: egen max_rank = max(rank)
+keep if max_rank<=3 
 
 bysort assignee_id year fips_state: gen nstates =_N 
 
@@ -415,6 +435,15 @@ label var other_pit_threelargest "PIT, three largest locations"
 label var other_gdp_threelargest "GDP, three largest locations"
 label var other_unemployment_threelargest "Unemployment, three largest locations"
 
+save "${TEMP}/other_threelargest`i'_`num'.dta", replace 
+
+}
+
+clear 
+
+forvalues i = 1/`c' {
+	append using "${TEMP}/other_threelargest`i'_`num'.dta"
+}
 
 bysort fips_state assignee_id year: gen count = _n 
 keep if count ==1 
@@ -422,16 +451,16 @@ save "${TEMP}/other_threelargest_`num'.dta", replace
 
 * Erasing all the helper files I created along the way to keep storage space clean
 
-
-
-	*erase "${TEMP}/other_all`i'_`num'.dta"
-	*erase "${TEMP}/helper_other`i'_v`num'.dta"
-	*erase  "${TEMP}/helper_other`i'_cleaned`num'.dta"
+forvalues i = 1/`c' {
 	
+	erase "${TEMP}/other_all`i'_`num'.dta"
+	erase "${TEMP}/helper_other`i'_v`num'.dta"
+	erase  "${TEMP}/helper_other`i'_cleaned`num'.dta"
+	
+}
 
 
-
-
+}
 
 
 

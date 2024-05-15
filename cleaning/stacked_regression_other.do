@@ -24,8 +24,37 @@ keep if multistatefirm_max==1
 egen estab = group(assignee_id fips_state)
 xtset estab year 
 
+
+* Renaming all the variables because otherwise we can't generate the change variable 
+*rename other_rd_credit_all0 other_all0
+*rename other_rd_credit_all1 other_all1 
+rename other_rd_credit_all3 other_all3
+
+*rename other_rd_credit_weighted0 other_weighted0
+*rename other_rd_credit_weighted1 other_weighted1 
+rename other_rd_credit_weighted3 other_weighted3
+
+*rename other_rd_credit_threelargest0 other_threelargest0
+*rename other_rd_credit_threelargest1 other_threelargest1 
+rename other_rd_credit_threelargest3 other_threelargest3
+ 
+*rename other_rd_credit_first0 other_first0
+*rename other_rd_credit_first1 other_first1 
+rename other_rd_credit_first3 other_first3 
+
+foreach num of numlist  3 {
+foreach state_var in unemployment gdp cit pit {
+	rename other_`state_var'_threelargest`num' other_threelargest`num'_`state_var'
+	rename other_`state_var'_weighted`num' other_weighted`num'_`state_var'
+	rename other_`state_var'_first`num' other_first`num'_`state_var'
+	rename other_`state_var'_all`num' other_all`num'_`state_var'
+}
+}
+
+
 * (Weighted) levels at other locations
-foreach var in other_all1 other_all2 other_all3 other_all_weighted1 other_all_weighted2 other_all_weighted3 other_threelargest1 other_threelargest2 other_threelargest3 other_first1 other_first2 other_first3  {
+* other_all0 other_all1 other_all3 other_weighted0 other_weighted1 other_weighted3 other_threelargest0 other_threelargest1 other_threelargest3 other_first0 other_first1 other_first3
+foreach var in  other_all3 other_weighted3 other_threelargest3 other_first3 {
 	// pit cit 
 	// Loop with `var'_other_b  `var'_l1_other_b `var'_l2_other_b `var'_l3_other_b `var'_l4_other_b 
 	
@@ -48,9 +77,10 @@ save  "${TEMP}/final_state_stacked_other_zeros.dta", replace
 ********************************************************************************
 * Increases 
 ********************************************************************************
+*other_all0 other_all1 other_all3 other_weighted0 other_weighted1 other_weighted3 other_threelargest0 other_threelargest1 other_threelargest3 other_first0 other_first1 other_first3
 
 
-	foreach var in other_all1 other_all2 other_all3 other_all_weighted1 other_all_weighted2 other_all_weighted3 other_threelargest1 other_threelargest2 other_threelargest3 other_first1 other_first2 other_first3 {
+	foreach var in other_all3 other_weighted3 other_threelargest3 other_first3  {
 		
 	    use  "${TEMP}/final_state_stacked_other_zeros.dta", clear 
 	    levelsof year if year>= 1992 & year<=2018, local(years_final)
@@ -130,9 +160,9 @@ save  "${TEMP}/final_state_stacked_other_zeros.dta", replace
 * Decreases 
 ********************************************************************************
 
+*other_all0 other_all1 other_all3 other_weighted0 other_weighted1 other_weighted3 other_threelargest0 other_threelargest1 other_threelargest3 other_first0 other_first1 other_first3 
 
-
-foreach var in other_all1 other_all2 other_all3 other_all_weighted1 other_all_weighted2 other_all_weighted3 other_threelargest1 other_threelargest2 other_threelargest3 other_first1 other_first2 other_first3 {
+foreach var in other_all3 other_weighted3 other_threelargest3 other_first3 {
 	// pit cit 
 	// Loop with `var'_other_b  `var'_l1_other_b `var'_l2_other_b `var'_l3_other_b `var'_l4_other_b 
 	

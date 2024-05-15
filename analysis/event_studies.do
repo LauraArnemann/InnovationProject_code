@@ -5,26 +5,16 @@
 // Goal: Merging the data set using the number of inventors in a state employed by the respective firm as outcome variable 
 
 
+
+
 ********************************************************************************
 * Event Studies without Zeros 
 ********************************************************************************
-use "C:/Users/laura/Desktop/final_state_stacked_zeros.dta", clear 
-merge m:1 assignee_id using "C:/Users/laura/Desktop/match_assignee.dta"
-keep if _merge==3 
-drop _merge 
-rename assignee_id assignee_id_code 
-rename assignee_id_string assignee_id 
 
-rename rd_credit rd_credit_old 
-rename total_rd_credit total_rd_credit_old 
-rename total_pit total_pit_old 
-rename total_cit total_cit_old 
-rename total_gdp total_gdp_old 
-
-
-merge 1:1 fips_state assignee_id year using "${TEMP}/final_state_zeros_new.dta"
 
 use "${TEMP}/final_state_zeros_new.dta", clear 
+
+drop if missing(assignee_id)
 
 foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 {
 	gstats winsor `var', cut(1 99) gen(`var'_w1)
@@ -32,13 +22,13 @@ foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_in
 	gen ln_`var'=log(`var')
 }
 
-tostring fips_state, gen(strate_str) 
-gen estab_id = assignee_id + strate_str
-egen estab = group(estab_id)
+gen ln_gdp =log(gdp)
+
+egen estab = group(fips_state assignee_id)
 
 xtset estab year 
 
-gen change_other_credit = total_rd_credit - l.total_rd_credit 
+gen change_other_credit = other_rd_credit_weighted3 - l.other_rd_credit_weighted3
 gen byte increase_credit = change_other_credit>0
 gen byte decrease_credit = change_other_credit<0
 
@@ -56,14 +46,14 @@ foreach x in change_other_credit increase_credit decrease_credit {
 }
 
 
-		gen ln_gdp=log(gdp)
-		gen ln_gdp_other=log(total_gdp)
+		*gen ln_gdp=log(gdp)
+		*gen ln_gdp_other=log(total_gdp)
 
 drop F1* 
 gen zero_1=1
 label var zero_1 "-1"
 
-ppmlhdfe patents3 rd_credit F?_change_other_credit zero_1 L?_change_other_credit rd_credit ln_gdp ln_gdp_other unemployment unemployment_other pit cit total_pit total_cit if year>=1988, absorb(estab year) cl(fips_state)
+ppmlhdfe patents3 rd_credit pit cit ln_gdp F?_change_other_credit zero_1 L?_change_other_credit, absorb(estab year) cl(estab#year)
 est sto patreg
 coefplot patreg, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black))  keep(F?_change_other_credit zero_1 L?_change_other_credit) yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
 capture noisily graph export "${OVERLEAF}/graphs/eventstudies/patents_heterogeneity1.png", replace
