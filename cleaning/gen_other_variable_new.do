@@ -10,7 +10,7 @@
 *set max_memory 80g, permanently
 * Generating the Helper data set 
 *Usually numlist 0 1 3 
-foreach num of numlist 0 1 3 {
+foreach num of numlist 0 1  3 {
 	
 if `num' == 0 {
 use "${TEMP}/patentcount_state.dta", clear 
@@ -101,12 +101,12 @@ use "${TEMP}/patentcount_state.dta", clear
 drop if missing(assignee_id)
 
 
-* Only keep multi state firms 
+/* Only keep multi state firms 
 bysort assignee_id app_year: gen count =_N 
 bysort assignee_id: egen max_count = max(count)
 
 keep if max_count>1 
-drop max_count count 
+drop max_count count */
 
 bysort fips_state assignee_id: egen min_year_estab = min(app_year)
 bysort fips_state assignee_id: egen max_year_estab = max(app_year)
@@ -161,7 +161,8 @@ keep if count==1
 keep fips_state assignee_id app_year other*
 rename app_year year 
 save "${TEMP}/other_first`num'.dta", replace 
-}
+*/
+
 
 
 ********************************************************************************
@@ -172,7 +173,6 @@ outcome variables were constructed. (E.g. difference in patents1 and patents3)
 might address this in a robustness check   */
 ********************************************************************************
 
-local num =3 
 
 if `num' == 0 {
 	use "${TEMP}/patentcount_state.dta", clear 
@@ -361,7 +361,6 @@ save "${TEMP}/other_all_`num'.dta", replace
 * RD Credit at other locations based on presence during the time period in which we  
 * observe patenting activity at this establishment, only three largest estabs
 ********************************************************************************
-local num = 3 
 
 use "${TEMP}/helper_other_cleaned`num'.dta", clear 
 duplicates drop fips_state assignee_id year other_fips_state, force
@@ -419,6 +418,7 @@ label var other_unemployment_threelargest "Unemployment, three largest locations
 bysort fips_state assignee_id year: gen count = _n 
 keep if count ==1 
 save "${TEMP}/other_threelargest_`num'.dta", replace 
+}
 
 * Erasing all the helper files I created along the way to keep storage space clean
 

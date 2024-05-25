@@ -61,7 +61,10 @@ use patnum citation_count withdrawn date_filing date_grant app_year ///
 	inventor_id first_name last_name male location_id state_fips_inventor county_fips_inventor ///
 	assignee_id state_fips_assignee county_fips_assignee  ///
 	using "${PATENTDTA}/inventor_applications.dta", clear
-	
+
+/*
+Should we exclude foreign firms? Drop if country_assignee!="US"
+*/	
 drop if withdrawn==1 
 drop withdrawn
 
@@ -72,9 +75,8 @@ drop if county_fips_inventor == .
 * First step: Number of patents the firm records in a county and a state
 
 *-Drop duplicates (we only want to count inventors once per recorded patent)
-duplicates tag patnum inventor_id county_fips_inventor assignee_id, gen(dup)
-drop if dup!=0
-drop dup
+duplicates drop patnum inventor_id county_fips_inventor assignee_id, force
+
 * (132 observations deleted)
 duplicates report patnum inventor_id assignee_id // differences in geocoding (missings or two different locations recorded); 190 cases
 duplicates tag patnum inventor_id assignee_id, gen(dup)
@@ -166,6 +168,7 @@ one state with this method.
 
 	duplicates tag patnum state_fips_inventor, gen(dup)
 	drop if dup!=0
+	drop dup
 
 	gen patent=1 
 	replace patent = weight * patent 
@@ -282,10 +285,10 @@ drop if app_year == .
 drop if county_fips_inventor == .
 
 * Drop duplicates (we only want to count inventors once per recorded patent)
-duplicates tag patnum inventor_id county_fips_inventor assignee_id, gen(dup)
-drop if dup!=0 
-drop dup	// 132 observations deleted
+duplicates drop patnum inventor_id county_fips_inventor assignee_id, force
+	// 132 observations deleted
 duplicates report patnum inventor_id assignee_id // differences in geocoding (missings or two different locations recorded); 190 cases
+* Drop all patents for which two locations were reported
 duplicates tag patnum inventor_id assignee_id, gen(dup) 
 drop if dup!=0
 drop dup
@@ -372,6 +375,7 @@ save "${TEMP}/inventor_1.dta", replace
 	
 	duplicates tag inventor_id state_fips_inventor assignee_id app_year, gen(dup)
 	drop if dup!=0
+	drop dup
 	bysort state_fips_inventor assignee_id app_year: gen count=_N
 
 	merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper.dta"
@@ -394,6 +398,7 @@ save "${TEMP}/inventor_1.dta", replace
 	drop count 
 	duplicates tag app_year inventor_id, gen(dup)
 	drop if dup>0
+	drop dup
 	gen new_inventor = 1 if app_year==min_year 
 	
 bysort state_fips_inventor assignee_id app_year: gen count=_N
@@ -409,7 +414,6 @@ drop _merge
 
 merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_2.dta", keepusing(n_inventors2)
 drop _merge 
-
 
 order n_inventors1 n_inventors2 n_inventors3 
 *n_inventors3b
@@ -451,14 +455,18 @@ merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta
 drop _merge 
 
 * For each state assignee_id observation, expand the number of states such that they are constant 
-merge 1:1 fips_state app_year assignee_id using "${TEMP}/state_data_cleaned.dta", keepusing(rd_credit gdp cit pit unemployment)
-drop if _merge==2
+merge m:1 fips_state app_year using "${TEMP}/state_data_cleaned.dta", keepusing(rd_credit gdp cit pit unemployment)
+drop if _merge!=3
 drop _merge
 
-foreach num of numlist 0 1 3 {
-* Merging in the variables at other locations 
-merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_all`num'.dta", keepusing(other*)
-drop if _merge==2 
+rename app_year year 
+
+foreach num of numlist 3 {
+* Merging in the variables at other locations
+
+merge 1:1 fips_state year assignee_id using "${TEMP}/other_all_`num'.dta", keepusing(other*)
+drop if _merge==2
+drop _merge  
 
 foreach var of varlist rd_credit cit gdp unemployment pit {
 	rename other_`var'_all other_`var'_all`num' 
@@ -466,16 +474,17 @@ foreach var of varlist rd_credit cit gdp unemployment pit {
 }
 
 
-merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_threelargest`num'.dta", keepusing(other*)
+merge 1:1 fips_state year assignee_id using "${TEMP}/other_threelargest_`num'.dta", keepusing(other*)
 drop if _merge==2 
+drop _merge 
 
 foreach var of varlist rd_credit cit gdp unemployment pit {
 	rename other_`var'_threelargest other_`var'_threelargest`num' 
 }
-
-
-merge 1:1 fips_state app_year assignee_id using "${TEMP}/other_first`num'.dta", keepusing(other*)
+ 
+merge 1:1 fips_state year assignee_id using "${TEMP}/other_first`num'.dta", keepusing(other*)
 drop if _merge==2 
+drop _merge 
 
 foreach var of varlist rd_credit cit gdp unemployment pit {
 	rename other_`var'_first other_`var'_first`num'
@@ -507,18 +516,16 @@ foreach var of varlist rd_credit cit gdp unemployment pit {
 
 * Actually quite a lot of observations that were not merged
 
-bysort assignee_id app_year: gen nstates=_N 
+bysort assignee_id year: gen nstates=_N 
 
 gen multistatefirm_temp=0 
 replace multistatefirm_temp=1 if nstates>1
 bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
+ 
 
-drop count *_helper* total_inventors* total_inventors_other* 
-
-rename app_year year 
 * What should we do with New York, Ohio, Louisiana? 
 
-duplicates drop assignee_id fips_state year, force // sanity check; shouldn't drop anything
+duplicates report assignee_id fips_state year // Sanity Check
 compress
 save "${TEMP}/final_state_zeros_new.dta", replace 
 

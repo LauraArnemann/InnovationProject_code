@@ -12,18 +12,17 @@
 macro drop controls controls_other 
 
 global controls rd_credit pit cit 
-global controls_other pit_other cit_other
 
 local outcome patents3 n_inventors3 n_newinventors3
 
-foreach direction in `direction' {
+foreach direction in incr {
 		
 		*Change at other locations
 		*-----------------------------------------------------------------------
 
-		foreach var2 of varlist other_all1 other_all2 other_all3 other_all_weighted1 other_all_weighted2 other_all_weighted3 other_threelargest1 other_threelargest2 other_threelargest3 other_first1 other_first2 other_first3  {
+		foreach var2 in other_all3 other_weighted3 other_threelargest3   {
 		
-			use "${TEMP}/final_state_stacked_other_`var2'_`direction'.dta", replace 
+			use "${TEMP}/final_state_stacked_`var2'_`direction'.dta", replace 
 			merge m:1 estab year using "${TEMP}/final_state_stacked_other_zeros.dta", nogen keep(3)
 			
 			bysort assignee_id year event: egen n_patents = total(patents3)
@@ -35,11 +34,8 @@ foreach direction in `direction' {
 				gstats winsor `var', cut(1 95) gen(`var'_w2)
 				gen ln_`var'=log(`var')
 			}
-
-			gen ln_gdp=log(gdp)
-			gen ln_gdp_other=log(total_gdp) 
-			gen ln_state_rd_exp=log(state_rd_exp) 
-			gen ln_state_rd_exp_other=log(state_rd_exp_other)
+			
+			gen ln_gdp = log(`var2'_gdp)
 			
 		    * Balanced Panel: Only observations present four years before and four years after event
 		    bysort assignee_id fips_state: egen min_year = min(year)
@@ -74,11 +70,11 @@ foreach direction in `direction' {
 			local sample5 if inrange(year, 1988, 2018)
 			local sample6 if balanced_panel == 1 
 			
-			forvalues i =1/6 {
+			forvalues i =1/1 {
 				
 				foreach outc in `outcome'  {
 				
-				/*
+				
 				*Event studies
 				capture noisily ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 				capture noisily est sto inventorreg1
@@ -96,7 +92,7 @@ foreach direction in `direction' {
 				title("`var2', `direction' - controls") xtitle("Years since Change") graphregion(color(white))
 					capture noisily graph export "${RESULTS}/graphs/`outc'/stacked_other_`var2'_`direction'_c1_sample`i'.png", replace  
 					
-				capture noisily ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary $controls $controls_other `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
+				capture noisily ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary $controls `var2'_pit `var2'_cit `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 				capture noisily est sto inventorreg3
 				capture noisily coefplot inventorreg3, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 				xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
@@ -104,17 +100,17 @@ foreach direction in `direction' {
 				title("`var2', `direction' - controls (incl other)") xtitle("Years since Change") graphregion(color(white))
 					capture noisily graph export "${RESULTS}/graphs/`outc'/stacked_other_`var2'_`direction'_c2_sample`i'.png", replace  
 					
-				capture noisily ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary $controls2 $controls_other2 `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
+	/*			capture noisily ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary $controls2 $controls_other2 `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 				capture noisily est sto inventorreg4
 				capture noisily coefplot inventorreg4, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 				xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 				yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				title("`var2', `direction' - controls (incl other, incl gdp unemployment)") xtitle("Years since Change") graphregion(color(white))
 					capture noisily graph export "${RESULTS}/graphs/`outc'/stacked_other_`var2'_`direction'_c3_sample`i'.png", replace 
-					*/
+				
 						
 				*DiD
-				capture noisily ppmlhdfe `outc' 1.max_treated#1.post_tr `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
+/*				capture noisily ppmlhdfe `outc' 1.max_treated#1.post_tr `sample`i'', absorb(estab#event year#event) cl(fips_state#event)
 					capture noisily outreg2 using "$RESULTS/tables/`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
 					replace dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 					ctitle("`outc'") lab
@@ -138,6 +134,7 @@ foreach direction in `direction' {
 					capture noisily outreg2 using "$RESULTS/tables/`outc'/change_stack_other_zero_`var2'_`direction'_sample`i'", ///
 					append dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 					ctitle("`outc'") lab
+					*/
 
 				}
 			}

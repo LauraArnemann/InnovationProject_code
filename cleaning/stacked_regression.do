@@ -152,13 +152,14 @@ foreach var in "rd_credit" {
 
 use "${TEMP}/final_state_stacked_zeros.dta", clear 
 
+foreach var in "rd_credit" {
+
 	levelsof year if change_`var' < 0 & year>=1992 & change_`var'!=. , local(change)
 	di `change'
 
 	levelsof year if change_`var' < 0 & year>=1992 & change_`var'!=. , local(change_final)
 	di `change_final'
 	
-foreach var in "rd_credit" {
 	
 	foreach v in `change' {
 		use  "${TEMP}/final_state_stacked_zeros.dta", clear 

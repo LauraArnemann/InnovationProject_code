@@ -219,23 +219,16 @@ twoway 	(bar rd_neg_count year, barw(0.85) color(gs10%50) yaxis(1) ytitle("Numbe
 ********************************************************************************
 * Distribution of changes in other variable 
 ********************************************************************************
-use  "${TEMP}/final_state_zeros_new.dta", clear 
+use "${TEMP}/final_state_stacked_other_zeros.dta", clear 
 drop if missing(assignee_id)
 
-egen estab = group(assignee_id fips_state)
-
-xtset estab year 
-
-*  other_rd_credit_first other_rd_credit_threelargest other_rd_credit_all other_rd_credit_weighted   
-
-foreach var in total_rd_credit {
-	*Changes in tax variable
-	gen change_`var' = `var' - l.`var'
-		}	
 
 
+
+*  other_rd_credit_first other_rd_credit_threelargest other_rd_credit_all other_rd_credit_weighted  
+/*
 * Bar Graph with the overll distribution of changes
-foreach var of varlist total_rd_credit {
+foreach var of varlist other_all0 other_all1 other_all3 other_weighted0 other_weighted1 other_weighted3 other_threelargest0 other_threelargest1 other_threelargest3 other_first0 other_first1 other_first3 {
 	hist change_`var', graphregion(color(white)) xtitle("Change in RD Credit, other locations")
 	sum change_`var', detail 
  
@@ -244,15 +237,56 @@ foreach var of varlist total_rd_credit {
 	hist change_`var' if change_`var'<0, graphregion(color(white)) xtitle("Change in RD Credit, other locations")
 
 } 		
+*/ 
 
-foreach var of varlist total_rd_credit {
-gen indicator_largechange =0
-replace indicator_largechange=1  if inrange(change_`var', -1, 1)
+* other_weighted3 other_threelargest3 other_first3
+
+foreach var of varlist other_all3  {
+gen indicator_largechange =1 if change_`var'!=.
+replace indicator_largechange=0  if inrange(change_`var', -1, 1)
+
+gen indicator_largeincrease =0
+replace indicator_largeincrease=1  if change_`var'>=1 & change_`var'!=.
+
+gen indicator_largedecrease =0
+replace indicator_largedecrease=1  if change_`var'<=-1 & change_`var'!=.
+
+}
 
 * Bar Graph with the distribution of large changes  
 graph bar (rawsum) indicator_largechange if year>=1992 , over(year, label(labsize(small) angle(forty_five))) graphregion(color(white)) bgcolor(white)  bar(1, color(dkgreen%50) ) ytitle("Number of Large Changes")
+graph export "${RESULTS}/descriptives/`var'_largechanges.png", replace 
 drop indicator_largechange 
+
+
+* Bar Graph with the distribution of large increases 
+graph bar (rawsum) indicator_largeincrease if year>=1992 , over(year, label(labsize(small) angle(forty_five))) graphregion(color(white)) bgcolor(white)  bar(1, color(dkgreen%50) ) ytitle("Number of Large Increases")
+graph export "${RESULTS}/descriptives/`var'_largeincrease.png", replace 
+drop indicator_largeincrease
+
+
+* Bar Graph with the distribution of large decreases 
+graph bar (rawsum) indicator_largedecrease if year>=1992 , over(year, label(labsize(small) angle(forty_five))) graphregion(color(white)) bgcolor(white)  bar(1, color(dkgreen%50) ) ytitle("Number of Large Decreases")
+graph export "${RESULTS}/descriptives/`var'_largedecrease.png", replace 
+drop indicator_largedecrease 
 }
 
 
 
+
+use "${TEMP}/other_all_3.dta", clear 
+
+egen estab = group(assignee_id fips_state)
+xtset estab year 
+
+gen change_otherall3 = other_rd_credit_all - l.other_rd_credit_all
+rename year app_year 
+
+merge m:1 assignee_id app_year using "${TEMP}/helper_dataset3.dta" , keepusing(states_present new_states)
+keep if _merge==3 
+drop _merge 
+* Also seems like other all variable was generated properly 
+
+
+* 03bb96f2-0306-4608-a4fb-e21bb46c3dd9, year 2020
+* 03ede0a1-cc92-4d76-88ed-d6a7a0101822, year 2019
