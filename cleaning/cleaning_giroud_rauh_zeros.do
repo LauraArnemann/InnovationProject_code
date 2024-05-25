@@ -247,9 +247,6 @@ drop _merge
 merge 1:1 fips_state assignee_id app_year using "${TEMP}/patents2.dta", keepusing(patents2)
 drop _merge 
 
-merge 1:1 fips_state assignee_id app_year using "${TEMP}/patents3.dta", keepusing(patents3)
-drop _merge  
-
 save "${TEMP}/patentcount_state.dta", replace 
 
 

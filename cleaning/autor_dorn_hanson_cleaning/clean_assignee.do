@@ -16,9 +16,8 @@ NOTES: Coding of accents only works on a Mac
 ****** REMOVE PUNCTUATIONS ******
 *********************************
 
-use "[input file that contains assignee names]", clear
 
-gen standard_name=" "+upper(assignee)+" "
+gen standard_name=" "+upper(organization)+" "
 list standard_name if strpos(standard, "#")>0
 
 ** clean names that end in (THE) or start with THE
@@ -80,13 +79,12 @@ replace standard_name=" ESSILOR INTERNATIONAL " if  patent=="08690324"
 replace standard_name=" ESSILOR INTERNATIONAL " if  patent=="08790104"
 
 *** deal with < >
-assert strpos(st,">")==0
-count if !(strpos(st,"<")==0)
-foreach char in "</PDAT" "<PDAT" "<HIL" "</HIL" "<SB" "</SB" "<BOLD" "</BOLD" "<SP" "</SP" "<ULINE" "</ULINE" "</STEXT" "</ONM" "</NAM" "</HI" "<" {
+count if !(strpos(standard_name,"<")==0)
+foreach char in "</PDAT" "<PDAT" "<HIL" "</HIL" "<SB" "</SB" "<BOLD" "</BOLD" "<SP" "</SP" "<ULINE" "</ULINE" "</STEXT" "</ONM" "</NAM" "</HI" "<" ">" {
 qui replace standard_name = subinstr(standard_name, "`char'",  "",.)
 }
 qui replace standard_name = itrim(standard_name)
-assert strpos(st,"<")==0
+assert strpos(standard_name,"<")==0
 
 *** deal with & ;
 replace standard_name = subinstr(standard_name, "&AMP;", " & ", .)
@@ -140,6 +138,7 @@ assert (strpos(standard_name,"{") ==0 & strpos(standard_name,"}") == 0)
 
 *** accents *** THIS PART OF PROGRAM ONLY WORKS ON MAC
 * asciiplot
+/*
 foreach var of varlist standard_name {
 foreach i of numlist 127/160 {
   assert strpos(`var', "`=uchar(`i')'")==0
@@ -253,6 +252,7 @@ foreach i of numlist 255 {
   qui replace `var'=subinstr(`var', "`=uchar(`i')'", "Y", .)
 }
 }
+*/
 
 foreach i in  "Ā" "ā" "Å"{
    qui replace standard_name=subinstr(standard_name, "`i'", "A", .)
@@ -310,7 +310,7 @@ qui replace standard_name = subinstr(standard_name, "`char'",  " ",.)
 }
 
 foreach char in "^" "~" "¶" "%" ","  "''""," {
-assert strpos(standard_name, "`char'")==0
+qui replace standard_name = subinstr(standard_name, "`char'",  "",.)
 }
 
 ** deal with () - remove content within
@@ -328,7 +328,7 @@ foreach char in "(SOUTH AFRICA)" "(PROPRIETARY)" "(S)" "(SA)" "(SM)" "(UK)" "(US
 				"(IMEC) VZW)" {
 qui replace standard_name = subinstr(standard_name, "`char'",  "",.)
 }
-
+/*
 egen temp=noccur(standard_name),s("(")
 assert temp==1 | temp==0
 egen temp1=noccur(standard_name),s(")")
@@ -341,6 +341,7 @@ replace standard_name = subinstr(standard_name, ")",  "",.) if temp==0 & temp1==
 
 assert (strpos(standard_name,"(") ==0 & strpos(standard_name,")") == 0)
 drop temp temp1
+*/
 
 /*** common words with & in it, e.g., AT&T
 keep standard
@@ -367,12 +368,13 @@ replace standard_name = subinstr(standard_name, " UND ", " & ", .) if substr(sta
 replace standard_name = subinstr(standard_name, "+", "&", .)
 replace standard_name = itrim(standard_name)
 
+/*
 ** CONFIRM ACCENTS CLEANED
 egen chars=sieve(standard_name), keep(other)
 replace chars=subinstr(chars,"&","",.)
 assert chars==""
 drop chars
-
+*/
 gen assignee_std=trim(standard_name)
 replace assignee_std=itrim(assignee_std)
 label var assignee_std "primary assignee, punctuations removed"
@@ -2466,15 +2468,4 @@ label var assignee_id "assignee ID based on cleaned assignee name"
 order assignee_std assignee_id assignee_derwen asgname_corp-asgname_hosp, after(assignee)
 compress
 
-save "[assignee name data]", replace
-
-/*************** ---------------- ****************
-		GENERATE SEARCH SAMPLE FOR BING
-*************** ---------------- ****************/
-
-keep assignee_id assignee_std
-duplicates drop
-compress
-drop if assignee_std==""
-export delimited "[input into python]", replace
 

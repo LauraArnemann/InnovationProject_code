@@ -40,7 +40,7 @@ if c(username) == "laura" {
 	global CODE ${path}/code
 
 
-	global PATENTDTA ${path}/raw/main_data/data_patent
+	global PATENTDTA ${path}/data/raw/main_data/data_patent
 	global REGDTA C:/Users/laura/Desktop/InnovationProject/data/temp/
 
 	global RESULTS C:/Users/laura/Desktop/InnovationProject/results
@@ -60,6 +60,7 @@ if c(username) == "tbuehrle" {
 	global OVERLEAF "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_3_Results\overleaf"
 } 
 
+/*
 
 else {
 	
@@ -80,7 +81,7 @@ else {
 
 	global RESULTS C:/Users/laura/Desktop/InnovationProject/results
 }
-
+*/
 /*
 capture noisily {
 do "${CODE}/cleaning/cleaning_giroud_rauh_zeros.do"
