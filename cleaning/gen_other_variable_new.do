@@ -10,7 +10,7 @@
 *set max_memory 80g, permanently
 * Generating the Helper data set 
 *Usually numlist 0 1 3 
-foreach num of numlist 0 1  3 {
+foreach num of numlist 3 {
 	
 if `num' == 0 {
 use "${TEMP}/patentcount_state.dta", clear 
@@ -31,8 +31,15 @@ drop if missing(assignee_id)
 bysort fips_state assignee_id: egen min_year_estab = min(app_year)
 bysort fips_state assignee_id: egen max_year_estab = max(app_year)
 
+* Only keep establishment were we observe at least 5 patents 
+bysort fips_state assignee_id: egen total_patents = total(patents3)
+keep if total_patents>=5  
+
+
 bysort assignee_id: egen min_year_assignee = min(app_year)
 bysort assignee_id: egen max_year_assignee = max(app_year)
+
+
 
 keep fips_state assignee_id min_year_estab max_year_estab min_year_assignee max_year_assignee  
 duplicates drop
@@ -69,15 +76,19 @@ save "${TEMP}/helper_dataset`num'.dta", replace
 
 
 
-
-
-
-
 ********************************************************************************
 * First Location in which we observe R&D activity 
 ********************************************************************************
 
 * Merging based on whether there was RD activity in the state when the establishment was first active 
+
+
+use "${TEMP}/helper_dataset`num'.dta", clear 
+rename app_year min_year_estab 
+tempfile helper1 
+save `helper1'
+
+
 if `num' == 0 {
 	use "${TEMP}/patentcount_state.dta", clear 
 }
@@ -92,12 +103,6 @@ if `num' == 3 {
   use "${TEMP}/patents3.dta", clear 
 }
 
-use "${TEMP}/helper_dataset`num'.dta", clear 
-rename app_year min_year_estab 
-tempfile helper1 
-save `helper1'
-
-use "${TEMP}/patentcount_state.dta", clear 
 drop if missing(assignee_id)
 
 
@@ -110,6 +115,11 @@ drop max_count count */
 
 bysort fips_state assignee_id: egen min_year_estab = min(app_year)
 bysort fips_state assignee_id: egen max_year_estab = max(app_year)
+
+
+bysort fips_state assignee_id: egen total_patents = total(patents3)
+keep if total_patents>=5  
+
 
 keep fips_state assignee_id min_year_estab max_year_estab 
 duplicates drop 
@@ -217,6 +227,9 @@ drop if missing(assignee_id)
 * Only keep multi state firms 
 bysort assignee_id app_year: gen count =_N 
 bysort assignee_id: egen max_count = max(count)
+
+bysort fips_state assignee_id: egen total_patents = total(patents3)
+keep if total_patents>=5  
 
 keep if max_count>1 
 drop max_count count 

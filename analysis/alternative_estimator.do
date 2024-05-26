@@ -29,18 +29,19 @@ egen estab = group(fips_state assignee_id)
 
 xtset estab year 
 
-* all 
-foreach helper in weighted threelargest {
+* all weighted threelargest
+foreach helper in all  {
 	
 gen change_other_credit = other_rd_credit_`helper'3 - l.other_rd_credit_`helper'3
-gen byte increase_credit = change_other_credit>0 & change_other_credit!=. 
-gen byte decrease_credit = change_other_credit<0 & change_other_credit!=. 
+gen byte increase_credit = change_other_credit>=1 & change_other_credit!=. 
+gen byte decrease_credit = change_other_credit<=-1 & change_other_credit!=. 
 
 
 bysort assignee_id fips_state: egen max_decrease = max(decrease_credit)
 bysort assignee_id fips_state: egen max_increase = max(increase_credit)
 
 replace other_gdp_`helper'3 = ln(other_gdp_`helper'3)
+
  *******************************************************************************
  * Chaisemartin Estimator 
  *******************************************************************************
@@ -75,8 +76,8 @@ graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c0_decr.png",
 drop change_other_credit
 }
 
-/*
-* For some reason the code does not yet work with control variables 
+
+* With control variables the Chaisemartin estimator does not accomodate a continuous treatment alongside continuous control variables. Hence, I will only use the binary treatment indicator with the control variables 
 foreach helper in all weighted threelargest {
 
     local controls1 rd_credit pit cit 
@@ -88,16 +89,13 @@ foreach helper in all weighted threelargest {
 		forvalues y =1/4 {
 foreach var of varlist patents1 patents3 patents3_w1 patents1_w1 n_inventors3 n_newinventors3 { 
  
-* Both Changes 
-did_multiplegt_dyn `var' estab year change_other_credit `sample`i'', effects(8) placebo(5)  controls(`controls`y'') cluster(estab)
-graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c`y'_both.png", replace 
 
 * Only Increases
-did_multiplegt_dyn `var' estab year change_other_credit `sample`i'' & max_decrease == 0, effects(8) placebo(5)  controls(`controls`y'') cluster(estab)
+did_multiplegt_dyn `var' estab year increase_credit `sample`i'' & max_decrease == 0, effects(8) placebo(5)  controls(`controls`y'') cluster(estab)
 graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c`y'_incr.png", replace 
 
 *Only Decreases
-did_multiplegt_dyn `var' estab year change_other_credit `sample`i'' & max_increase == 0, effects(8) placebo(5)  controls(`controls`y'') cluster(estab)
+did_multiplegt_dyn `var' estab year decrease_credit `sample`i'' & max_increase == 0, effects(8) placebo(5)  controls(`controls`y'') cluster(estab)
 graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c`y'_decr.png", replace
 
 }

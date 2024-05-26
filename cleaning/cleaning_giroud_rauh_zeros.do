@@ -70,7 +70,7 @@ drop withdrawn
 
 *-Drop if missings in important variables
 drop if app_year == .
-drop if county_fips_inventor == .
+drop if state_fips_inventor == .
 
 * First step: Number of patents the firm records in a county and a state
 
@@ -83,6 +83,17 @@ duplicates tag patnum inventor_id assignee_id, gen(dup)
 drop if dup!=0 
 drop dup
 
+* Merge in information on county_fips_information 
+rename county_fips_inventor county_fips_helper 
+
+merge 1:1 patnum assignee_id inventor_id using "${TEMP}/inventor_helper_v3.dta", keepusing(county_fips_inventor)
+drop if _merge==2 
+drop _merge 
+replace county_fips_helper = county_fips_inventor if missing(county_fips_helper)
+drop county_fips_inventor 
+rename county_fips_helper county_fips_inventor
+
+drop if missing(county_fips_inventor)
 duplicates report patnum inventor_id
 
 save "${TEMP}/patents_helper.dta", replace 
@@ -282,7 +293,7 @@ drop withdrawn
 
 * Drop if missings in important variables
 drop if app_year == .
-drop if county_fips_inventor == .
+drop if state_fips_inventor == .
 
 * Drop duplicates (we only want to count inventors once per recorded patent)
 duplicates drop patnum inventor_id county_fips_inventor assignee_id, force
@@ -292,6 +303,19 @@ duplicates report patnum inventor_id assignee_id // differences in geocoding (mi
 duplicates tag patnum inventor_id assignee_id, gen(dup) 
 drop if dup!=0
 drop dup
+
+* Merge in information on county_fips_information 
+rename county_fips_inventor county_fips_helper 
+
+merge 1:1 patnum assignee_id inventor_id using "${TEMP}/inventor_helper_v3.dta", keepusing(county_fips_inventor)
+drop if _merge==2 
+drop _merge 
+replace county_fips_helper = county_fips_inventor if missing(county_fips_helper)
+drop county_fips_inventor 
+rename county_fips_helper county_fips_inventor
+
+drop if missing(county_fips_inventor)
+
 * Patent count by inventor - assignee - state - year
 collapse (count) n_patents=patnum, by(inventor_id assignee_id state_fips_inventor app_year)
 
@@ -299,6 +323,7 @@ collapse (count) n_patents=patnum, by(inventor_id assignee_id state_fips_invento
 bysort inventor_id app_year: gen count=_N
 drop if count>=3 	// 148,111 observations deleted
 drop count 
+
 
 save "${TEMP}/inventor_helper.dta", replace 
 
@@ -442,7 +467,7 @@ do "${CODE}/cleaning_state.do"
 ********************************************************************************
 
 * This dofile generates the variables based on all years the establishment is present
-do "${CODE}/gen_other_variable.do"
+do "${CODE}/gen_other_variable_new.do"
     
 ********************************************************************************
 * Merging things together

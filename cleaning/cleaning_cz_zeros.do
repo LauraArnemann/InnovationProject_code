@@ -23,7 +23,7 @@ rename CZ_depagri_1990 czone
 
     bysort patnum  czone  app_year: gen cz_count=_N 
     bysort patnum app_year: gen count=_N
-    keep if count==state_count 
+    keep if count==cz_count 
 	duplicates tag patnum, gen(dup)
 	drop if dup!=0
 	

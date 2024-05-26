@@ -60,7 +60,7 @@ if c(username) == "tbuehrle" {
 	global OVERLEAF "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_3_Results\overleaf"
 } 
 
-/*
+
 
 else {
 	
@@ -81,7 +81,7 @@ else {
 
 	global RESULTS ${path}/results
 }
-*/
+
 /*
 capture noisily {
 do "${CODE}/cleaning/cleaning_giroud_rauh_zeros.do"

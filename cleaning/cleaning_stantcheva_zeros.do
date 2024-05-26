@@ -75,7 +75,7 @@ save "${TEMP}/inventor_applications.dta", replace
 one state with this method. 
 */
 
-do "${code}/filing_counties.do"
+*do "${code}/filing_counties.do"
 
 use "${TEMP}/inventor_helper_v3.dta", clear 
 
@@ -146,7 +146,8 @@ tempfile patents1
 save `patents1'
 
 * Include zeros in states inbetween activity 
-bysort fips_state assignee_id: egen max_year = max(app_year)
+     rename state_fips_inventor fips_state
+     bysort fips_state assignee_id: egen max_year = max(app_year)
      bysort fips_state assignee_id: egen min_year = min(app_year)
 	 
 	 duplicates drop fips_state assignee_id, force 
@@ -159,9 +160,10 @@ bysort fips_state assignee_id: egen max_year = max(app_year)
 	 keep if inrange(app_year, min_year, max_year)
 	 drop count_obs 
 	 
-	 merge 1:1 fips_state assignee_id app_year using `patents1', keepusing(patents1)
+	 merge 1:1 fips_state assignee_id app_year using `patents1', keepusing(pat_count_weighted)
 	 replace pat_count_weighted = 0 if _merge ==1 
 	 drop _merge 
+	 rename pat_count_weighted patents1
 	 
 save "${TEMP}/patents_stantcheva.dta", replace 
 
@@ -190,6 +192,7 @@ use `helper'
 
 merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper.dta"
  drop if _merge==1 // Observations from year 2021
+ 
  bysort state_fips_inventor assignee_id inventor_id: egen max_merge=max(_merge)
  keep if max_merge==3
 
@@ -210,17 +213,14 @@ replace pat_count = 0 if missing(pat_count)
 
 collapse (count) n_inventors1 = inventor_id n_newinventors1=new_inventor (total) pat_count_weighted pat_count, by(assignee_id state_fips_inventor app_year)
 
-label var n_inventors1 "Number of Inventors, 1"
-label var n_newinventors1 "Number of New Inventors, 1"
+rename state_fips_inventor fips_state
+
+label var n_inventors1 "Number of Inventors, Stantcheva"
+label var n_newinventors1 "Number of New Inventors, Stantcheva"
+
 save "${TEMP}/inventors_stantcheva.dta", replace
 
-
 erase "${TEMP}/helper.dta"
-erase "${TEMP}/inventor_1.dta"
-erase "${TEMP}/inventor_2.dta"
-erase "${TEMP}/inventor_3.dta"
-erase "${TEMP}/inventor_3b.dta"
-erase "${TEMP}/inventor_helper.dta"
 
 
 ********************************************************************************
@@ -236,7 +236,7 @@ do "${CODE}/cleaning_state.do"
 ********************************************************************************
 
 * This dofile generates the variables based on all years the establishment is present
-do "${CODE}/gen_other_variable.do"
+do "${CODE}/gen_other_variable_stantcheva.do"
     
 ********************************************************************************
 * Merging things together
@@ -255,10 +255,9 @@ drop _merge
 
 rename app_year year 
 
-foreach num of numlist 3 {
 * Merging in the variables at other locations
 
-merge 1:1 fips_state year assignee_id using "${TEMP}/other_all_`num'.dta", keepusing(other*)
+merge 1:1 fips_state year assignee_id using "${TEMP}/other_all_stantcheva.dta", keepusing(other*)
 drop if _merge==2
 drop _merge  
 
@@ -268,7 +267,7 @@ foreach var of varlist rd_credit cit gdp unemployment pit {
 }
 
 
-merge 1:1 fips_state year assignee_id using "${TEMP}/other_threelargest_`num'.dta", keepusing(other*)
+merge 1:1 fips_state year assignee_id using "${TEMP}/other_threelargest_stantcheva.dta", keepusing(other*)
 drop if _merge==2 
 drop _merge 
 
@@ -276,7 +275,7 @@ foreach var of varlist rd_credit cit gdp unemployment pit {
 	rename other_`var'_threelargest other_`var'_threelargest`num' 
 }
  
-merge 1:1 fips_state year assignee_id using "${TEMP}/other_first`num'.dta", keepusing(other*)
+merge 1:1 fips_state year assignee_id using "${TEMP}/other_first_stantcheva.dta", keepusing(other*)
 drop if _merge==2 
 drop _merge 
 
@@ -284,7 +283,7 @@ foreach var of varlist rd_credit cit gdp unemployment pit {
 	rename other_`var'_first other_`var'_first`num'
 }
 
-}
+
 
 
 /* For the inventors there are a lot of non-matches. This is plausible since there might be new inventors? 
