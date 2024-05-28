@@ -7,6 +7,8 @@
 // Goal: 			Running Stacked Regression
 ////////////////////////////////////////////////////////////////////////////////
 
+local indepvar rd_credit rd_credit_first rd_credit_10pat rd_credit_rank
+
 
 use "${TEMP}/final_state_stacked_rd_credit_incr.dta", clear 
 merge m:1 estab  year using "${TEMP}/final_state_stacked_zeros.dta", nogen keep(3)
@@ -72,8 +74,9 @@ ppmlhdfe `var' 1.max_treated#1.post_tr pit cit ln_gdp unemployment if inrange(ye
 * Changes at other R&D locations 
 ********************************************************************************		 
 
+foreach indepvar in `indepvar' {
 
-use "${TEMP}/final_state_stacked_other_total_rd_credit_incr.dta", replace 
+use "${TEMP}/final_state_stacked_other_total_`indepvar'_incr.dta", replace 
 merge m:1 estab year using "${TEMP}/final_state_stacked_other_zeros.dta", nogen keep(3)
 
 *Generate the event indicators
@@ -99,23 +102,23 @@ merge m:1 estab year using "${TEMP}/final_state_stacked_other_zeros.dta", nogen 
 foreach var of varlist patents3 n_inventors3 n_newinventors3 {
 		
 		
-ppmlhdfe `var' f4_binary f3_binary f2_binary zero_1 l?_binary rd_credit pit cit ln_gdp unemployment pit_other cit_other ln_gdp_other unemployment_other if inrange(year, 1988, 2018), absorb(estab#event year#event) cl(fips_state#event)
+ppmlhdfe `var' f4_binary f3_binary f2_binary zero_1 l?_binary `indepvar' pit cit ln_gdp unemployment pit_other cit_other ln_gdp_other unemployment_other if inrange(year, 1988, 2018), absorb(estab#event year#event) cl(fips_state#event)
 est sto `var'reg1
 
 coefplot `var'reg1, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 			xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 			yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 		 xtitle("Years since Change") graphregion(color(white))
-capture noisily graph export "${OVERLEAF}/graphs/eventstudies/stacked_rd_credit_incr_other_sample7_`var'.png", replace  
+capture noisily graph export "${OVERLEAF}/graphs/eventstudies/stacked_`indepvar'_incr_other_sample7_`var'.png", replace  
 
-ppmlhdfe `var' 1.max_treated#1.post_tr rd_credit pit cit ln_gdp unemployment pit_other cit_other ln_gdp_other unemployment_other if inrange(year, 1988, 2018), absorb(estab#event year#event) cl(fips_state#event)
-	outreg2 using "$OVERLEAF/tables/stacked_rd_credit_incr_other_`var'", ///
+ppmlhdfe `var' 1.max_treated#1.post_tr `indepvar' pit cit ln_gdp unemployment pit_other cit_other ln_gdp_other unemployment_other if inrange(year, 1988, 2018), absorb(estab#event year#event) cl(fips_state#event)
+	outreg2 using "$OVERLEAF/tables/stacked_`indepvar'_incr_other_`var'", ///
 	replace dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 	ctitle("`var'") lab		
 }		 
 		 
 		 
-		 
+}		 
 		 
 		 
 		 /*

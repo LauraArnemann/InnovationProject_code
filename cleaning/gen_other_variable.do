@@ -78,6 +78,7 @@ save "${TEMP}/helper_dataset`num'.dta", replace
 ********************************************************************************
 
 * Merging based on whether there was RD activity in the state when the establishment was first active 
+**# Bookmark #2
 if `num' == 0 {
 	use "${TEMP}/patentcount_state.dta", clear 
 }
@@ -96,6 +97,7 @@ use "${TEMP}/helper_dataset`num'.dta", clear
 rename app_year min_year_estab 
 tempfile helper1 
 save `helper1'
+**# Bookmark #1
 
 use "${TEMP}/patentcount_state.dta", clear 
 drop if missing(assignee_id)
@@ -128,6 +130,9 @@ split states_present, parse(,) generate(other_fips_state)
 drop other_fips_state1 
 * This observation is always empty  
 egen id = group(fips_state assignee_id app_year)
+**# Bookmark #3
+
+*TBL: What about locations where firm has been present before, but might not be patenting right now?
 
 reshape long other_fips_state, i(id) j(count)
 drop if missing(other_fips_state)
@@ -172,7 +177,7 @@ outcome variables were constructed. (E.g. difference in patents1 and patents3)
 might address this in a robustness check   */
 ********************************************************************************
 
-local num =3 
+local num =0 
 
 if `num' == 0 {
 	use "${TEMP}/patentcount_state.dta", clear 
@@ -247,6 +252,10 @@ drop count
 gen states_total = states_present if app_year == min_year_estab 
 
 bysort assignee_id fips_state (app_year): replace states_total = states_total[_n-1] + new_states if app_year!=min_year_estab
+**# Bookmark #1
+*Check e.g. 159509: What if state shows up and then never again?
+* sort assignee_id app_year
+
 split states_total, parse(,) generate(other_fips_state)
 drop other_fips_state1 
 
@@ -361,7 +370,7 @@ save "${TEMP}/other_all_`num'.dta", replace
 * RD Credit at other locations based on presence during the time period in which we  
 * observe patenting activity at this establishment, only three largest estabs
 ********************************************************************************
-local num = 3 
+local num = 0 
 
 use "${TEMP}/helper_other_cleaned`num'.dta", clear 
 duplicates drop fips_state assignee_id year other_fips_state, force

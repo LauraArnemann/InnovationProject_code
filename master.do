@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	20/11/2023
-// Last Update:    	10/04/2024
+// Last Update:    	15/04/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Master
 ////////////////////////////////////////////////////////////////////////////////
-
+   
 clear
 *set maxvar 120000
 set more off
@@ -40,7 +40,7 @@ if c(username) == "laura" {
 	global CODE ${path}/code
 
 
-	global PATENTDTA ${path}/data/raw/main_data/data_patent
+	global PATENTDTA ${path}/raw/main_data/data_patent
 	global REGDTA C:/Users/laura/Desktop/InnovationProject/data/temp/
 
 	global RESULTS C:/Users/laura/Desktop/InnovationProject/results
@@ -48,18 +48,20 @@ if c(username) == "laura" {
 
 if c(username) == "tbuehrle" {
 	
-	global IN "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data\raw"
-	global TEMP "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data\temp"
-	global OUT  "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data\final"
-	global LINKING  "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data\linking_tables"
-	global PATENTDTA "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Data\Patent Data US_Woeppel\Temp"
+	global path "/projekte/tbuehrle/homes/2_Empirical"
 	
-	global code "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_2_Code"
+	global IN "${path}/2_1_Data/raw"
+	global TEMP "${path}/2_1_Data/temp"
+	global OUT  "${path}/2_1_Data/final"
+	global LINKING  "${path}/2_1_Data/linking_tables"
+	global PATENTDTA "/projekte/tbuehrle/homes/Patent Data US_Woeppel/Temp"
 	
-	global RESULTS "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_3_Results"
-	global OVERLEAF "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_3_Results\overleaf"
+	global CODE "${path}/2_2_Code/cleaning"
+	
+	global RESULTS "${path}/2_3_Results"
+	global OVERLEAF "${path}/2_3_Results/overleaf"
+	
 } 
-
 
 
 else {
@@ -171,6 +173,8 @@ do "${code}/checking_RD_expenditure.do"
 *-------------------------------------------------------------------------------
 
 Stacked reg: running_stacked_regression.do
+
+
 
 
 
