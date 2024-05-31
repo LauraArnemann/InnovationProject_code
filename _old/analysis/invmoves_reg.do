@@ -2,137 +2,107 @@
 /// GOAL: Regression - Mobility at county/commuting zone level
 /// AUTHOR: Theresa Bührle, tbuehrle@diw.de
 /// CREATION: 11-01-2024
-/// LAST UPDATE: 11-01-2024
+/// LAST UPDATE: 07-02-2024
 /// DATA: Woeppel patent data
 
 ///PRE-REQUISITE:  invmoves_data_Woeppel.do
 
-set maxvar 120000
-
-*Set environment
-global REGDTA "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_1_Data"
-global RESULTS "C:\Users\tbuehrle\OneDrive - DIW Berlin\3_Forschung\Topics\Spillover migration\2_Empirical\2_3_Results"
-
 *Set variables
-global controls GDP corprate rev_totaltaxes rev_corptax revsh_indinctax revsh_corptax payroll_wgt prop_wgt ///
-	Losscarryback Losscarryforward FranchiseTax fed_deduction fed_taxbase AllowFedAccDep ACRSDepreciation ///
-	fed_bonusdepr throwback combined BEAemp avg_wages ITC_rate rd_credit GOS_s propertytax jobcreationcred ///
-	propabatement incr_ma incr_fixed t_pinc_rate t_sales 
+global controls_inv GDP_inv_log corprate_inv t_pinc_rate_inv RA_inv			
+global controls_other GDP_net_wghd_CZ_log corprate_net_wghd_CZ t_pinc_rate_net_wghd_CZ RA_net_wghd_CZ
+global controls_add n_inv_total_state_L1_w1_log	
 
-*A. ****************************************************************************
-*Descriptives ******************************************************************
-
-use "$REGDTA\final\reg_data_patent_invmoves.dta", clear	
-keep if year > 1992 & year < 2020
-
-collapse (mean) migration_CZ_UScensus firm_move_CZ_UScensus, by(year)
-
-twoway line migration_CZ_UScensus year, yaxis(1)  ///
-	|| line firm_move_CZ_UScensus year, yaxis(2)  ///
-	|| , graphregion(color(white)) ytitle("Share") ytitle("Share", axis(2)) ///
-	xscale(range(1992 2020)) xlabel(1992 1996 2000 2004 2008 2012 2016 2020) ///
-	legend(position(6) label(1 "Inventor moves (left yaxis)") label(2 "Within-firm movers (right yaxis)")) 
+global FE_var CZ_inv app_year
+global clustervar state_inv
+ 
+//Let's take the US cenzus CZ for now; there we have the most inventor moves	
 	
-	graph export "$RESULTS\share_invmoves_year.png", replace
+*dep var: patents, inventors
+*indep var: R&D 	
 
-use "$REGDTA\final\reg_data_patent_invmoves.dta", clear	
-keep if year > 1992 & year < 2020
+*1. Prepare data ***************************************************************	
 
-collapse (count) migration_CZ_UScensus firm_move_CZ_UScensus, by(state_inv)
+/*
+// FIRM LEVEL
+use "$OUT\woeppel_regsample_firm.dta", clear	
+// Unique id: app_year firm_id2 CZ_inv
 
-twoway bar migration_CZ_UScensus state_inv, yaxis(1) color(blue%30)  ///
-	|| bar firm_move_CZ_UScensus state_inv, yaxis(2) color(red%30)    ///
-	|| , graphregion(color(white)) ytitle("Count") ytitle("Count", axis(2)) ///
-	legend(position(6) label(1 "Inventor moves (left yaxis)") label(2 "Within-firm movers (right yaxis)")) 
-	
-	graph export "$RESULTS\count_invmoves_state.png", replace
-	
-*B. ****************************************************************************
-* Aggregation at CZ level ******************************************************
-
-//Let's take the US cenzus CZ for now; there we have the most inventor moves
-
-use "$REGDTA\final\reg_data_patent_invmoves.dta", clear	
-
-drop if origin_CZ_UScensus == .	// drops 3,148,427	obs; inventors that are not observed in two consecutive years
-egen CZpairs = group(CZ_UScensus origin_CZ_UScensus) 	
-	
-collapse (first) CZ_UScensus origin_CZ_UScensus ///
-		 (sum) n_patents migration_CZ_UScensus firm_move_CZ_UScensus ///
-		 (mean) citation_count $controls diff*, ///
-		 by(CZpairs year)
-	
-save "$REGDTA\final\reg_data_patent_invmoves_county.dta", replace	
-	
-*C. ****************************************************************************
-*Regression ********************************************************************
-
-*1st stage ---------------------------------------------------------------------
-// Exposure of location to inventor moves
-
-use "$REGDTA\final\reg_data_patent_invmoves_county.dta", clear	
-keep if year > 1992 & year < 2020
-
-reghdfe n_patents diff*, absorb(year CZ_UScensus) vce(cluster CZpairs)
-	outreg2 using "$RESULTS\Results_Stage1", ///
-	replace excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
-	ctitle("n_patents, CZ FE") lab
-reghdfe n_patents diff* $controls, absorb(year CZ_UScensus) vce(cluster CZpairs)
-	outreg2 using "$RESULTS\Results_Stage1", ///
-	append excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
-	ctitle("n_patents, CZ FE") lab
-	
-reghdfe n_patents diff*, absorb(year CZpairs) vce(cluster CZpairs)
-	outreg2 using "$RESULTS\Results_Stage1", ///
-	append excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
-	ctitle("n_patents, pair FE") lab
-reghdfe n_patents diff* $controls, absorb(year CZpairs) vce(cluster CZpairs)
-	outreg2 using "$RESULTS\Results_Stage1", ///
-	append excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
-	ctitle("n_patents, pair FE") lab	
-	
-foreach depvar in "migration_CZ_UScensus" "firm_move_CZ_UScensus" {
-
-reghdfe `depvar' diff*, absorb(year CZ_UScensus) vce(cluster CZpairs)
-	outreg2 using "$RESULTS\Results_Stage1", ///
-	append excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
-	ctitle("`depvar', CZ FE") lab
-reghdfe `depvar' diff* $controls, absorb(year CZ_UScensus) vce(cluster CZpairs)	
-	outreg2 using "$RESULTS\Results_Stage1", ///
-	append excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
-	ctitle("`depvar', CZ FE") lab
-reghdfe `depvar' diff*, absorb(year CZpairs) vce(cluster CZpairs)
-	outreg2 using "$RESULTS\Results_Stage1", ///
-	append excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
-	ctitle("`depvar', pair FE") lab
-reghdfe `depvar' diff* $controls, absorb(year CZpairs) vce(cluster CZpairs)
-	outreg2 using "$RESULTS\Results_Stage1", ///
-	append excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
-	ctitle("`depvar', pair FE") lab
-	
-reghdfe `depvar' corprate t_pinc_rate ITC_rate rd_credit, absorb(year CZ_UScensus) vce(cluster CZpairs)
-	outreg2 using "$RESULTS\Results_Stage1", ///
-	append excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
-	ctitle("`depvar', CZ FE") lab
-reghdfe `depvar' corprate t_pinc_rate ITC_rate rd_credit $controls, absorb(year CZ_UScensus) vce(cluster CZpairs)	
-	outreg2 using "$RESULTS\Results_Stage1", ///
-	append excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
-	ctitle("`depvar', CZ FE") lab
-reghdfe `depvar' corprate t_pinc_rate ITC_rate rd_credit, absorb(year CZpairs) vce(cluster CZpairs)
-	outreg2 using "$RESULTS\Results_Stage1", ///
-	append excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
-	ctitle("`depvar', pair FE") lab
-reghdfe `depvar' corprate t_pinc_rate ITC_rate rd_credit $controls, absorb(year CZpairs) vce(cluster CZpairs)
-	outreg2 using "$RESULTS\Results_Stage1", ///
-	append excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
-	ctitle("`depvar', pair FE") lab	///
-	sortvar( *corprate *t_pinc_rate *ITC_rate *rd_credit) 
+*Winsorizing
+foreach var in "n_patent_firm" "n_inv_firm"	///
+		"n_patents_inv_CZ" "n_inv_total_CZ" ///
+		"n_inv_new_CZ" "n_inv_newsuper_CZ" ///
+		"n_inv_total_state_inv_L1" {
+	winsor2 `var', suffix(_w1) cuts(1 99) by(app_year)
 }
 
-*2nd stage ---------------------------------------------------------------------
-// Effect of inventor moves on innovation
+rename n_inv_total_state_inv_L1_w1 n_inv_total_state_L1_w1
+
+*Logarithm
+foreach var in "n_patent_firm_w1" "n_inv_firm_w1" ///
+		"n_patents_inv_CZ_w1" "n_inv_total_CZ_w1" ///
+		"n_inv_new_CZ_w1" "n_inv_newsuper_CZ_w1" ///
+		"GDP_inv" "GDP_net_other" "GDP_net_oth_wghd" ///
+		"n_inv_total_state_L1_w1" {
+	gen `var'_log = log(`var')
+}
+*/
+
+// CZ LEVEL
+use "$OUT\woeppel_regsample_CZ.dta", clear	
+
+*Winsorizing
+foreach var in "n_patents_inv_CZ" "n_inv_total_CZ" ///
+		"n_inv_new_CZ" "n_inv_newsuper_CZ" ///
+		"n_inv_total_state_inv_L1" {
+	winsor2 `var', suffix(_w1) cuts(1 99) by(app_year)
+}
+
+rename n_inv_total_state_inv_L1_w1 n_inv_total_state_L1_w1
+
+*Logarithm
+foreach var in "n_patents_inv_CZ_w1" "n_inv_total_CZ_w1" ///
+		"n_inv_new_CZ_w1" "n_inv_newsuper_CZ_w1" ///
+		"GDP_inv" "GDP_net_wghd_CZ" ///
+		"n_inv_total_state_L1_w1" {
+	gen `var'_log = log(`var')
+}
 
 
+*2. Regression *****************************************************************
+
+*CZ level ------------------------------------------------------------------
+
+
+reghdfe n_patents_inv_CZ_w1_log n_inv_total_CZ_w1_log rd_credit_inv rd_credit_net_wghd_CZ, absorb($FE_var) vce(cluster $clustervar)
+	outreg2 using "$RESULTS\Results_patents_firm_CZ", ///
+	replace excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
+	ctitle("n_patents, reghfe") lab	
+	
+foreach depvar in "n_patents_inv_CZ_w1_log" "n_inv_total_CZ_w1_log" ///
+		"n_inv_new_CZ_w1_log" "n_inv_newsuper_CZ_w1_log" {
+			
+	foreach control_var in "" ///
+		"$controls_inv" "$controls_inv $controls_other" "$controls_inv $controls_other $controls_add" {		
+
+	reghdfe `depvar' rd_credit_inv rd_credit_net_wghd_CZ `control_var', absorb($FE_var) vce(cluster $clustervar)
+		outreg2 using "$RESULTS\Results_patents_firm_CZ", ///
+		append excel dec(4) stats(coef se) adjr2 noni nodepvar tex(frag) ///
+		ctitle("`depvar', reghfe") lab	
+	}
+}
+		
+foreach depvar in "n_patents_inv_CZ_w1" "n_inv_total_CZ_w1" ///
+		"n_inv_new_CZ_w1" "n_inv_newsuper_CZ_w1" {
+			
+	foreach control_var in "" ///
+		"$controls_inv" "$controls_inv $controls_other" "$controls_inv $controls_other $controls_add" {		
+		
+	ppmlhdfe `depvar' rd_credit_inv rd_credit_net_wghd_CZ `control_var', absorb($FE_var) vce(cluster $clustervar)
+		outreg2 using "$RESULTS\Results_patents_firm_CZ", ///
+		append excel dec(4) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
+		ctitle("`depvar', ppmlhdfe") lab
+	}
+}
 
 
 

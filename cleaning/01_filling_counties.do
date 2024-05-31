@@ -7,7 +7,10 @@
 // Goal: 			Merging county information for the inventors for which no county was recorded
 ////////////////////////////////////////////////////////////////////////////////
 
-* This data set is only for the largest counties, so several counties and cities are not merged 
+********************************************************************************
+* Preparing File which Maps Cities to Counties 
+********************************************************************************
+
 import excel "${IN}/var_CommutingZones/uscities.xlsx", sheet("Sheet1") firstrow clear
 keep city state_id county_fips 
 rename state_id state_inventor
@@ -19,15 +22,19 @@ keep county_fips* city_inventor state_inventor
 save "${TEMP}/counties.dta", replace 
 
 
+
+********************************************************************************
+* Correct for spelling mistakes 
+********************************************************************************
+
 use patnum citation_count withdrawn date_filing date_grant app_year ///
 	inventor_id first_name last_name male location_id state_fips_inventor county_fips_inventor ///
 	assignee_id state_fips_assignee county_fips_assignee city_inventor state_inventor latitude_inventor longitude_inventor ///
 	using "${PATENTDTA}/inventor_applications.dta", clear
-		
+	
 	drop if withdrawn==1 
 	drop withdrawn
-
-		
+	
 *-Drop duplicates (we only want to count inventors once per recorded patent)
 duplicates drop patnum inventor_id county_fips_inventor assignee_id, force
 
@@ -84,21 +91,25 @@ duplicates tag patnum inventor_id assignee_id, gen(dup)
 drop if dup!=0 
 drop dup
 
-*-Drop if missings in important variables
 drop if app_year == .
 drop if missing(state_inventor)
+
 gen tag = 0 
 replace  tag = 1 if missing(county_fips_inventor)
 merge 1:1 app_year inventor_id patnum using `helper', keepusing(county_fips_helper)
 replace county_fips_inventor = county_fips_helper if _merge==3 & missing(county_fips_inventor)
 drop if _merge ==2 
 drop _merge 
-*(39,013 real changes made)
-bysort city_inventor state_fips_inventor (tag): replace county_fips_inventor = county_fips_inventor[_n-1] if missing(county_fips_inventor)
-bysort city_inventor state_fips_inventor (tag): replace county_fips_inventor = county_fips_inventor[_n-1] if missing(county_fips_inventor)
 
+bysort city_inventor state_fips_inventor (tag): replace county_fips_inventor = county_fips_inventor[_n-1] if missing(county_fips_inventor)
+bysort city_inventor state_fips_inventor (tag): replace county_fips_inventor = county_fips_inventor[_n-1] if missing(county_fips_inventor)
 
 replace tag = 0 if county_fips_inventor!=. 
+
+********************************************************************************
+* Merge in information for missing 
+********************************************************************************
+
 merge m:1 city_inventor state_inventor using  "${TEMP}/counties.dta"
 replace county_fips_inventor = county_fips1 if tag ==1 & _merge ==3 
 drop if _merge ==2
@@ -110,11 +121,16 @@ gen tag = 1 if missing(county_fips_inventor)
 preserve 
 save "${TEMP}/inventor_helper_v2.dta", replace 
 restore 
-* 24.727 observations, which have no county and also no geo codes  
+
+********************************************************************************
+* Counties which are missing but we know latitude of inventor 
+********************************************************************************
 keep if tag ==1 & latitude_inventor!=. 
 save "${TEMP}/county_match_prep.dta", replace 
 
-* Run the Python Code inbetween 
+
+*!Run Python Code inbetween to assign counties to inventors with missing counties but nonmissing geo-information, generates the file county_matched_cleaned 
+
 use "${TEMP}/county_matched_cleaned.dta", replace 
 destring STATEFP, replace 
 destring COUNTYFP, replace 
@@ -127,6 +143,10 @@ drop county_fips_helper
 rename county_fips_inventor county_fips_helper 
 save "${TEMP}/county_matched_cleaned_v1.dta", replace 
  
+*******************************************************************************
+* Merging the different data sets together 
+*******************************************************************************
+ 
  use "${TEMP}/inventor_helper_v2.dta", clear 
  drop county_fips_helper 
  merge  1:1 app_year inventor_id patnum using "${TEMP}/county_matched_cleaned_v1.dta", keepusing(county_fips_helper)
@@ -136,7 +156,6 @@ save "${TEMP}/county_matched_cleaned_v1.dta", replace
  *  27,960  for which there are no county fips codes, hopefully this should not interfere with our analysis anymore 
  drop county_fips_helper tag 
  drop if missing(county_fips_inventor)
- 
  save "${TEMP}/inventor_helper_v3.dta", replace 
  
  erase "${TEMP}/inventor_helper_v2.dta"

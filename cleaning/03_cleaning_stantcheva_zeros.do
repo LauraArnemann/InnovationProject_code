@@ -82,7 +82,7 @@ use "${TEMP}/inventor_helper_v3.dta", clear
 duplicates report patnum inventor_id
 drop if missing(assignee_id)
 
-bysort inventor_id: gen pat_count = _N 
+bysort inventor_id app_year: gen pat_count = _N 
 bysort patnum: gen inventor_count = _N 
 
 gen weight = 1/inventor_count
