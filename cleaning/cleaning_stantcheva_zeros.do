@@ -140,13 +140,13 @@ save `helper'
 
 * Collapsing patents on state and assignee level 
 
-collapse (total) pat_count_weighted, by(assignee_id state_fips_inventor app_year)
-
+collapse (sum) pat_count_weighted, by(assignee_id state_fips_inventor app_year)
+rename state_fips_inventor fips_state
 tempfile patents1 
 save `patents1'
 
 * Include zeros in states inbetween activity 
-     rename state_fips_inventor fips_state
+    
      bysort fips_state assignee_id: egen max_year = max(app_year)
      bysort fips_state assignee_id: egen min_year = min(app_year)
 	 
@@ -210,8 +210,9 @@ keep if inrange(app_year, min_year, max_year)
 replace pat_count_weighted = 0 if missing(pat_count_weighted)
 replace pat_count = 0 if missing(pat_count)
 
+gen n_inventors = 1 if inventor_id!=""
 
-collapse (count) n_inventors1 = inventor_id n_newinventors1=new_inventor (total) pat_count_weighted pat_count, by(assignee_id state_fips_inventor app_year)
+collapse (count) n_inventors1 = n_inventors n_newinventors1=new_inventor (sum) pat_count_weighted pat_count, by(assignee_id state_fips_inventor app_year)
 
 rename state_fips_inventor fips_state
 
@@ -228,7 +229,7 @@ erase "${TEMP}/helper.dta"
 ********************************************************************************
 
 * This dofile generates all the state-level variables 
-do "${CODE}/cleaning_state.do"
+*do "${CODE}/cleaning_state.do"
  
 ********************************************************************************
 * Running the dofiles to generate the variables indicating tax changes in other
@@ -236,7 +237,7 @@ do "${CODE}/cleaning_state.do"
 ********************************************************************************
 
 * This dofile generates the variables based on all years the establishment is present
-do "${CODE}/gen_other_variable_stantcheva.do"
+do "${CODE}/cleaning/gen_other_variable_stantcheva.do"
     
 ********************************************************************************
 * Merging things together

@@ -30,7 +30,7 @@ egen estab = group(fips_state assignee_id)
 xtset estab year 
 
 * all weighted threelargest
-foreach helper in all  {
+foreach helper in all weighted threelargest {
 	
 gen change_other_credit = other_rd_credit_`helper'3 - l.other_rd_credit_`helper'3
 gen byte increase_credit = change_other_credit>=1 & change_other_credit!=. 
@@ -65,10 +65,10 @@ did_multiplegt_dyn `var' estab year change_other_credit `sample`i'' & max_decrea
 graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c0_incr.png", replace 
 
 *Only Decreases (Do not run through with sample2 )
-if `i' !=2 {
-did_multiplegt_dyn `var' estab year change_other_credit `sample`i'' & max_increase == 0, effects(8) placebo(5) cluster(estab)
-graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c0_decr.png", replace
-}
+*if `i' !=2 {
+*did_multiplegt_dyn `var' estab year change_other_credit `sample`i'' & max_increase == 0, effects(8) placebo(5) cluster(estab)
+*graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c0_decr.png", replace
+*}
 
 }
 }
@@ -102,38 +102,4 @@ graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c`y'_decr.png
 		}
 	}
 }
-
-
-********************************************************************************
-* Sun & Abraham 
-********************************************************************************
-
-
-
-
-
-
-
-* Implementing all the necessary steps to run the eventstudyinteract estimator 
- gen change_year = year if increase_credit == 1 & change_other_credit >=1 
- bysort estab: egen first_change = min(change_year)
-
- gen ry = year - first_change
- 
- gen never_change = (change_year == .) & max_decrease == 0
- 
-   forvalues k = 5(-1)2 {
-           gen g_`k' = ry == -`k'
-        }
-        forvalues k = 0/5 {
-             gen g`k' = ry == `k'
-        }
-
-
- 
- eventstudyinteract patents3 g_* g0-g5 if year>=1992 & max_corp_assg==1, cohort(first_change) covariates(rd_credit ln_gdp cit pit) control_cohort(never_change) absorb(i.estab i.year) vce(cluster estab)
-
- 
-
-graph export "${RESULTS}/chaisemartin/patents_all3.png", replace 
 

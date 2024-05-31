@@ -459,7 +459,7 @@ erase "${TEMP}/inventor_helper.dta"
 ********************************************************************************
 
 * This dofile generates all the state-level variables 
-do "${CODE}/cleaning_state.do"
+do "${CODE}/cleaning/cleaning_state.do"
  
 ********************************************************************************
 * Running the dofiles to generate the variables indicating tax changes in other
@@ -467,7 +467,7 @@ do "${CODE}/cleaning_state.do"
 ********************************************************************************
 
 * This dofile generates the variables based on all years the establishment is present
-do "${CODE}/gen_other_variable_new.do"
+do "${CODE}/cleaning/gen_other_variable_new.do"
     
 ********************************************************************************
 * Merging things together
