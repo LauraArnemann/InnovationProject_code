@@ -58,11 +58,14 @@ foreach var of varlist patents1 patents3 patents3_w1 patents1_w1 n_inventors3 n_
  
 * Both Changes 
 did_multiplegt_dyn `var' estab year change_other_credit `sample`i'', effects(8) placebo(5) cluster(estab)
-graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c0_both.png", replace 
+graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c0_both_continuous.png", replace 
 
 * Only Increases
 did_multiplegt_dyn `var' estab year change_other_credit `sample`i'' & max_decrease == 0, effects(8) placebo(5) cluster(estab)
-graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c0_incr.png", replace 
+graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c0_incr_continuous.png", replace 
+
+did_multiplegt_dyn `var' estab year increase_credit `sample`i'' & max_decrease == 0, effects(8) placebo(5)  controls(`controls`y'') cluster(estab)
+graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c`y'_incr_binary.png", replace 
 
 *Only Decreases (Do not run through with sample2 )
 *if `i' !=2 {
@@ -77,6 +80,18 @@ drop change_other_credit
 }
 
 
+
+
+		local sample1 if year>=1988 
+		local sample2 if inrange(year, 1988, 2018)  & n_patents>5 
+		local sample3 if inrange(year, 1988, 2018)  & n_patents!=0 
+		local sample4 if inrange(year, 1988, 2005)
+		local sample5 if inrange(year, 1988, 2018) & max_corp_assg==1
+		
+
+did_multiplegt_dyn ln_n_inventors3 estab year increase_credit if year>=1988 &  max_decrease == 0, effects(5) placebo(3)  controls(rd_credit) cluster(estab)
+graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c`y'_incr.png", replace 
+
 * With control variables the Chaisemartin estimator does not accomodate a continuous treatment alongside continuous control variables. Hence, I will only use the binary treatment indicator with the control variables 
 foreach helper in all weighted threelargest {
 
@@ -87,16 +102,17 @@ foreach helper in all weighted threelargest {
 
 	forvalues i =1/5 {	
 		forvalues y =1/4 {
-foreach var of varlist patents1 patents3 patents3_w1 patents1_w1 n_inventors3 n_newinventors3 { 
- 
+foreach var of varlist  ln_n_inventors3 { 
+
+* patents1 patents3 patents3_w1 patents1_w1 n_inventors3 n_newinventors3
 
 * Only Increases
-did_multiplegt_dyn `var' estab year increase_credit `sample`i'' & max_decrease == 0, effects(8) placebo(5)  controls(`controls`y'') cluster(estab)
+did_multiplegt_dyn `var' estab year increase_credit `sample`i'' & max_decrease == 0, effects(8) placebo(5)  controls(rd_credit) cluster(estab)
 graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c`y'_incr.png", replace 
 
 *Only Decreases
-did_multiplegt_dyn `var' estab year decrease_credit `sample`i'' & max_increase == 0, effects(8) placebo(5)  controls(`controls`y'') cluster(estab)
-graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c`y'_decr.png", replace
+*did_multiplegt_dyn `var' estab year decrease_credit `sample`i'' & max_increase == 0, effects(8) placebo(5)  controls(`controls`y'') cluster(estab)
+*graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c`y'_decr.png", replace
 
 }
 		}

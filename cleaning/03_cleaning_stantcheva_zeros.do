@@ -85,6 +85,13 @@ drop if missing(assignee_id)
 bysort inventor_id app_year: gen pat_count = _N 
 bysort patnum: gen inventor_count = _N 
 
+
+* I think the data we are working with is a bit different from the data Stantcheva is working with, e.g. the address of the inventor is not constant across one patent. However if in that year the inventor has a solo patent I will assume this to be his correct address for the respective 
+bysort patnum app_year: gen count = _N 
+
+
+
+
 gen weight = 1/inventor_count
 
 bysort inventor_id app_year: egen pat_count_weighted = total(weight)
