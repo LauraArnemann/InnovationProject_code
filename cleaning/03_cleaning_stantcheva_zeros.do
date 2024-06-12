@@ -83,34 +83,29 @@ duplicates report patnum inventor_id
 drop if missing(assignee_id)
 
 bysort inventor_id app_year: gen pat_count = _N 
-bysort patnum: gen inventor_count = _N 
+bysort inventor_id app_year: gen helper =_n 
 
 
 * I think the data we are working with is a bit different from the data Stantcheva is working with, e.g. the address of the inventor is not constant across one patent. However if in that year the inventor has a solo patent I will assume this to be his correct address for the respective 
-bysort patnum app_year: gen count = _N 
 
+bysort patnum app_year: gen count = _N
+bysort inventor_id app_year: egen min_count = min(count)
+*392.430 inventors / 1.522.428, for around one third information from the first invention 
 
+drop if count!=1 & min_count==1
 
+* 3502, who have solo-authored patents, but cannot be assigned to a definite state 
 
-gen weight = 1/inventor_count
-
-bysort inventor_id app_year: egen pat_count_weighted = total(weight)
+*gen weight = 1/inventor_count
+*bysort inventor_id app_year: egen pat_count_weighted = total(weight)
 bysort inventor_id state_fips_inventor app_year: gen state_count = _N 
 bysort inventor_id assignee_id app_year: gen assignee_count =_N 
 
 bysort inventor_id app_year : egen max_assignee_count = max(assignee_count)
 bysort inventor_id app_year : egen max_state_count = max(state_count)
 
-
-gen filing_month = month(date_filing)
-bysort inventor_id app_year assignee_id: egen min_month_assignee = min(filing_month)
-bysort inventor_id app_year state_fips_inventor: egen min_month_state = min(filing_month)
-
-bysort inventor_id app_year: egen min_month1 = min(min_month_assignee)
-bysort inventor_id app_year: egen min_month2 = min(min_month_state)
-
 keep if assignee_count == max_assignee_count | max_state_count == state_count
-keep if min_month1 == min_month_assignee | min_month2==min_month_state
+
 
 collapse (first) pat_count pat_count_weighted min_month_state min_month_assignee, by(assignee_id state_fips_inventor inventor_id app_year)
 

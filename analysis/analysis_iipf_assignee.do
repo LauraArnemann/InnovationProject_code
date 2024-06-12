@@ -6,7 +6,7 @@
 
 
 *use "${TEMP}/final_state.dta", clear
-use "${TEMP}/final_state_zeros.dta", clear 
+use "${TEMP}/final_state_zeros_new.dta", clear 
 
 foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 {
 	gstats winsor `var', cut(1 99) gen(`var'_w1)
