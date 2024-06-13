@@ -1,102 +1,39 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	06/12/2023
-// Last Update:    	24/04/2024
-// Authors:         Laura Arnemann
-//					Theresa Bührle
-// Goal: 			Merging the data set using the number of inventors in a state employed by the respective firm as outcome variable 
+// Last Update:    	13/06/2024
+// Authors:         	Laura Arnemann
+//			Theresa Bührle
+// Goal: 		Merging the data set using the number of inventors in a state employed by the respective firm as outcome variable 
 ////////////////////////////////////////////////////////////////////////////////
 
 
-********************************************************************************
-*Reduce file size by assigning numerical IDs
-********************************************************************************
-/*
-use "$PATENTDTA\inventor_applications.dta", clear
-compress
-
-egen inventor_id_num = group(inventor_id)
-egen assignee_id_num = group(assignee_id)
-egen location_id_num = group(location_id)
-
-preserve
-	keep inventor_id_num inventor_id 
-	duplicates drop
-	rename inventor_id inventor_id_string 
-	rename inventor_id_num inventor_id
-	save "${TEMP}/id_match_inventor.dta", replace 
-restore
-
-preserve
-	keep assignee_id_num assignee_id
-	rename assignee_id assignee_id_string
-	rename assignee_id_num assignee_id
-	duplicates drop
-	save "${TEMP}/id_match_assignee.dta", replace 
-restore
-
-preserve
-	keep location_id_num location_id
-	rename location_id location_id_string
-	rename location_id_num location_id
-	duplicates drop
-	save "${TEMP}/id_match_location.dta", replace 
-restore
-
-drop assignee_id
-rename assignee_id_num assignee_id
-drop inventor_id
-rename inventor_id_num inventor_id
-drop location_id
-rename location_id_num location_id
-
-save "${TEMP}/inventor_applications.dta", replace
-*/
 
 ********************************************************************************
 *File: Patent count at state level
 ********************************************************************************
 
-use patnum citation_count withdrawn date_filing date_grant app_year ///
-	inventor_id first_name last_name male location_id state_fips_inventor county_fips_inventor ///
-	assignee_id state_fips_assignee county_fips_assignee  ///
-	using "${PATENTDTA}/inventor_applications.dta", clear
-
-/*
-Should we exclude foreign firms? Drop if country_assignee!="US"
-*/	
-drop if withdrawn==1 
-drop withdrawn
+use "$inventordata", clear 
 
 *-Drop if missings in important variables
-drop if app_year == .
-drop if state_fips_inventor == .
+drop if missing(app_year)
+drop if missing(assignee_id)
+drop if missing(state_fips_inventor)
+drop if missing(county_fips_inventor)
 
 * First step: Number of patents the firm records in a county and a state
 
 *-Drop duplicates (we only want to count inventors once per recorded patent)
 duplicates drop patnum inventor_id county_fips_inventor assignee_id, force
 
-* (132 observations deleted)
 duplicates report patnum inventor_id assignee_id // differences in geocoding (missings or two different locations recorded); 190 cases
 duplicates tag patnum inventor_id assignee_id, gen(dup)
 drop if dup!=0 
 drop dup
 
-* Merge in information on county_fips_information 
-rename county_fips_inventor county_fips_helper 
-
-merge 1:1 patnum assignee_id inventor_id using "${TEMP}/inventor_helper_v3.dta", keepusing(county_fips_inventor)
-drop if _merge==2 
-drop _merge 
-replace county_fips_helper = county_fips_inventor if missing(county_fips_helper)
-drop county_fips_inventor 
-rename county_fips_helper county_fips_inventor
-
-drop if missing(county_fips_inventor)
 duplicates report patnum inventor_id
 
-save "${TEMP}/patents_helper.dta", replace 
+save "${TEMP}/patents_helper_$dataset.dta", replace 
 
 * No more duplicates in terms of patent numbers and inventor identification number
 /* 
@@ -130,7 +67,7 @@ one state with this method.
 
 *1 Only keep patents which can be uniquely assigned to one state during a year
 
-    use "${TEMP}/patents_helper.dta", clear 
+    use "${TEMP}/patents_helper_$dataset.dta", clear 
 	bysort patnum state_fips_inventor app_year: gen state_count=_N 
 	bysort patnum app_year: gen count=_N
 	keep if count==state_count 
@@ -167,12 +104,11 @@ one state with this method.
 	 drop _merge 
 	 * Not merged 2021 
 	 
-	 save "${TEMP}/patents1.dta", replace 
- 
+	 save "${TEMP}/patents1_$dataset.dta", replace 
  
  
 *2 Weight patents by number of patents recorded in each state
-    use "${TEMP}/patents_helper.dta", clear 
+    use "${TEMP}/patents_helper_$dataset.dta", clear 
 	bysort patnum state_fips_inventor app_year: gen state_count=_N 
 	bysort patnum app_year: gen count=_N
 	gen weight=state_count/count 
@@ -210,10 +146,10 @@ one state with this method.
 	 replace patents2 = 0 if _merge ==1 
 	 drop _merge 
 	 * Not merged 2021 
-	 save "${TEMP}/patents2.dta", replace
+	 save "${TEMP}/patents2_$dataset.dta", replace
 
 *3 Keep observation with the highest number of patents in one year  
-    use "${TEMP}/patents_helper.dta", clear 
+    use "${TEMP}/patents_helper_$dataset.dta", clear 
 	bysort patnum state_fips_inventor app_year: gen state_count=_N 
 	bysort patnum app_year: egen max_state=max(state_count)
 	keep if max_state==state_count 
@@ -252,17 +188,22 @@ one state with this method.
 	 replace patents3 = 0 if _merge ==1 
 	 drop _merge 
 	 * Not merged 2021 
-	 save "${TEMP}/patents3.dta", replace
+	 save "${TEMP}/patents3_$dataset.dta", replace
 	
       
-merge 1:1 fips_state assignee_id app_year using "${TEMP}/patents1.dta", keepusing(patents1)
+merge 1:1 fips_state assignee_id app_year using "${TEMP}/patents1_$dataset.dta", keepusing(patents1)
 drop _merge 
 
-merge 1:1 fips_state assignee_id app_year using "${TEMP}/patents2.dta", keepusing(patents2)
+merge 1:1 fips_state assignee_id app_year using "${TEMP}/patents2_$dataset.dta", keepusing(patents2)
 drop _merge 
 
-save "${TEMP}/patentcount_state.dta", replace 
+save "${TEMP}/patentcount_state_$dataset.dta", replace 
 
+erase "${TEMP}/patents1_$dataset.dta"
+erase "${TEMP}/patents2_$dataset.dta"
+erase "${TEMP}/patents3_$dataset.dta"
+
+xxxx
 
 ********************************************************************************
 *File: Inventor count at state level
@@ -271,29 +212,25 @@ save "${TEMP}/patentcount_state.dta", replace
 * Helper data set for the inventors: balanced panel from 1970 - 2020 
 *-------------------------------------------------------------------------------
 
-use inventor_id state_fips_inventor assignee_id using "${PATENTDTA}/inventor_applications.dta", clear
+use "$inventordata", clear 
 duplicates drop state_fips_inventor assignee_id inventor_id, force
 drop if state_fips == . 
 
 expand 51 
 bysort state_fips_inventor assignee_id inventor_id: gen count_obs = _n
 gen app_year = 1969+count_obs
-save "${TEMP}/helper.dta", replace 
+save "${TEMP}/helper_$dataset.dta", replace 
 
 * Helper data set for the inventors: patent count per firm, location and year 
 *-------------------------------------------------------------------------------
 
-use patnum withdrawn app_year ///
-	inventor_id  state_fips_inventor county_fips_inventor ///
-	assignee_id state_fips_assignee county_fips_assignee  ///
-	using "${PATENTDTA}/inventor_applications.dta", clear
-	
-drop if withdrawn==1 
-drop withdrawn
+use "$inventordata", clear 
 
 * Drop if missings in important variables
-drop if app_year == .
-drop if state_fips_inventor == .
+drop if missing(app_year)
+drop if missing(assignee_id)
+drop if missing(state_fips_inventor)
+drop if missing(county_fips_inventor)
 
 * Drop duplicates (we only want to count inventors once per recorded patent)
 duplicates drop patnum inventor_id county_fips_inventor assignee_id, force
@@ -304,18 +241,6 @@ duplicates tag patnum inventor_id assignee_id, gen(dup)
 drop if dup!=0
 drop dup
 
-* Merge in information on county_fips_information 
-rename county_fips_inventor county_fips_helper 
-
-merge 1:1 patnum assignee_id inventor_id using "${TEMP}/inventor_helper_v3.dta", keepusing(county_fips_inventor)
-drop if _merge==2 
-drop _merge 
-replace county_fips_helper = county_fips_inventor if missing(county_fips_helper)
-drop county_fips_inventor 
-rename county_fips_helper county_fips_inventor
-
-drop if missing(county_fips_inventor)
-
 * Patent count by inventor - assignee - state - year
 collapse (count) n_patents=patnum, by(inventor_id assignee_id state_fips_inventor app_year)
 
@@ -324,15 +249,14 @@ bysort inventor_id app_year: gen count=_N
 drop if count>=3 	// 148,111 observations deleted
 drop count 
 
-
-save "${TEMP}/inventor_helper.dta", replace 
+save "${TEMP}/inventor_helper_$dataset.dta", replace 
 
 * Generate inventor count
 *-------------------------------------------------------------------------------
 
 * Generate similar options to above 
 *1 Only keep inventors which can be uniquely assigned to one state during a year
-    use "${TEMP}/inventor_helper.dta", clear 
+    use "${TEMP}/inventor_helper_$dataset.dta", clear 
 	bysort inventor_id app_year: gen count_pats=_N 
 	bysort inventor_id app_year state_fips_inventor: gen count_state=_N
 	keep if count_state==count_pats
@@ -342,7 +266,7 @@ save "${TEMP}/inventor_helper.dta", replace
 	drop if dup!=0
 	drop dup
 
-	merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper.dta"
+	merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper_$dataset.dta"
 	drop if _merge==1 // Observations from year 2021
 	bysort state_fips_inventor assignee_id inventor_id: egen max_merge=max(_merge)
 	
@@ -372,11 +296,11 @@ collapse (count) n_inventors1=count n_newinventors1=new_inventor, by(state_fips_
 
 label var n_inventors1 "Number of Inventors, 1"
 label var n_newinventors1 "Number of New Inventors, 1"
-save "${TEMP}/inventor_1.dta", replace
+save "${TEMP}/inventor_1_$dataset.dta", replace
 
 
 *2 Weight inventors by number of patents recorded in each state
-    use "${TEMP}/inventor_helper.dta", clear
+    use "${TEMP}/inventor_helper_$dataset.dta", clear
 	bysort inventor_id app_year: egen total_patents=total(n_patents)
 	gen share_patents= n_patents/total_patents 
 
@@ -385,11 +309,11 @@ save "${TEMP}/inventor_1.dta", replace
 	collapse (sum) n_inventors2=inventor, by(state_fips_inventor assignee_id app_year)
 
 	label var n_inventors2 "Number of Inventors, 2"
-	save "${TEMP}/inventor_2.dta", replace
+	save "${TEMP}/inventor_2_$dataset.dta", replace
 
 
 *3 Keep observation with the highest number of patents in one year  
-    use "${TEMP}/inventor_helper.dta", clear
+    use "${TEMP}/inventor_helper_$dataset.dta", clear
 	bysort inventor_id app_year: egen max_patents=max(n_patents)
 	keep if max_patents==n_patents 
 
@@ -403,7 +327,7 @@ save "${TEMP}/inventor_1.dta", replace
 	drop dup
 	bysort state_fips_inventor assignee_id app_year: gen count=_N
 
-	merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper.dta"
+	merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper_$dataset.dta"
 	drop if _merge==1	// Observations from year 2021
 	bysort state_fips_inventor assignee_id inventor_id: egen max_merge=max(_merge)
 	keep if max_merge==3 
@@ -431,28 +355,28 @@ bysort state_fips_inventor assignee_id app_year: gen count=_N
 	collapse (count) n_inventors3=count n_newinventors3 = new_inventor, by(state_fips_inventor assignee_id app_year)
 	label var n_inventors3 "Number of Inventors, 3"
 	label var n_newinventors3 "Number of New Inventors, 3"
-	save "${TEMP}/inventor_3.dta", replace
+	save "${TEMP}/inventor_3_$dataset.dta", replace
 
 
-merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_1.dta", keepusing(n_inventors1 n_newinventors1)
+merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_1_$dataset.dta", keepusing(n_inventors1 n_newinventors1)
 drop _merge 
 
-merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_2.dta", keepusing(n_inventors2)
+merge 1:1 state_fips_inventor assignee_id app_year using "${TEMP}/inventor_2_$dataset.dta", keepusing(n_inventors2)
 drop _merge 
 
 order n_inventors1 n_inventors2 n_inventors3 
 *n_inventors3b
 rename state_fips_inventor fips_state 
-save "${TEMP}/inventorcount_state.dta", replace 
+save "${TEMP}/inventorcount_state_$dataset.dta", replace 
 
-/*
-erase "${TEMP}/helper.dta"
-erase "${TEMP}/inventor_1.dta"
-erase "${TEMP}/inventor_2.dta"
-erase "${TEMP}/inventor_3.dta"
-erase "${TEMP}/inventor_3b.dta"
-erase "${TEMP}/inventor_helper.dta"
-*/
+erase "${TEMP}/helper_$dataset.dta"
+erase "${TEMP}/inventor_1_$dataset.dta"
+erase "${TEMP}/inventor_2_$dataset.dta"
+erase "${TEMP}/inventor_3_$dataset.dta"
+erase "${TEMP}/inventor_3b_$dataset.dta"
+erase "${TEMP}/inventor_helper_$dataset.dta"
+
+xxxxxx
 
 ********************************************************************************
 * Running the dofiles to generate the state data 
@@ -474,8 +398,8 @@ do "${CODE}/cleaning/gen_other_variable_new.do"
 ********************************************************************************
 * Only records active years 
 
-use "${TEMP}/patentcount_state.dta", clear 
-merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state.dta"
+use "${TEMP}/patentcount_state_$dataset.dta", clear 
+merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state_$dataset.dta"
 * There might be some times mismatches since we have different methods for allocating patents and inventors, in my opinion this is correct however maybe we also might want to check this later on
 drop _merge 
 
@@ -552,7 +476,7 @@ bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
 
 duplicates report assignee_id fips_state year // Sanity Check
 compress
-save "${TEMP}/final_state_zeros_new.dta", replace 
+save "${TEMP}/final_state_zeros_new_$dataset.dta", replace 
 
 
 ********************************************************************************
