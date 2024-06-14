@@ -76,3 +76,49 @@ drop if missing(latitude)
 save "${TEMP}/new_dataset1.dta", replace 
 
 
+
+import delimited "${IN}/main_data/data_new/g_location_disambiguated.tsv", clear
+save "${TEMP}/location.dta", replace 
+
+import delimited "${IN}/main_data/data_new/g_assignee_disambiguated.tsv", clear
+* Drop all patents with multiple assignees
+duplicates tag patent_id, gen(dup)
+drop if dup>0 
+*538,141 observations deleted)
+drop dup
+save "${TEMP}/assignee.dta", replace 
+
+import delimited "${IN}\main_data\data_new\g_application.tsv", clear 
+save "${TEMP}/application.dta", replace 
+
+
+import delimited "${IN}/main_data/data_new/g_inventor_disambiguated.tsv", clear
+merge m:1 patent_id using "${TEMP}/assignee.dta"
+keep if _merge==3 
+drop _merge 
+
+merge m:1 location_id using "${TEMP}/location.dta"
+keep if _merge ==3 
+drop _merge 
+keep if disambig_country =="US"
+
+merge m:1 patent_id using "${TEMP}/application.dta"
+gen year = substr(filing_date, 1,4)
+destring year, replace 
+keep if inrange(year,1975, 2018)
+
+save "${TEMP}/new_dataset2.dta", replace 
+
+
+/*
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                       163,215
+        from master                   160,265  (_merge==1)
+        from using                      2,950  (_merge==2)
+
+    Matched                        21,887,313  (_merge==3)
+    -----------------------------------------
+
+*/
+
