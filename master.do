@@ -1,10 +1,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	20/11/2023
-// Last Update:    	15/04/2024
-// Authors:         Laura Arnemann
-//					Theresa Bührle
-// Goal: 			Master
+// Last Update:    	31/05/2024
+// Authors:         	Laura Arnemann
+//			Theresa Bührle
+// Goal: 		Master
 ////////////////////////////////////////////////////////////////////////////////
    
 clear
@@ -21,6 +21,12 @@ ssc install shp2dta, replace
 ssc install mif2dta, replace
 ssc install outreg2, replace
 ssc install gtools, replace
+ssc install ppmlhdfe, replace
+ssc install coefplot, replace
+ssc install ftools, replace
+ssc install reghdfe, replace
+
+ssc install did_multiplegt_dyn, replace
 */
 
 * Set the global so the paths adjust quickly
@@ -48,13 +54,13 @@ if c(username) == "laura" {
 
 if c(username) == "tbuehrle" {
 	
-	global path "/projekte/tbuehrle/homes/2_Empirical"
+	global path "/projekte/tbuehrle/homes/Spillover/2_Empirical"
 	
 	global IN "${path}/2_1_Data/raw"
 	global TEMP "${path}/2_1_Data/temp"
 	global OUT  "${path}/2_1_Data/final"
 	global LINKING  "${path}/2_1_Data/linking_tables"
-	global PATENTDTA "/projekte/tbuehrle/homes/Patent Data US_Woeppel/Temp"
+	global PATENTDTA "/projekte/tbuehrle/homes/Spillover/Patent Data US_Woeppel/Temp"
 	
 	global CODE "${path}/2_2_Code/cleaning"
 	
