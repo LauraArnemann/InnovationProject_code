@@ -129,7 +129,7 @@ keep if tag ==1 & latitude_inventor!=.
 save "${TEMP}/county_match_prep.dta", replace 
 
 
-*!Run Python Code inbetween to assign counties to inventors with missing counties but nonmissing geo-information, generates the file county_matched_cleaned 
+*Recovering county Fips Codes in Python (county_codes.ipynb)	x	x	x	x	x	x	x 
 
 use "${TEMP}/county_matched_cleaned.dta", replace 
 destring STATEFP, replace 

@@ -8,7 +8,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-use "${TEMP}/final_state_zeros_new.dta", clear 
+use "${TEMP}/final_state_zeros_new_${d}.dta", clear 
 drop if missing(assignee_id)
 merge m:1 assignee_id using "${TEMP}/corporate_assignees.dta"
 drop if _merge!=3 
@@ -46,11 +46,11 @@ replace other_gdp_`helper'3 = ln(other_gdp_`helper'3)
  * Chaisemartin Estimator 
  *******************************************************************************
  
+
 		local sample1 if year>=1988 
-		local sample2 if inrange(year, 1988, 2018)  & n_patents>5 
-		local sample3 if inrange(year, 1988, 2018)  & n_patents!=0 
-		local sample4 if inrange(year, 1988, 2005)
-		local sample5 if inrange(year, 1988, 2018) & max_corp_assg==1
+		local sample2 if inrange(year, 1988, 2018)  & total_patents>5 
+		local sample3 if inrange(year, 1988, 2018)  & total_patents!=0
+		local sample4 if inrange(year, 1988, 2018) & estab_patents>5
 		
 * No Controls 		
 	forvalues i =1/5 {	
@@ -80,7 +80,7 @@ drop change_other_credit
 }
 
 
-
+*
 
 		local sample1 if year>=1988 
 		local sample2 if inrange(year, 1988, 2018)  & n_patents>5 

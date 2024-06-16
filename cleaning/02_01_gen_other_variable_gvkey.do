@@ -26,8 +26,6 @@ if `num' == 3 {
 }
 
 
-drop if missing(assignee_id)
-
 bysort fips_state assignee_id: egen min_year_estab = min(app_year)
 bysort fips_state assignee_id: egen max_year_estab = max(app_year)
 
@@ -103,7 +101,7 @@ if `num' == 3 {
   use "${TEMP}/patents3_$dataset.dta", clear 
 }
 
-drop if missing(assignee_id)
+
 
 
 /* Only keep multi state firms 
@@ -158,7 +156,7 @@ gen other_`var'_first = total_`var'/nstates
 
 } 
 
-label var other_rd_credit_first "RD Credits, first locations"
+label var other_rd_credit_first"RD Credits, first locations"
 label var other_pit_first "PIT, first locations"
 label var other_cit_first "CIT, first locations"
 label var other_gdp_first "GDP, first locations"
@@ -170,7 +168,7 @@ keep if count==1
 
 keep fips_state assignee_id app_year other*
 rename app_year year 
-save "${TEMP}/other_first`num'_$dataset.dta", replace 
+save "${TEMP}/other_first`num'_${dataset}_gvkey.dta", replace 
 
 
 
@@ -221,7 +219,6 @@ if `num' == 3 {
   use "${TEMP}/patents3_$dataset.dta", clear 
 }
 
-drop if missing(assignee_id)
 
 
 * Only keep multi state firms 
@@ -305,7 +302,7 @@ drop _merge
 */
 rename app_year year
 
-save "${TEMP}/helper_other_cleaned`num'_$dataset.dta", replace 
+save "${TEMP}/helper_other_cleaned`num'_${dataset}.dta", replace 
 
 
 * Generate the different variables weighted by the patenters respective inventors 
@@ -342,7 +339,7 @@ gen `var'_weighted = weight_patents * `var'
 bysort assignee_id year fips_state: egen total_`var'_weighted = total(`var'_weighted)
 *bysort assignee_id year fips_state: egen total_credits_weighted2 = total(rd_credit_weighted2)
 
-gen other_`var'_all = total_`var'/nstates 
+gen other_`var'_all= total_`var'/nstates 
 rename total_`var'_weighted other_`var'_weighted 
 * Do not need to divide by state since we already weight the observations
 }
@@ -365,7 +362,7 @@ duplicates drop fips_state assignee_id year, force
 
 
 keep fips_state assignee_id year other* 
-save "${TEMP}/other_all_`num'_$dataset.dta", replace 
+save "${TEMP}/other_all_`num'_${dataset}_gvkey.dta", replace 
 
 
 
@@ -430,7 +427,7 @@ label var other_unemployment_threelargest "Unemployment, three largest locations
 
 bysort fips_state assignee_id year: gen count = _n 
 keep if count ==1 
-save "${TEMP}/other_threelargest_`num'_$dataset.dta", replace 
+save "${TEMP}/other_threelargest_`num'_${dataset}_gvkey.dta", replace 
 
 
 * Erasing all the helper files I created along the way to keep storage space clean
@@ -438,6 +435,7 @@ save "${TEMP}/other_threelargest_`num'_$dataset.dta", replace
 erase "${TEMP}/helper_dataset`num'_$dataset.dta"
 erase  "${TEMP}/helper_other_v`num'_$dataset.dta"
 erase   "${TEMP}/helper_other_cleaned`num'_$dataset.dta"
+
 	}
 
 

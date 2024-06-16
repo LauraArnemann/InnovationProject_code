@@ -90,6 +90,9 @@ else {
 	global RESULTS ${path}/results
 }
 
+
+
+do $
 /*
 capture noisily {
 do "${CODE}/cleaning/cleaning_giroud_rauh_zeros.do"

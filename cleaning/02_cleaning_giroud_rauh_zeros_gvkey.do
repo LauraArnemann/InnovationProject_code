@@ -15,6 +15,8 @@
 
 use "$inventordata", clear 
 
+drop assignee_id 
+rename gvkey assignee_id
 *-Drop if missings in important variables
 drop if missing(app_year)
 drop if missing(assignee_id)
@@ -213,6 +215,11 @@ save "${TEMP}/patentcount_state_$dataset.dta", replace
 *-------------------------------------------------------------------------------
 
 use "$inventordata", clear 
+drop assignee_id 
+rename gvkey assignee_id
+*-Drop if missings in important variables
+drop if missing(assignee_id)
+
 duplicates drop state_fips_inventor assignee_id inventor_id, force
 keep state_fips_inventor assignee_id inventor_id
 drop if state_fips_inventor == . 
@@ -227,6 +234,8 @@ save "${TEMP}/helper_$dataset.dta", replace
 
 use "$inventordata", clear 
 
+drop assignee_id 
+rename gvkey assignee_id
 * Drop if missings in important variables
 drop if missing(app_year)
 drop if missing(assignee_id)
@@ -382,10 +391,8 @@ erase "${TEMP}/inventor_helper_$dataset.dta"
 * locations 
 ********************************************************************************
 
-* This dofile generates the variables based on all years the establishment is present
-do "${CODE}/cleaning/02_01_gen_other_variable.do"
-    
-
+do "${CODE}/cleaning/02_01_gen_other_variable_gvkey.do"
+    	
 ********************************************************************************
 * Merging things together
 ********************************************************************************
@@ -406,7 +413,7 @@ rename app_year year
 foreach num of numlist 3 {
 * Merging in the variables at other locations
 
-merge 1:1 fips_state year assignee_id using "${TEMP}/other_all_`num'_$dataset.dta", keepusing(other*)
+merge 1:1 fips_state year assignee_id using "${TEMP}/other_all_`num'_$dataset_gvkey.dta", keepusing(other*)
 drop if _merge==2
 drop _merge  
 
@@ -416,7 +423,7 @@ foreach var of varlist rd_credit cit gdp unemployment pit {
 }
 
 
-merge 1:1 fips_state year assignee_id using "${TEMP}/other_threelargest_`num'_$dataset.dta", keepusing(other*)
+merge 1:1 fips_state year assignee_id using "${TEMP}/other_threelargest_`num'_$dataset_gvkey.dta", keepusing(other*)
 drop if _merge==2 
 drop _merge 
 
@@ -424,7 +431,7 @@ foreach var of varlist rd_credit cit gdp unemployment pit {
 	rename other_`var'_threelargest other_`var'_threelargest`num' 
 }
  
-merge 1:1 fips_state year assignee_id using "${TEMP}/other_first`num'_$dataset.dta", keepusing(other*)
+merge 1:1 fips_state year assignee_id using "${TEMP}/other_first`num'_$dataset_gvkey.dta", keepusing(other*)
 drop if _merge==2 
 drop _merge 
 
@@ -470,7 +477,7 @@ bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
 
 duplicates report assignee_id fips_state year // Sanity Check
 compress
-save "${TEMP}/final_state_zeros_new_${dataset}_assignee.dta", replace 
+save "${TEMP}/final_state_zeros_new_${dataset}_gvkey.dta", replace 
 
 
 ********************************************************************************

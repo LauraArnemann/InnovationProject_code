@@ -7,10 +7,11 @@
 // Goal: 		Creating datasets based on different raw data
 ////////////////////////////////////////////////////////////////////////////////
 
-global dataset 3
+global dataset 4
 	// 1 = Woeppel
 	// 2 = Harvard, 2010
 	// 3 = Harvard, 2018
+	// 4 = Patentsview, 2018
 
 
 if $dataset == 1 {
@@ -25,6 +26,12 @@ if $dataset == 3 {
 	global inventordata "${TEMP}/new_dataset2.dta"
 }
 
+if $dataset == 4 {
+	global inventordata "${TEMP}/new_dataset3.dta"
+}
 
 
-
+do "${CODE}/cleaning/02_cleaning_giroud_rauh_zeros.do"
+do "${CODE}/cleaning/02_cleaning_giroud_rauh_zeros_gvkey.do"
+do "${CODE}/analysis/analysis_twowayfe_static.do"
+do "${CODE}/analysis/analysis_twowayfe_dynamic.do"
