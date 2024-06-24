@@ -15,6 +15,8 @@
 
 use "${inventordata}", clear 
 
+drop assignee_id 
+rename gvkey assignee_id 
 *-Drop if missings in important variables
 drop if missing(app_year)
 drop if missing(assignee_id)
@@ -85,9 +87,9 @@ one state with this method.
 	tempfile patents1 
 	save `patents1'
 	
-	* Already include zeros in states inbetween activity 
-	 bysort fips_state assignee_id: egen max_year = max(app_year)
-     bysort fips_state assignee_id: egen min_year = min(app_year)
+	* Include zeros in states inbetween activity, during the time period the establishment is active  
+	 bysort assignee_id: egen max_year = max(app_year)
+     bysort assignee_id: egen min_year = min(app_year)
 	 
 	 duplicates drop fips_state assignee_id, force 
 	 keep fips_state assignee_id min_year max_year 
@@ -129,8 +131,8 @@ one state with this method.
 	save `patents2'
 	
 	* Already include zeros in states inbetween activity 
-	 bysort fips_state assignee_id: egen max_year = max(app_year)
-     bysort fips_state assignee_id: egen min_year = min(app_year)
+	 bysort assignee_id: egen max_year = max(app_year)
+     bysort assignee_id: egen min_year = min(app_year)
 	 
 	 duplicates drop fips_state assignee_id, force 
 	 keep fips_state assignee_id min_year max_year 
@@ -171,8 +173,8 @@ one state with this method.
 	save `patents3'
 	
 	* Already include zeros in states inbetween activity 
-	 bysort fips_state assignee_id: egen max_year = max(app_year)
-     bysort fips_state assignee_id: egen min_year = min(app_year)
+	 bysort assignee_id: egen max_year = max(app_year)
+     bysort assignee_id: egen min_year = min(app_year)
 	 
 	 duplicates drop fips_state assignee_id, force 
 	 keep fips_state assignee_id min_year max_year 
@@ -213,6 +215,8 @@ save "${TEMP}/patentcount_state_$dataset.dta", replace
 *-------------------------------------------------------------------------------
 
 use "$inventordata", clear 
+drop assignee_id 
+rename gvkey assignee_id 
 duplicates drop state_fips_inventor assignee_id inventor_id, force
 keep state_fips_inventor assignee_id inventor_id
 drop if state_fips_inventor == . 
@@ -227,6 +231,8 @@ save "${TEMP}/helper_$dataset.dta", replace
 
 use "$inventordata", clear 
 
+drop assignee_id 
+rename gvkey assignee_id 
 * Drop if missings in important variables
 drop if missing(app_year)
 drop if missing(assignee_id)
@@ -383,7 +389,7 @@ erase "${TEMP}/inventor_helper_$dataset.dta"
 ********************************************************************************
 
 * This dofile generates the variables based on all years the establishment is present
-do "${CODE}/cleaning/02_01_gen_other_variable.do"
+do "${CODE}/cleaning/02_01_gen_other_variable_matray.do"
     
 
 ********************************************************************************
@@ -395,6 +401,16 @@ use "${TEMP}/patentcount_state_$dataset.dta", clear
 merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state_$dataset.dta"
 * There might be some times mismatches since we have different methods for allocating patents and inventors, in my opinion this is correct however maybe we also might want to check this later on
 drop _merge 
+
+gen balanced_panel = 0 
+replace balanced_panel = 1 if min_year<=1992 & max_year>=2018 
+
+
+forvalues i =1/3 {
+* I don't know if this makes so much sense 
+  replace n_inventors`i'= 0 if missing(n_inventors`i')
+  replace n_newinventors`i'=0 if missing(n_newinventors`i')
+}
 
 * For each state assignee_id observation, expand the number of states such that they are constant 
 merge m:1 fips_state app_year using "${TEMP}/state_data_cleaned.dta", keepusing(rd_credit gdp cit pit unemployment)
@@ -468,9 +484,11 @@ bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
 
 * What should we do with New York, Ohio, Louisiana? 
 
+
+
 duplicates report assignee_id fips_state year // Sanity Check
 compress
-save "${TEMP}/final_state_zeros_new_${dataset}_assignee.dta", replace 
+save "${TEMP}/final_state_zeros_new_${dataset}_gvkey_matray.dta", replace 
 
 
 ********************************************************************************

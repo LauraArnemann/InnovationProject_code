@@ -8,11 +8,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-use "${TEMP}/final_state_zeros_new_${d}.dta", clear 
-drop if missing(assignee_id)
-merge m:1 assignee_id using "${TEMP}/corporate_assignees.dta"
-drop if _merge!=3 
-drop _merge 
+foreach type in  gvkey {
+
+use "${TEMP}/final_state_zeros_new_${dataset}_`type'.dta", clear 
+
 drop if missing(assignee_id)
 
 bysort assignee_id year : egen n_patents = total(patents3)
@@ -25,13 +24,16 @@ foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_in
 
 gen ln_gdp =log(gdp)
 
+bysort assignee_id fips_state: egen total_patents = total(patents3)
 egen estab = group(fips_state assignee_id)
+bysort estab: egen estab_patents = total(patents3)
+egen state_year = group(fips_state year)
 
-xtset estab year 
+
 
 * all weighted threelargest
-foreach helper in all weighted threelargest {
-	
+foreach helper in threelargest {
+	xtset estab year 
 gen change_other_credit = other_rd_credit_`helper'3 - l.other_rd_credit_`helper'3
 gen byte increase_credit = change_other_credit>=1 & change_other_credit!=. 
 gen byte decrease_credit = change_other_credit<=-1 & change_other_credit!=. 
@@ -45,44 +47,56 @@ replace other_gdp_`helper'3 = ln(other_gdp_`helper'3)
  *******************************************************************************
  * Chaisemartin Estimator 
  *******************************************************************************
- 
-
-		local sample1 if year>=1988 
-		local sample2 if inrange(year, 1988, 2018)  & total_patents>5 
-		local sample3 if inrange(year, 1988, 2018)  & total_patents!=0
-		local sample4 if inrange(year, 1988, 2018) & estab_patents>5
-		
+			* Set different sample restrictions as well 
+		     local sample1 if year>=1988 
+		     local sample2 if inrange(year, 1988, 2018)  & total_patents>5 
+		     local sample3 if inrange(year, 1988, 2018)  & total_patents!=0
+		     local sample4 if inrange(year, 1988, 2018) & estab_patents>5
+		     local sample5 if inrange(year, 1988, 2018) & total_patents>10	
+	
+****** Only Establishment and Year Fixed Effects 	
 * No Controls 		
-	forvalues i =1/5 {	
+	forvalues i =5/5 {	
 foreach var of varlist patents1 patents3 patents3_w1 patents1_w1 n_inventors3 n_newinventors3 ln_patents3 ln_n_inventors3 { 
  
 * Both Changes 
-did_multiplegt_dyn `var' estab year change_other_credit `sample`i'', effects(8) placebo(5) cluster(estab)
-graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c0_both_continuous.png", replace 
+did_multiplegt_dyn `var' estab year change_other_credit `sample`i'', effects(6) placebo(4) cluster(estab)
+graph export "${RESULTS}/chaisemartin_new/new_`type'_${dataset}/graph`var'_sample`i'`helper'_c0_both_continuous_year.png", replace 
 
 * Only Increases
-did_multiplegt_dyn `var' estab year change_other_credit `sample`i'' & max_decrease == 0, effects(8) placebo(5) cluster(estab)
-graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c0_incr_continuous.png", replace 
+did_multiplegt_dyn `var' estab year change_other_credit `sample`i'' & max_decrease == 0, effects(6) placebo(4) cluster(estab)
+graph export "${RESULTS}/chaisemartin_new/new_`type'_${dataset}/graph`var'_sample`i'`helper'_incr_continuous_year.png", replace 
 
-did_multiplegt_dyn `var' estab year increase_credit `sample`i'' & max_decrease == 0, effects(8) placebo(5)  controls(`controls`y'') cluster(estab)
-graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c`y'_incr_binary.png", replace 
+did_multiplegt_dyn `var' estab year increase_credit `sample`i'' & max_decrease == 0, effects(6) placebo(4) cluster(estab)
+graph export "${RESULTS}/chaisemartin_new/new_`type'_${dataset}/graph`var'_sample`i'`helper'_incr_binary_year.png", replace 
 
-*Only Decreases (Do not run through with sample2 )
-*if `i' !=2 {
-*did_multiplegt_dyn `var' estab year change_other_credit `sample`i'' & max_increase == 0, effects(8) placebo(5) cluster(estab)
-*graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c0_decr.png", replace
-*}
 
+***** Establishment and State-Year Fixed effects 
+* Both Changes 
+*did_multiplegt_dyn `var' estab state_year change_other_credit `sample`i'', effects(6) placebo(4) cluster(estab)
+*graph export "${RESULTS}/chaisemartin_new/new_`type'_${dataset}/graph`var'_sample`i'`helper'_c0_both_continuous_stateyear.png", replace 
+
+* Only Increases
+*did_multiplegt_dyn `var' estab state_year change_other_credit `sample`i'' & max_decrease == 0, effects(6) placebo(4) cluster(estab)
+*graph export "${RESULTS}/chaisemartin_new/new_`type'_${dataset}/graph`var'_sample`i'`helper'_incr_continuous_stateyear.png", replace 
+
+*did_multiplegt_dyn `var' estab state_year increase_credit `sample`i'' & max_decrease == 0, effects(6) placebo(4) cluster(estab)
+*graph export "${RESULTS}/chaisemartin_new/new_`type'_${dataset}/graph`var'_sample`i'`helper'_incr_binary_stateyear.png", replace 
 }
 }
 
 drop change_other_credit
 }
+}
 
 
-*
 
-		local sample1 if year>=1988 
+********************************************************************************
+* This would be the analysis when using controls; However this does not converge yet  
+********************************************************************************
+	
+/*
+	local sample1 if year>=1988 
 		local sample2 if inrange(year, 1988, 2018)  & n_patents>5 
 		local sample3 if inrange(year, 1988, 2018)  & n_patents!=0 
 		local sample4 if inrange(year, 1988, 2005)
@@ -119,3 +133,4 @@ graph export "${RESULTS}/chaisemartin/graph`var'_sample`i'`helper'_c`y'_incr.png
 	}
 }
 
+*/

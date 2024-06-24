@@ -1,16 +1,50 @@
-// Project: Inventor Relocation
-// Creation Date: 15/06/2024
-// Last Update: 15/06/2024
-// Author: Laura Arnemann 
-// Goal: Regular two-way fixed effects analysis  
+////////////////////////////////////////////////////////////////////////////////
+// Project:        	Moving innovation
+// Creation Date:  	19/03/2024
+// Last Update:    	24/04/2024
+// Authors:         Laura Arnemann
+//					Theresa Bührle
+// Goal: 			Trying to see if we can replicate the results from the Giroud Spillover Paper to create similar control groups  
+////////////////////////////////////////////////////////////////////////////////
 
 
-*use "${TEMP}/final_state.dta", clear
+********************************************************************************
+* Changing the control groups 
+********************************************************************************
+
+use "${TEMP}/final_state_zeros_new_${dataset}_gvkey.dta", clear 
+
+* Analysis on Commuting Zone Level 
+use "${TEMP}/patentcount_czone.dta", clear 
+
+gen fips_state = substr(czone, 1, 2)
+
+foreach num of numlist 3 {
+* Merging in the variables at other locations
+
+merge 1:1 fips_state year assignee_id using "${TEMP}/other_all_`num'_$dataset_gvkey.dta", keepusing(other*)
+drop if _merge==2
+drop _merge  
+
+foreach var of varlist rd_credit cit gdp unemployment pit {
+	rename other_`var'_all other_`var'_all`num' 
+	rename other_`var'_weighted other_`var'_weighted`num'
+}
 
 
-foreach type in assignee gvkey {
-	
-use "${TEMP}/final_state_zeros_new_${dataset}_`type'.dta", clear 
+merge 1:1 fips_state year assignee_id using "${TEMP}/other_threelargest_`num'_$dataset_gvkey.dta", keepusing(other*)
+drop if _merge==2 
+drop _merge 
+
+foreach var of varlist rd_credit cit gdp unemployment pit {
+	rename other_`var'_threelargest other_`var'_threelargest`num' 
+}
+ 
+}
+
+********************************************************************************
+* Running Regressions 
+********************************************************************************
 
 
 *Different conditions for Balanced Panel 
@@ -40,7 +74,7 @@ bysort assignee_id year: egen total_patents=total(patents3)
 ********************************************************************************
 * Regular Regressions: Based on Assignee  Id 
 ********************************************************************************
-egen estab_id = group(assignee_id fips_state)
+egen estab_id = group(assignee_id czone)
 bysort estab_id: egen estab_patents = total(patents3)
 
 label var pit "PIT"
@@ -56,7 +90,7 @@ label var rd_credit "R\&D Credit"
 		local sample5 if inrange(year, 1988, 2018)  & total_patents>10	
 		local sample6 if inrange(year, 1988, 2018) & balanced_panel ==1 
 
-forvalues i = 5/5 {
+forvalues i = 1/6 {
 	
 foreach var of varlist patents3 patents3_w1 n_inventors3 n_inventors3_w1 n_newinventors3 n_newinventors3_w1 {
 
@@ -84,13 +118,13 @@ estadd local estabfe "\checkmark", replace
 estadd local statecontrols "\checkmark", replace
 estadd local othercontrols "\checkmark", replace
 
-ppmlhdfe `var' other_rd_credit_`explaining'3 `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
+ppmlhdfe `var' other_rd_credit_`explaining'3 `sample`i'', absorb(estab_id year#i.czone) cl(estab_id)
 est sto reg4
 estadd local stateyearfe "\checkmark", replace
 estadd local estabfe "\checkmark", replace
 
 
-ppmlhdfe `var' other_rd_credit_`explaining'3 `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
+ppmlhdfe `var' other_rd_credit_`explaining'3 `other_controls' `sample`i'', absorb(estab_id year#i.czone) cl(estab_id)
 est sto reg5
 estadd local stateyearfe "\checkmark", replace
 estadd local estabfe "\checkmark", replace
@@ -98,7 +132,7 @@ estadd local othercontrols "\checkmark", replace
 
 * Exporting the Results in a log file, since no excel and tex available
 
-log using "$RESULTS/tables/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_`type'.log", replace 
+log using "$RESULTS/tables/new_`type'_${dataset}/czone/var`var'_`explaining'_sample`i'_`type'.log", replace 
 
 esttab reg1 reg2 reg3 reg4 reg5, replace noconstant nomtitles drop(`other_controls' pit cit ln_gdp unemployment _cons) cells(b(star fmt(%9.3f)) se(par)) stats(yearfe estabfe stateyearfe statecontrols othercontrols N, fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Year FE" "Firm FE" "State-Year FE" "State Controls" "Other Controls" "Observations")) collabels(none) starl(* .10 ** .05 *** .01) label 
 
@@ -138,20 +172,20 @@ estadd local estabfe "\checkmark", replace
 estadd local statecontrols "\checkmark", replace
 estadd local othercontrols "\checkmark", replace
 
-reghdfe `var' other_rd_credit_`explaining'3 `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
+reghdfe `var' other_rd_credit_`explaining'3 `sample`i'', absorb(estab_id year#i.czone) cl(estab_id)
 est sto reg9
 estadd local stateyearfe "\checkmark", replace
 estadd local estabfe "\checkmark", replace
 
 
-reghdfe `var' other_rd_credit_`explaining'3 `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
+reghdfe `var' other_rd_credit_`explaining'3 `other_controls' `sample`i'', absorb(estab_id year#i.czone) cl(estab_id)
 est sto reg10
 estadd local stateyearfe "\checkmark", replace
 estadd local estabfe "\checkmark", replace
 estadd local othercontrols "\checkmark", replace
 
 
-log using "$RESULTS/tables/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_`type'_log.log", replace 
+log using "$RESULTS/tables/new_`type'_${dataset}/czone/var`var'_`explaining'_sample`i'_`type'_log.log", replace 
 
 esttab reg6 reg7 reg8 reg9 reg10, replace noconstant nomtitles drop(`other_controls' pit cit ln_gdp unemployment _cons) cells(b(star fmt(%9.3f)) se(par)) stats(yearfe estabfe stateyearfe statecontrols othercontrols N, fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Year FE" "Firm FE" "State-Year FE" "State Controls" "Other Controls" "Observations")) collabels(none) starl(* .10 ** .05 *** .01) label 
 
@@ -161,5 +195,18 @@ capture log close
 }
 }
 }
-}
 
+
+
+
+
+*merge 1:1 czone assignee_id app_year using "${TEMP}/inventorcount_cz.dta"
+*drop _merge 
+
+
+
+* Analysis on Commuting Zone Level, excluding 
+
+* Control Group II: Only compare with treated units in the same state (Think more about whether this is the same thing as including state times year fixed effects)
+
+* Control Group III: For each treated group counties with a similar geographic dispersion (present in similar states)
