@@ -16,7 +16,6 @@ global dataset 4
 
 
 if $dataset == 1 {
-**# Bookmark #1
 	global inventordata "${TEMP}/woeppel_dataset.dta"
 }
 

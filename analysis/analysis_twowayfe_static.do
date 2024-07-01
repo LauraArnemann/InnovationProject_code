@@ -5,15 +5,11 @@
 // Goal: Regular two-way fixed effects analysis  
 
 
-*use "${TEMP}/final_state.dta", clear
-
-
 foreach type in assignee gvkey {
 	
-use "${TEMP}/final_state_zeros_new_${dataset}_`type'.dta", clear 
+	use "${TEMP}/final_state_zeros_new_${dataset}_`type'.dta", clear 
 
-
-*Different conditions for Balanced Panel 
+	*Different conditions for Balanced Panel 
      if ${dataset} == 2 {
      gen balanced_panel = 1 if min_year<=1988 & max_year>=2006 
       }
@@ -23,143 +19,95 @@ use "${TEMP}/final_state_zeros_new_${dataset}_`type'.dta", clear
 	 * Only 206 unique gvkey observations
       }
 
-foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3  n_newinventors1 n_newinventors3 {
-	gstats winsor `var', cut(1 99) gen(`var'_w1)
-	gstats winsor `var', cut(1 95) gen(`var'_w2)
-	gen ln_`var'=log(`var')
-}
+	foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3  n_newinventors1 n_newinventors3 {
+		gstats winsor `var', cut(1 99) gen(`var'_w1)
+		gstats winsor `var', cut(1 95) gen(`var'_w2)
+		gen ln_`var'=log(`var')
+	}
 
-gen ln_gdp=log(gdp)
+	gen ln_gdp=log(gdp)
 
-foreach var of varlist  other_gdp_weighted3 other_gdp_all3 other_gdp_threelargest3 {
-    replace `var'=log(`var')
-}
+	foreach var of varlist  other_gdp_weighted3 other_gdp_all3 other_gdp_threelargest3 {
+		replace `var'=log(`var')
+	}
 
-bysort assignee_id year: egen total_patents=total(patents3)
+	bysort assignee_id year: egen total_patents=total(patents3)
 
-********************************************************************************
-* Regular Regressions: Based on Assignee  Id 
-********************************************************************************
-egen estab_id = group(assignee_id fips_state)
-bysort estab_id: egen estab_patents = total(patents3)
+	********************************************************************************
+	* Regular Regressions: Based on Assignee  Id 
+	********************************************************************************
+	egen estab_id = group(assignee_id fips_state)
+	bysort estab_id: egen estab_patents = total(patents3)
 
-label var pit "PIT"
-label var cit "CIT"
-label var rd_credit "R\&D Credit"
+	label var pit "PIT"
+	label var cit "CIT"
+	label var rd_credit "R\&D Credit"
 
-* Sample Restrictions 
-
-		local sample1 if year>=1988 
-		local sample2 if inrange(year, 1988, 2018)  & total_patents>5 
-		local sample3 if inrange(year, 1988, 2018)  & total_patents!=0
-		local sample4 if inrange(year, 1988, 2018) & estab_patents>5
-		local sample5 if inrange(year, 1988, 2018)  & total_patents>10	
-		local sample6 if inrange(year, 1988, 2018) & balanced_panel ==1 
-
-forvalues i = 5/5 {
-	
-foreach var of varlist patents3 patents3_w1 n_inventors3 n_inventors3_w1 n_newinventors3 n_newinventors3_w1 {
-
-foreach explaining in all weighted threelargest {
-	
-	local other_controls other_cit_`explaining'3  other_pit_`explaining'3 other_unemployment_`explaining'3 other_gdp_`explaining'3  
-	
-ppmlhdfe `var' other_rd_credit_`explaining'3 rd_credit `sample`i'' , absorb(estab_id year) cl(estab_id)
-est sto reg1
-estadd local yearfe "\checkmark", replace
-estadd local estabfe "\checkmark", replace
-
-
-ppmlhdfe `var' other_rd_credit_`explaining'3 rd_credit pit cit ln_gdp unemployment `sample`i'', absorb(estab_id year) cl(estab_id)
-est sto reg2
-estadd local yearfe "\checkmark", replace
-estadd local estabfe "\checkmark", replace
-estadd local statecontrols "\checkmark", replace
-
-
-ppmlhdfe `var' other_rd_credit_`explaining'3 rd_credit pit cit ln_gdp unemployment `other_controls' `sample`i'', absorb(estab_id year) cl(estab_id)
-est sto reg3
-estadd local yearfe "\checkmark", replace
-estadd local estabfe "\checkmark", replace
-estadd local statecontrols "\checkmark", replace
-estadd local othercontrols "\checkmark", replace
-
-ppmlhdfe `var' other_rd_credit_`explaining'3 `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
-est sto reg4
-estadd local stateyearfe "\checkmark", replace
-estadd local estabfe "\checkmark", replace
-
-
-ppmlhdfe `var' other_rd_credit_`explaining'3 `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
-est sto reg5
-estadd local stateyearfe "\checkmark", replace
-estadd local estabfe "\checkmark", replace
-estadd local othercontrols "\checkmark", replace
-
-* Exporting the Results in a log file, since no excel and tex available
-
-log using "$RESULTS/tables/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_`type'.log", replace 
-
-esttab reg1 reg2 reg3 reg4 reg5, replace noconstant nomtitles drop(`other_controls' pit cit ln_gdp unemployment _cons) cells(b(star fmt(%9.3f)) se(par)) stats(yearfe estabfe stateyearfe statecontrols othercontrols N, fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Year FE" "Firm FE" "State-Year FE" "State Controls" "Other Controls" "Observations")) collabels(none) starl(* .10 ** .05 *** .01) label 
-
-capture log close 
-}
-}
-}
-
-
-********************************************************************************
-* Also running the logarithm 
-********************************************************************************
-	forvalues i = 1/6  {
+	forvalues i = 1/2 {
 		
-foreach var of varlist ln_patents3 ln_n_inventors3  {
+		foreach var of $outcome {
 
-foreach explaining in all weighted threelargest {
+			foreach explaining in $weighting_strategy {
+				
+			local other_controls other_cit_`explaining'  other_pit_`explaining' other_unemployment_`explaining' other_gdp_`explaining'  
+				
+			ppmlhdfe `var' other_rd_credit_`explaining' rd_credit $sample`i' , absorb(estab_id year#i.fips_state) cl(estab_id)
+			est sto regres1
+			estadd local yearfe "\checkmark", replace
+			estadd local estabfe "\checkmark", replace
 
+			ppmlhdfe `var' other_rd_credit_`explaining' `other_controls' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+			est sto regres2
+			estadd local stateyearfe "\checkmark", replace
+			estadd local estabfe "\checkmark", replace
+			estadd local othercontrols "\checkmark", replace
+
+			* Exporting the Results in a log file, since no excel and tex available
+			log using "$RESULTS/tables/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_`type'.log", replace 
+
+			esttab regres1 regres2, replace noconstant nomtitles drop(`other_controls' pit cit ln_gdp unemployment _cons) ///
+				cells(b(star fmt(%9.3f)) se(par)) stats(yearfe estabfe stateyearfe statecontrols othercontrols N, ///
+				fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Year FE" "Firm FE" "State-Year FE" "State Controls" "Other Controls" "Observations")) ///
+				collabels(none) starl(* .10 ** .05 *** .01) label 
+
+			capture log close 
+			}
+		}
+	}
+
+
+	********************************************************************************
+	* Also running the logarithm 
+	********************************************************************************
+	forvalues i = 1/2  {
 		
-reghdfe `var' other_rd_credit_`explaining'3 rd_credit `sample`i'' , absorb(estab_id year) cl(estab_id)
-est sto reg6
-estadd local yearfe "\checkmark", replace
-estadd local estabfe "\checkmark", replace
+		foreach var of varlist $outcome_log  {
 
+			foreach explaining in $weighting_strategy {
+				
+			reghdfe `var' other_rd_credit_`explaining' $sample`i' , absorb(estab_id year#i.fips_state) cl(estab_id)
+			est sto regres3
+			estadd local yearfe "\checkmark", replace
+			estadd local estabfe "\checkmark", replace
 
-reghdfe  `var' other_rd_credit_`explaining'3 rd_credit pit cit ln_gdp unemployment `sample`i'', absorb(estab_id year) cl(estab_id)
-est sto reg7
-estadd local yearfe "\checkmark", replace
-estadd local estabfe "\checkmark", replace
-estadd local statecontrols "\checkmark", replace
+			reghdfe `var' other_rd_credit_`explaining' `other_controls' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+			est sto regres4
+			estadd local stateyearfe "\checkmark", replace
+			estadd local estabfe "\checkmark", replace
+			estadd local othercontrols "\checkmark", replace
 
+			* Exporting the Results in a log file, since no excel and tex available
+			log using "$RESULTS/tables/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_`type'_log.log", replace 
 
-reghdfe  `var' other_rd_credit_`explaining'3 rd_credit pit cit ln_gdp unemployment `other_controls' `sample`i'', absorb(estab_id year) cl(estab_id)
-est sto reg8
-estadd local yearfe "\checkmark", replace
-estadd local estabfe "\checkmark", replace
-estadd local statecontrols "\checkmark", replace
-estadd local othercontrols "\checkmark", replace
+			esttab regres3 regres4, replace noconstant nomtitles drop(`other_controls' pit cit ln_gdp unemployment _cons) ///
+				cells(b(star fmt(%9.3f)) se(par)) stats(yearfe estabfe stateyearfe statecontrols othercontrols N, ///
+				fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Year FE" "Firm FE" "State-Year FE" "State Controls" "Other Controls" "Observations")) ///
+				collabels(none) starl(* .10 ** .05 *** .01) label 
 
-reghdfe `var' other_rd_credit_`explaining'3 `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
-est sto reg9
-estadd local stateyearfe "\checkmark", replace
-estadd local estabfe "\checkmark", replace
+			capture log close 
 
-
-reghdfe `var' other_rd_credit_`explaining'3 `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
-est sto reg10
-estadd local stateyearfe "\checkmark", replace
-estadd local estabfe "\checkmark", replace
-estadd local othercontrols "\checkmark", replace
-
-
-log using "$RESULTS/tables/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_`type'_log.log", replace 
-
-esttab reg6 reg7 reg8 reg9 reg10, replace noconstant nomtitles drop(`other_controls' pit cit ln_gdp unemployment _cons) cells(b(star fmt(%9.3f)) se(par)) stats(yearfe estabfe stateyearfe statecontrols othercontrols N, fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Year FE" "Firm FE" "State-Year FE" "State Controls" "Other Controls" "Observations")) collabels(none) starl(* .10 ** .05 *** .01) label 
-
-capture log close 
-
-
-}
-}
-}
+			}
+		}
+	}
 }
 

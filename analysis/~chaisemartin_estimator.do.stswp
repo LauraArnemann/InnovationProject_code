@@ -57,7 +57,7 @@ replace other_gdp_`helper'3 = ln(other_gdp_`helper'3)
 ****** Only Establishment and Year Fixed Effects 	
 * No Controls 		
 	forvalues i =5/5 {	
-foreach var of varlist $outcome { 
+foreach var of varlist $out { 
  
 * Both Changes 
 did_multiplegt_dyn `var' estab year change_other_credit $sample`i', effects(6) placebo(4) cluster(estab)
