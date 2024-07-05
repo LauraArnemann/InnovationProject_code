@@ -54,7 +54,8 @@ if c(username) == "laura" {
 
 if c(username) == "tbuehrle" {
 	
-	global path "/projekte/tbuehrle/homes/Spillover/2_Empirical"
+	*global path "/projekte/tbuehrle/homes/Spillover/2_Empirical"
+	global path "C:/Users/tbuehrle/OneDrive - DIW Berlin/3_Forschung/Topics/Spillover migration/2_Empirical"
 	
 	global IN "${path}/2_1_Data/raw"
 	global TEMP "${path}/2_1_Data/temp"
@@ -90,11 +91,6 @@ else {
 	global RESULTS ${path}/results
 }
 
-
-
-do "${CODE}/analysis/analysis_twowayfe_static.do"
-do "${CODE}/analysis/analysis_twowayfe_dynamic.do"
-do "${CODE}/analysis/chaisemartin_estimator.do"
 /*
 capture noisily {
 do "${CODE}/cleaning/cleaning_giroud_rauh_zeros.do"

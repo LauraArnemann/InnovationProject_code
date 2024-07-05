@@ -4,6 +4,11 @@
 // Author: Laura Arnemann 
 // Goal: Regular two-way fixed effects analysis  
 
+local sample1 if inrange(year, 1988, 2018)
+local sample2 if inrange(year, 1988, 2018)  & total_patents>10 
+local sample3  if inrange(year, 1988, 2018)  & balanced_panel==1
+local sample4  if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>10 
+
 
 foreach type in assignee gvkey {
 	
@@ -51,12 +56,12 @@ foreach type in assignee gvkey {
 				
 			local other_controls other_cit_`explaining'  other_pit_`explaining' other_unemployment_`explaining' other_gdp_`explaining'  
 				
-			ppmlhdfe `var' other_rd_credit_`explaining' rd_credit $sample`i' , absorb(estab_id year#i.fips_state) cl(estab_id)
+			ppmlhdfe `var' other_rd_credit_`explaining' rd_credit `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 			est sto regres1
 			estadd local yearfe "\checkmark", replace
 			estadd local estabfe "\checkmark", replace
 
-			ppmlhdfe `var' other_rd_credit_`explaining' `other_controls' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+			ppmlhdfe `var' other_rd_credit_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 			est sto regres2
 			estadd local stateyearfe "\checkmark", replace
 			estadd local estabfe "\checkmark", replace
@@ -85,12 +90,12 @@ foreach type in assignee gvkey {
 
 			foreach explaining in $weighting_strategy {
 				
-			reghdfe `var' other_rd_credit_`explaining' $sample`i' , absorb(estab_id year#i.fips_state) cl(estab_id)
+			reghdfe `var' other_rd_credit_`explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 			est sto regres3
 			estadd local yearfe "\checkmark", replace
 			estadd local estabfe "\checkmark", replace
 
-			reghdfe `var' other_rd_credit_`explaining' `other_controls' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+			reghdfe `var' other_rd_credit_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 			est sto regres4
 			estadd local stateyearfe "\checkmark", replace
 			estadd local estabfe "\checkmark", replace

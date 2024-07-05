@@ -7,6 +7,11 @@
 // Goal: 			Running Stacked Regression: Changes at current location 
 ////////////////////////////////////////////////////////////////////////////////
 
+local sample1 if inrange(year, 1988, 2018)
+local sample2 if inrange(year, 1988, 2018)  & total_patents>10 
+local sample3  if inrange(year, 1988, 2018)  & balanced_panel==1
+local sample4  if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>10 
+
 foreach direction in $direction  {
 
 	foreach var in "other_$weighting_strategy"  {
@@ -64,7 +69,7 @@ foreach direction in $direction  {
 			foreach outc in $outcome {
 	
 			*Event studies
-			capture noisily ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary $sample`i', absorb(estab#event year#event#fips_stat) cl(estab#event)
+			capture noisily ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `sample`i'', absorb(estab#event year#event#fips_stat) cl(estab#event)
 			capture noisily est sto inventorreg1
 			capture noisily coefplot inventorreg1, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 			xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
@@ -72,7 +77,7 @@ foreach direction in $direction  {
 			title("`indepvar', `direction' - no controls") xtitle("Years since Change") graphregion(color(white))
 				capture noisily graph export "${RESULTS}/graphs/`outc'/stacked_`indepvar'_`direction'_sample`i'.png", replace  
 
-			capture noisily ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary $controls_other $sample`i', absorb(estab#event year#event#fips_stat) cl(estab#event)
+			capture noisily ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary $controls_other `sample`i'', absorb(estab#event year#event#fips_stat) cl(estab#event)
 			capture noisily est sto inventorreg2
 			capture noisily coefplot inventorreg2, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 			xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
@@ -81,12 +86,12 @@ foreach direction in $direction  {
 				capture noisily graph export "${RESULTS}/graphs/`outc'/stacked_`indepvar'_`direction'_c1_sample`i'.png", replace  
 		
 			*DiD
-			capture noisily ppmlhdfe `outc' 1.max_treated#1.post_tr $sample`i', absorb(estab#event year#event#fips_stat) cl(estab#event)
+			capture noisily ppmlhdfe `outc' 1.max_treated#1.post_tr `sample`i'', absorb(estab#event year#event#fips_stat) cl(estab#event)
 				capture noisily outreg2 using "$RESULTS/tables/`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
 				replace dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab
 		
-			capture noisily ppmlhdfe `outc' 1.max_treated#1.post_tr $controls_other $sample`i', absorb(estab#event year#event#fips_stat) cl(estab#event)
+			capture noisily ppmlhdfe `outc' 1.max_treated#1.post_tr $controls_other `sample`i'', absorb(estab#event year#event#fips_stat) cl(estab#event)
 				capture noisily outreg2 using "$RESULTS/tables/`outc'/change_stack_zero_`indepvar'_`direction'_sample`i'", ///
 				append dec(3) stats(coef se) addstat(Pseudo R2, e(r2_p)) noni nodepvar tex(frag) ///
 				ctitle("`outc'") lab

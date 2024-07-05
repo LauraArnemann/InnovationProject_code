@@ -4,6 +4,10 @@
 // Author: Laura Arnemann 
 // Goal: Regular two-way fixed effects analysis with event studies 
 
+local sample1 if inrange(year, 1988, 2018)
+local sample2 if inrange(year, 1988, 2018)  & total_patents>10 
+local sample3  if inrange(year, 1988, 2018)  & balanced_panel==1
+local sample4  if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>10 
 
 foreach type in assignee gvkey {
 	
@@ -74,6 +78,11 @@ foreach type in assignee gvkey {
 * Regular event studies: No binning off 
 ********************************************************************************
 
+	local sample1 if inrange(year, 1988, 2018)
+	local sample2 if inrange(year, 1988, 2018)  & total_patents>10 
+	local sample3  if inrange(year, 1988, 2018)  & balanced_panel==1
+	local sample4  if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>10 
+	
 	forvalues i = 1/2 {
 		
 		** Poisson Regression 
@@ -83,13 +92,13 @@ foreach type in assignee gvkey {
 				* Generating the local which contains control variables 	
 				local other_controls other_cit_`explaining' other_pit_`explaining' other_unemployment_`explaining' other_gdp_`explaining' 
 					
-				ppmlhdfe `var'  F?_change_`explaining' zero_1 L?_change_`explaining' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+				ppmlhdfe `var'  F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres1
 				coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
 				capture noisily graph export "$RESULTS/eventstudies/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_c1_balancednobin_`type'.png", replace
 
-				ppmlhdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+				ppmlhdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres2
 				coefplot regres2, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
@@ -107,7 +116,7 @@ foreach type in assignee gvkey {
 					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
 				capture noisily graph export "$RESULTS/eventstudies/new_`type'_$dataset/var`var'_`explaining'_sample`i'_c3_balancednobin_`type'.png", replace
 
-				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres4
 				coefplot regres4, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
@@ -137,13 +146,13 @@ foreach type in assignee gvkey {
 				* Generating the local which contains control variables 	
 				local other_controls other_cit_`explaining'  other_pit_`explaining' other_unemployment_`explaining' other_gdp_`explaining'  
 					
-				ppmlhdfe `var'  F?_change_`explaining' zero_1 L?_change_`explaining' $sample`i' , absorb(estab_id year#i.fips_state) cl(estab_id)
+				ppmlhdfe `var'  F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'' , absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres1
 				coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black))  ///
 					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
 				capture noisily graph export "$RESULTS/eventstudies/new_`type'_$dataset/var`var'_`explaining'_sample`i'_c1_balancedbinning_`type'.png", replace
 
-				ppmlhdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+				ppmlhdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres2
 				coefplot regres2, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
@@ -155,13 +164,13 @@ foreach type in assignee gvkey {
 		foreach var of varlist $outcome_log   {
 			foreach explaining in $weighting_strategy  {
 				
-				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres3
 				coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
 				capture noisily graph export "$RESULTS/eventstudies/new_`type'_$dataset/var`var'_`explaining'_sample`i'_c3_balancedbinning_`type'.png", replace
 
-				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres4
 				coefplot regres4, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
@@ -198,13 +207,13 @@ foreach type in assignee gvkey {
 				* Generating the local which contains control variables 	
 				local other_controls other_cit_`explaining'  other_pit_`explaining' other_unemployment_`explaining' other_gdp_`explaining'  
 					
-				ppmlhdfe `var'  F?_change_`explaining' zero_1 L?_change_`explaining' $sample`i' , absorb(estab_id year#i.fips_state) cl(estab_id)
+				ppmlhdfe `var'  F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres1
 				coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
 				capture noisily graph export "$RESULTS/eventstudies/new_`type'_$dataset/var`var'_`explaining'_sample`i'_c1_unbalancedbinning_`type'.png", replace
 
-				ppmlhdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+				ppmlhdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres2
 				coefplot regres2, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
@@ -216,13 +225,13 @@ foreach type in assignee gvkey {
 		foreach var of varlist $outcome_log {
 			foreach explaining in $weighting_strategy {
 					
-				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres3
 				coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
 				capture noisily graph export "$RESULTS/eventstudies/new_`type'_$dataset/var`var'_`explaining'_sample`i'_c3_unbalancedbinning_`type'.png", replace
 
-				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' $sample`i', absorb(estab_id year#i.fips_state) cl(estab_id)
+				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres4
 				coefplot regres4, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))

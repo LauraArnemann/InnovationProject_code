@@ -7,6 +7,11 @@
 // Goal: 			Running Stacked Regression: Change in credits at other locations 
 ////////////////////////////////////////////////////////////////////////////////
 
+local sample1 if inrange(year, 1988, 2018)
+local sample2 if inrange(year, 1988, 2018)  & total_patents>10 
+local sample3  if inrange(year, 1988, 2018)  & balanced_panel==1
+local sample4  if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>10 
+
 foreach type in gvkey {
 
 	foreach direction in $direction {
@@ -57,7 +62,7 @@ foreach type in gvkey {
 				*Event studies
 				foreach outc in $outcome {
 									
-					ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary $sample`i', absorb(estab#event year#event#fips_state) cl(estab#event)
+					ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `sample`i'', absorb(estab#event year#event#fips_state) cl(estab#event)
 					 est sto inventorreg1
 					coefplot inventorreg1, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
@@ -65,7 +70,7 @@ foreach type in gvkey {
 					title("`var2', `direction' - no controls") xtitle("Years since Change") graphregion(color(white))
 						capture noisily graph export "${RESULTS}/stackedregression/new_`type'_${dataset}/`outc'/stacked_other_`var2'_`direction'_sample`i'_stateyear.png", replace  
 									
-					ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `var2'_pit `var2'_cit $sample`i', absorb(estab#event year#event#fips_state) cl(estab#event)
+					ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `var2'_pit `var2'_cit `sample`i'', absorb(estab#event year#event#fips_state) cl(estab#event)
 					est sto inventorreg3
 					coefplot inventorreg3, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
@@ -76,7 +81,7 @@ foreach type in gvkey {
 				* Also run the logarithm to give comparability with chaisemartin estimator 
 				foreach outc in $outcome_log {					
 				
-					reghdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `var2'_pit `var2'_cit $sample`i', absorb(estab#event year#event#fips_state) cl(estab#event)
+					reghdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `var2'_pit `var2'_cit `sample`i'', absorb(estab#event year#event#fips_state) cl(estab#event)
 					 est sto inventorreg3
 					coefplot inventorreg3, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///

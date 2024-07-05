@@ -7,11 +7,6 @@
 // Goal: 			Master Regression
 ////////////////////////////////////////////////////////////////////////////////
 
-global sample1 if inrange(year, 1988, 2018)
-global sample2 if inrange(year, 1988, 2018)  & total_patents>10 
-global sample3  if inrange(year, 1988, 2018)  & balanced_panel==1
-global sample4  if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>10 
-
 /*
 local sample1 if year>=1988 
 local sample2 if inrange(year, 1988, 2018)  & total_patents>5 
@@ -39,6 +34,10 @@ global dataset 4
 	// 3 = Harvard, 2018
 	// 4 = Patentsview, 2018
 
+********************************************************************************
+*First stage: Relocation	
+********************************************************************************
+	
 *A. MAIN -----------------------------------------------------------------------
 
 * Standard regression
@@ -55,8 +54,11 @@ do "${CODE}/running_stacked_regression_other.do"
 * Chaisemartin
 do "${CODE}/chaisemartin_estimator.do"
 
+********************************************************************************
+*Second stage: Spillover	
+********************************************************************************
 
-
+do "${CODE}/analysis_twowayfe_spillover.do"
 
 
 

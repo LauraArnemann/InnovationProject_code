@@ -383,7 +383,9 @@ erase "${TEMP}/inventor_helper_$dataset.dta"
 ********************************************************************************
 
 * This dofile generates the variables based on all years the establishment is present
-do "${CODE}/cleaning/02_01_gen_other_variable.do"
+do "${CODE}/02_01_gen_other_variable.do"
+    
+    
     
 
 ********************************************************************************
