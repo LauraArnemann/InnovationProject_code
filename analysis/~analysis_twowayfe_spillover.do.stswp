@@ -64,7 +64,7 @@ label var zero_1 "-1"
 bysort assignee_id: egen total_patents = total(patents3)
 
 *SAMPLE SLECTION:: ROBUSTNESS CHECK
-keep if tag_local == 1
+*keep if tag_local == 1
 
 *CHANGES -----------------------------------------------------------------------
 
