@@ -21,9 +21,8 @@ global direction incr decr
 global weighting_strategy threelargest3
 	// all3 weighted3
 
-global outcome patents3_w1 n_inventors3_w1 n_newinventors3_w1
-	*patents3 n_inventors3 n_newinventors3 
-global outcome_log ln_patents3_w1 ln_n_inventors3_w1 ln_n_newinventors3_w1
+global outcome patents3 n_inventors3 n_newinventors3 patents3_w1 n_inventors3_w1 n_newinventors3_w1
+global outcome_log ln_patents3 ln_n_inventors3 ln_n_newinventors3
 
 global controls rd_credit pit cit 
 global controls_other pit_other cit_other

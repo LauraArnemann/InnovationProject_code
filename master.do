@@ -91,17 +91,13 @@ else {
 	global RESULTS ${path}/results
 }
 
-<<<<<<< HEAD
-
-
-=======
 /*
 capture noisily {
 do "${CODE}/cleaning/cleaning_giroud_rauh_zeros.do"
 }
 beep_me
 */
->>>>>>> cbba2f0cbbc03aab404473fdeb81cbece5342aab
+
 * Creating the distinct data files 
 
 /*

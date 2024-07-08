@@ -18,7 +18,6 @@ use "${TEMP}/final_cz_${dataset}.dta", clear
 		gstats winsor `var', cut(1 99) gen(`var'_w1)
 		gstats winsor `var', cut(1 95) gen(`var'_w2)
 		gen ln_`var'=log(`var')
-		gen ln_`var'_w1 =log(`var'_w1)
 }
 
 egen estab_id = group(assignee_id fips_state czone)
@@ -32,7 +31,9 @@ xtset estab_id year
 
 gen change_otherstates = cz_treated_change_w - l.cz_treated_change_w
 gen byte incr_otherstates = change_otherstates >0
+replace incr_otherstates = . if change_otherstates<0 
 gen byte decr_otherstates = change_otherstates <0
+replace decr_otherstates = . if change_otherstates>0 
 		
 foreach x in change_otherstates incr_otherstates decr_otherstates {
 	
@@ -64,7 +65,7 @@ label var zero_1 "-1"
 bysort assignee_id: egen total_patents = total(patents3)
 
 *SAMPLE SLECTION:: ROBUSTNESS CHECK
-keep if tag_local == 1
+*keep if tag_local == 1
 
 *CHANGES -----------------------------------------------------------------------
 
@@ -85,7 +86,7 @@ foreach direction in change incr decr {
 		** Poisson Regression 
 		foreach var of varlist $outcome  {
 
-			ppmlhdfe `var' F?_`direction'_otherstates zero_1 L?_`direction'_otherstates `sample`i'', absorb(estab_id year#i.fips_state) cl(czone)
+			ppmlhdfe `var' F?_`direction'_otherstates zero_1 L?_`direction'_otherstates `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 			est sto regres1
 			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates zero_1 L?_`direction'_otherstates) yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
@@ -97,12 +98,12 @@ foreach direction in change incr decr {
 		** Regular Regression
 		foreach var of varlist $outcome_log  {
 			
-			reghdfe `var' F?_`direction'_otherstates zero_1 L?_`direction'_otherstates `sample`i'', absorb(estab_id year#i.fips_state) cl(czone)
+			reghdfe `var' F?_`direction'_otherstates zero_1 L?_`direction'_otherstates `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 			est sto regres3
 			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates zero_1 L?_`direction'_otherstates) yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				xtitle("Years since `direction'") ytitle(`var') graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/`var'_spillover_sample`i'_c3_nobin_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/var`var'_spillover_sample`i'_c3_nobin_`direction'.png", replace
 
 		}
 	}
@@ -124,12 +125,12 @@ foreach direction in change incr decr {
 		** Poisson Regression
 		foreach var of varlist $outcome {
 
-			ppmlhdfe `var' F?_`direction'_otherstates zero_1 L?_`direction'_otherstates `sample`i'', absorb(estab_id year#i.fips_state) cl(czone)
+			ppmlhdfe `var' F?_`direction'_otherstates zero_1 L?_`direction'_otherstates `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 			est sto regres1
 			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates zero_1 L?_`direction'_otherstates) yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				xtitle("Years since `direction'") ytitle(`var') graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/`var'_spillover_sample`i'_c1_binning_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/var`var'_spillover_sample`i'_c1_binning_`direction'.png", replace
 
 		}
 
@@ -137,12 +138,12 @@ foreach direction in change incr decr {
 		** Regular Regression
 		foreach var of varlist $outcome_log  {
 			
-			reghdfe `var' F?_`direction'_otherstates zero_1 L?_`direction'_otherstates `sample`i'', absorb(estab_id year#i.fips_state) cl(czone)
+			reghdfe `var' F?_`direction'_otherstates zero_1 L?_`direction'_otherstates `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 			est sto regres3
 			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates zero_1 L?_`direction'_otherstates) yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				xtitle("Years since `direction'") ytitle(`var') graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/`var'_spillover_sample`i'_c3_binning_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/var`var'_spillover_sample`i'_c3_binning_`direction'.png", replace
 
 		}
 	}

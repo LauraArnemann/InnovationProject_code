@@ -8,17 +8,14 @@
 ********************************************************************************
 * Generate Number of Patents on CZ level, by assignee id 
 ********************************************************************************
-foreach type in gvkey {
+
 use "$inventordata", clear 
 
-drop assignee_id 
-rename gvkey assignee_id
 *-Drop if missings in important variables
 drop if missing(app_year)
 drop if missing(assignee_id)
 drop if missing(state_fips_inventor)
 drop if missing(county_fips_inventor)
-
 
 tostring county_fips_inventor, replace 
 tostring state_fips_inventor, replace 
@@ -213,7 +210,7 @@ save "${TEMP}/patentcount_czone_${dataset}_assignee.dta", replace
 
 *  Balanced panel from 1970 - 2020
 
-use inventor_id county_fips_inventor state_fips_inventor assignee_id gvkey using "${inventordata}", clear 
+use inventor_id county_fips_inventor state_fips_inventor assignee_id using "${inventordata}", clear 
 
 drop if missing(assignee_id)
 drop if missing(state_fips_inventor)
@@ -251,9 +248,6 @@ save "${TEMP}/helper_${dataset}.dta", replace
 * Inventor Count on Commuting Zone level 
 
     use "${inventordata}", clear 
-	
-	drop assignee_id 
-	rename gvkey assignee_id
 
 	* Drop if missings in important variables
 	drop if missing(app_year)
@@ -411,10 +405,7 @@ drop _merge
 merge 1:1 fips_state czone assignee_id app_year using "${TEMP}/inventor2_czone_${dataset}.dta", keepusing(n_inventors2)
 drop _merge 
 
-
-save "${TEMP}/inventorcount_czone_`type'.dta", replace 
-}
-
+save "${TEMP}/inventorcount_czone_${dataset}_assignee.dta", replace 
 
 ********************************************************************************
 * Firm establishments facing tax changes in other locations 
@@ -447,9 +438,6 @@ drop  states_present new_states states_total total*
 save "${TEMP}/other_threelargest_3_$dataset_treated.dta", replace	
 
 
-
-
-/*
 ********************************************************************************
 * Merging data together 
 ********************************************************************************
