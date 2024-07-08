@@ -159,7 +159,7 @@ drop if dup>0
 drop dup
 save "${TEMP}/assignee.dta", replace 
 
-import delimited "${IN}\main_data\data_new\g_application.tsv", clear 
+import delimited "${IN}/main_data/data_new/g_application.tsv", clear 
 save "${TEMP}/application.dta", replace 
 
 

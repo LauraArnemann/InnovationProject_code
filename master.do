@@ -54,7 +54,8 @@ if c(username) == "laura" {
 
 if c(username) == "tbuehrle" {
 	
-	global path "/projekte/tbuehrle/homes/Spillover/2_Empirical"
+	*global path "/projekte/tbuehrle/homes/Spillover/2_Empirical"
+	global path "C:/Users/tbuehrle/OneDrive - DIW Berlin/3_Forschung/Topics/Spillover migration/2_Empirical"
 	
 	global IN "${path}/2_1_Data/raw"
 	global TEMP "${path}/2_1_Data/temp"
@@ -90,8 +91,17 @@ else {
 	global RESULTS ${path}/results
 }
 
+<<<<<<< HEAD
 
 
+=======
+/*
+capture noisily {
+do "${CODE}/cleaning/cleaning_giroud_rauh_zeros.do"
+}
+beep_me
+*/
+>>>>>>> cbba2f0cbbc03aab404473fdeb81cbece5342aab
 * Creating the distinct data files 
 
 /*

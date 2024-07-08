@@ -7,6 +7,10 @@
 // Goal: 			Using the Sun & Abraham and Chaisemartin approach 
 ////////////////////////////////////////////////////////////////////////////////
 
+local sample1 if inrange(year, 1988, 2018)
+local sample2 if inrange(year, 1988, 2018)  & total_patents>10 
+local sample3  if inrange(year, 1988, 2018)  & balanced_panel==1
+local sample4  if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>10 
 
 foreach type in  gvkey {
 
@@ -47,17 +51,11 @@ replace other_gdp_`helper'3 = ln(other_gdp_`helper'3)
  *******************************************************************************
  * Chaisemartin Estimator 
  *******************************************************************************
-			* Set different sample restrictions as well 
-		     local sample1 if year>=1988 
-		     local sample2 if inrange(year, 1988, 2018)  & total_patents>5 
-		     local sample3 if inrange(year, 1988, 2018)  & total_patents!=0
-		     local sample4 if inrange(year, 1988, 2018) & estab_patents>5
-		     local sample5 if inrange(year, 1988, 2018) & total_patents>10	
 	
 ****** Only Establishment and Year Fixed Effects 	
 * No Controls 		
 	forvalues i =5/5 {	
-foreach var of varlist patents1 patents3 patents3_w1 patents1_w1 n_inventors3 n_newinventors3 ln_patents3 ln_n_inventors3 { 
+foreach var of varlist $outcome { 
  
 * Both Changes 
 did_multiplegt_dyn `var' estab year change_other_credit `sample`i'', effects(6) placebo(4) cluster(estab)

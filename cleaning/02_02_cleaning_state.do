@@ -36,7 +36,7 @@ drop if year==1997
 tempfile gdp1997 
 save `gdp1997' 
 
-import delimited "${IN}\indep_var\var_state\gdp_1997_2018.csv", delimiter(comma) clear 
+import delimited "${IN}/indep_var/var_state/gdp_1997_2018.csv", delimiter(comma) clear 
 keep if industryid==1
 destring geofips, replace 
 gen fips_state = geofips/1000
@@ -113,7 +113,7 @@ save "${IN}/indep_var/var_tax/tax_final.dta", replace
 *R&D credits -------------------------------------------------------------------
 
 * Merging the RD Credits
-import excel "${IN}/main_data/indep_var/var_RDcredits/RD_credits_final.xlsx", sheet("rd_summary") firstrow clear
+import excel "${IN}/indep_var/var_RDcredits/RD_credits_final.xlsx", sheet("rd_summary") firstrow clear
 
 drop if missing(fips_state)
 
@@ -123,7 +123,7 @@ save "${IN}/indep_var/var_RDcredits/RD_credits_final.dta", replace
 
 *GOVERNMENT R&D EXPENDITURE ----------------------------------------------------
 
-use "${IN}\var_other\fips_codes_us.dta", clear
+use "${IN}/var_other/fips_codes_us.dta", clear
 
 keep state_name state_fips
 destring state_fips, replace
@@ -132,7 +132,7 @@ duplicates drop
 tempfile state_fips 
 save `state_fips'
 
-import excel "${IN}\var_other\rd_exp_states_us\nsf24306-tab003.xlsx", sheet("stata") firstrow clear
+import excel "${IN}/var_other/rd_exp_states_us/nsf24306-tab003.xlsx", sheet("stata") firstrow clear
 
 foreach letter in B C D E F G H I J K L M N O P Q R  {
 local c: var label `letter'
