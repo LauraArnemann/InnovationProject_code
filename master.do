@@ -92,15 +92,6 @@ else {
 
 
 
-do "${CODE}/analysis/analysis_twowayfe_static.do"
-do "${CODE}/analysis/analysis_twowayfe_dynamic.do"
-do "${CODE}/analysis/chaisemartin_estimator.do"
-/*
-capture noisily {
-do "${CODE}/cleaning/cleaning_giroud_rauh_zeros.do"
-}
-beep_me
-*/
 * Creating the distinct data files 
 
 /*

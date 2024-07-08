@@ -14,7 +14,7 @@ global controls rd_credit pit cit
 
 *assignee 
 
-foreach type in gvkey {
+foreach type in gvkey assignee {
 
 foreach direction in incr {
 		
@@ -22,7 +22,7 @@ foreach direction in incr {
 ********************************************************************************
 * Events indicator on year level: Change at other locations  
 ********************************************************************************
-/*
+
 		foreach var2 in other_all3 other_weighted3 other_threelargest3   {
 			
 			use "${TEMP}/final_state_stacked_`var2'_incr_${dataset}_`type'_year.dta", replace 
@@ -74,7 +74,7 @@ foreach direction in incr {
 			 local sample7 if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>10 
 	
 			
-			forvalues i =4/7 {
+			forvalues i =1/7 {
 				
 				foreach outc in patents3 n_inventors3 n_newinventors3 patents3_w1 n_inventors3_w1 n_newinventors3_w1  {
 				
@@ -121,7 +121,7 @@ foreach direction in incr {
 			}
 		}
 
-*/
+
 ********************************************************************************
 * Events indicator on state-year level: Change at other locations  
 ********************************************************************************		
@@ -169,8 +169,8 @@ foreach var2 in other_all3 other_weighted3 other_threelargest3   {
 			
 			* Set different sample restrictions as well 
 		 	local sample1 if inrange(year, 1988, 2018) 
-		    local sample2 if inrange(year, 1988, 2014)  & n_patents>5 
-		    local sample3 if inrange(year, 1988, 2014)  & n_patents!=0 
+		    local sample2 if inrange(year, 1988, 2014)  & total_patents>5 
+		    local sample3 if inrange(year, 1988, 2014)  & total_patents!=0 
 			local sample4 if inrange(year, 1988, 2018) & estab_patents>5
 			 local sample5 if inrange(year, 1988, 2018)  & total_patents>10 
 			 local sample6 if inrange(year, 1988, 2018)  & balanced_panel==1
@@ -178,7 +178,7 @@ foreach var2 in other_all3 other_weighted3 other_threelargest3   {
 			
 
 			
-			forvalues i =1/1 {
+			forvalues i =1/7 {
 				
 				foreach outc in patents3 n_inventors3 n_newinventors3 patents3_w1 n_inventors3_w1 n_newinventors3_w1  {
 				

@@ -8,14 +8,17 @@
 ********************************************************************************
 * Generate Number of Patents on CZ level 
 ********************************************************************************
-
+foreach type in gvkey {
 use "$inventordata", clear 
 
+drop assignee_id 
+rename gvkey assignee_id
 *-Drop if missings in important variables
 drop if missing(app_year)
 drop if missing(assignee_id)
 drop if missing(state_fips_inventor)
 drop if missing(county_fips_inventor)
+
 
 tostring county_fips_inventor, replace 
 tostring state_fips_inventor, replace 
@@ -208,8 +211,10 @@ save "${TEMP}/patentcount_czone_`type'.dta", replace
 
 *  Balanced panel from 1970 - 2020
 
-use inventor_id county_fips_inventor state_fips_inventor assignee_id using "${inventordata}", clear 
+use inventor_id county_fips_inventor state_fips_inventor assignee_id gvkey  using "${inventordata}", clear 
 
+drop assignee_id 
+rename gvkey assignee_id
 
 drop if missing(assignee_id)
 drop if missing(state_fips_inventor)
@@ -246,6 +251,9 @@ save "${TEMP}/helper.dta", replace
 * Inventor Count on Commuting Zone level 
 
     use "${inventordata}", clear 
+	
+	drop assignee_id 
+	rename gvkey assignee_id
 
 	* Drop if missings in important variables
 	drop if missing(app_year)
@@ -403,8 +411,11 @@ merge 1:1 czone assignee_id app_year using "${TEMP}/inventor2_czone.dta",keepusi
 drop _merge 
 
 save "${TEMP}/inventorcount_czone_`type'.dta", replace 
+}
 
 
+
+/*
 ********************************************************************************
 * Merging data together 
 ********************************************************************************
