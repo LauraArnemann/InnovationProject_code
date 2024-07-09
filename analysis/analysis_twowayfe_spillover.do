@@ -6,7 +6,7 @@
 //					Theresa Bührle
 // Goal: 			Calculating spillover with two-way fixed effects analysis
 ////////////////////////////////////////////////////////////////////////////////
-	
+	*https://github.com/sergiocorreia/ppmlhdfe/blob/master/guides/separation_primer.md
 local sample1 if inrange(year, 1988, 2018)
 local sample2 if inrange(year, 1988, 2018)  & total_patents>10 
 local sample3  if inrange(year, 1988, 2018)  & balanced_panel==1
