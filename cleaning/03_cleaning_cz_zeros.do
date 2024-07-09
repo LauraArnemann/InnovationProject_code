@@ -439,7 +439,7 @@ save "${TEMP}/other_threelargest_3_$dataset_treated.dta", replace
 
 
 ********************************************************************************
-* Merging data together 
+* Merging data together: Assignee Level  
 ********************************************************************************
 /*Difficulty in measuring spillover effects atm: We want to measure spillover effects, so 
 we need to exclude the patents of treated units. In my opinion the cleanest approach would be to focus on firms which are only active in one commuting zone  */
@@ -516,5 +516,76 @@ rename app_year year
 save "${TEMP}/final_cz_${dataset}.dta", replace 
 
 
+
+********************************************************************************
+* Merging data together: Commuting Zone level
+********************************************************************************
+/*Difficulty in measuring spillover effects atm: We want to measure spillover effects, so 
+we need to exclude the patents of treated units. In my opinion the cleanest approach would be to focus on firms which are only active in one commuting zone  */
+
+use "${TEMP}/patentcount_czone_${dataset}_assignee.dta", clear 
+merge 1:1 fips_state czone assignee_id app_year using "${TEMP}/inventorcount_czone_${dataset}_assignee.dta"
+drop _merge 
+
+destring fips_state, replace
+* Merging in R&D credit observations 
+merge m:1 fips_state app_year using "${TEMP}/state_data_cleaned.dta"
+	drop if _merge ==2
+	drop _merge
+
+*Changes at other locations
+rename app_year year 
+
+
+merge m:1 fips_state assignee_id year using "${TEMP}/other_threelargest_3_$dataset_treated.dta"
+	drop if _merge == 2
+	drop _merge
+
+bysort assignee_id year czone: gen cz_count=_N 
+gen byte helper = cz_count>1
+bysort czone: egen multistate_cz = max(helper)
+
+*Weight this already for collapsing 
+
+bysort assignee_id year czone: egen total_inventors = total(n_inventors3)
+foreach var of varlist pit rd_credit cit change_other_threelargest {
+	replace `var'= (n_inventors3/total_inventors) * `var'
+}
+	
+	gen byte missing_change_largest = change_other_threelargest == .
+	
+* Including all commuting zones
+collapse (sum) patents3 n_inventors3 n_newinventors3 change_other_threelargest pit rd_credit cit (max) max_multistate = multistate_cz max_missing_change = missing_change_largest , by(czone assignee_id year)
+
+* Creating an indicator for only local firms 
+bysort assignee_id year: gen cz_count = _N 
+bysort assignee_id: egen max_cz_count = max(cz_count)
+gen tag_local = 1 if max_cz_count == 1 	
+bysort czone year: gen n_labs = _N 
+
+foreach var of varlist n_inventors3 n_newinventors3 patents3 {
+	gen local_`var' = `var' if tag_local==1 
+}
+
+gen change_other_threelargest_d = 1 if change_other_threelargest!=0 & change_other_threelargest!=. 
+	
+*CZ with firms that are treated	
+bysort czone year: egen cz_treated = max(change_other_threelargest_d)
+
+*Average rd_credit change of treated firms within CZ
+bysort czone year: egen cz_treated_change = mean(change_other_threelargest)
+replace cz_treated_change = 0 if cz_treated_change == .
+
+	*Weighted:
+	gen inv_count_multistate = n_inventors3 if tag_local != 1 & change_other_threelargest_d == 1
+	bysort czone year: egen sum_inv_multi = sum(inv_count_multistate)
+	gen weight_multi = inv_count_multistate / sum_inv_multi if inv_count_multistate != .
+	gen weighted_change = change_other_threelargest * weight_multi
+
+	
+* Collapse everything on commuting zone level 
+collapse (sum) weighted_change n_inventors3 patents3 n_newinventors3 local_n_inventors3 local_n_newinventors3 local_patents3 pit rd_credit cit (max) multistate_cz = max_multistate max_labs = n_labs, by(czone year)
+
+save "${TEMP}/final_cz_${dataset}_aggregate.dta", replace 
 
 

@@ -17,7 +17,7 @@ local sample6 if inrange(year, 1988, 2018)  & balanced_panel==1
 local sample7 if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>10 
 */
 
-global direction incr decr
+global direction incr 
 global weighting_strategy threelargest3
 	// all3 weighted3
 

@@ -53,7 +53,7 @@ local outcome_log patents3_w1 n_inventors3_w1 n_newinventors3_w1
 				gen l`i'_binary = ry_`direction'ease==`i'
 				label var l`i'_binary "`i'"
 			}
-
+	}
 			drop f1_binary 
 			gen zero_1=1
 			label var zero_1 "-1" 
