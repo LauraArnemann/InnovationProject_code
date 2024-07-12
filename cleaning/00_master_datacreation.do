@@ -32,12 +32,7 @@ if $dataset == 4 {
 }
 
 * Run the dofiles 
-*do "${CODE}/cleaning/02_cleaning_giroud_rauh_zeros.do"
-*do "${CODE}/cleaning/02_cleaning_giroud_rauh_zeros_gvkey.do"
-*do "${CODE}/analysis/analysis_twowayfe_static.do"
-*do "${CODE}/analysis/analysis_twowayfe_dynamic.do"
-*do "${CODE}/cleaning/07_cleaning_stacked_regression_stateyear.do"
-*do "${CODE}/analysis/running_stacked_regression_other.do"
-
-
+*do "${CODE}/analysis/analysis_twowayfe_spillover.do"
+do "${CODE}/cleaning/08_cleaning_stacked_regression_other.do"
+do "${CODE}/analysis/running_stacked_regression_other_czone.do"
 
