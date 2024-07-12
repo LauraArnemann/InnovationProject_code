@@ -276,7 +276,7 @@ save "${IN}/indep_var/var_cz/density/county_area.dta", replace
 Variable: 	Urbanisation
 Source: 	Natioonal Center for Health Statistics
 Download: 	https://www.cdc.gov/nchs/data_access/urban_rural.htm
-Years: 		1990, 2006, 2013 classification scheme
+Years: 		1990, git add2006, 2013 classification scheme
 */
 ********************************************************************************
 
