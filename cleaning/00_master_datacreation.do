@@ -33,6 +33,6 @@ if $dataset == 4 {
 
 * Run the dofiles 
 *do "${CODE}/analysis/analysis_twowayfe_spillover.do"
-do "${CODE}/cleaning/08_cleaning_stacked_regression_other.do"
+do "${CODE}/cleaning/08_cleaning_stacked_regression_other_czone.do"
 do "${CODE}/analysis/running_stacked_regression_other_czone.do"
 
