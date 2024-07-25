@@ -26,6 +26,12 @@ ssc install coefplot, replace
 ssc install ftools, replace
 ssc install reghdfe, replace
 
+ssc install avar, replace
+ssc install xtivreg2, replace
+ssc install newey2, replace
+ssc install ivreg2, replace
+ssc install ranktest, replace
+
 ssc install did_multiplegt_dyn, replace
 */
 
@@ -62,6 +68,7 @@ if c(username) == "tbuehrle" {
 	global OUT  "${path}/2_1_Data/final"
 	global LINKING  "${path}/2_1_Data/linking_tables"
 	global PATENTDTA "/projekte/tbuehrle/homes/Spillover/Patent Data US_Woeppel/Temp"
+	global TECHDATA "D:/DOCS/3_Forschung/Topics/Spillover migration/2_Empirical/2_1_Data/temp/tech"
 	
 	global CODE "${path}/2_2_Code/cleaning"
 	

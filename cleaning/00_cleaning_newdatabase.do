@@ -148,10 +148,10 @@ save "${TEMP}/new_dataset2.dta", replace
 *2018 Data from PatentsView used in the Dyevre data set  
 ********************************************************************************
 
-import delimited "${IN}/main_data/data_new/g_location_disambiguated.tsv", clear
+import delimited "${IN}/main_data/data_new/Patentsview/g_location_disambiguated.tsv", clear
 save "${TEMP}/location.dta", replace 
 
-import delimited "${IN}/main_data/data_new/g_assignee_disambiguated.tsv", clear
+import delimited "${IN}/main_data/data_new/Patentsview/g_assignee_disambiguated.tsv", clear
 * Drop all patents with multiple assignees
 duplicates tag patent_id, gen(dup)
 drop if dup>0 
@@ -159,11 +159,11 @@ drop if dup>0
 drop dup
 save "${TEMP}/assignee.dta", replace 
 
-import delimited "${IN}/main_data/data_new/g_application.tsv", clear 
+import delimited "${IN}/main_data/data_new/Patentsview/g_application.tsv", clear 
 save "${TEMP}/application.dta", replace 
 
 
-import delimited "${IN}/main_data/data_new/g_inventor_disambiguated.tsv", clear
+import delimited "${IN}/main_data/data_new/Patentsview/g_inventor_disambiguated.tsv", clear
 merge m:1 patent_id using "${TEMP}/assignee.dta"
 keep if _merge==3 
 drop _merge 

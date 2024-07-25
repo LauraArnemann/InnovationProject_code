@@ -195,6 +195,15 @@ gen other_fips_state = fips_state
 save "${TEMP}/state_data_cleaned.dta", replace 
 
 
+*CONSUMER PRICE INDEX ----------------------------------------------------------
 
+import excel "${IN}/var_other/cpi_us.xlsx", sheet("stata") firstrow clear
+rename Year year
 
+sum cpi if year == 1995
+local cpi_1995 = r(mean)
+display `cpi_1995'
 
+gen cpi_norm = `cpi_1995' / cpi 
+
+save "${IN}/var_other/cpi_us.dta", replace

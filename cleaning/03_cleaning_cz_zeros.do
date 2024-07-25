@@ -587,6 +587,9 @@ foreach var of varlist n_inventors3 n_newinventors3 patents3 {
 }
 	
 */	
+
+save "${TEMP}/final_cz_${dataset}_preaggregate.dta", replace 
+
 * Collapse everything on commuting zone level 
 collapse (sum) weighted_change n_inventors3 patents3 n_newinventors3 local_n_inventors3 local_n_newinventors3 local_patents3 (max) max_labs = n_labs max_pit = pit max_rd_credit = rd_credit max_cit = cit, by(czone year fips_state)
 
