@@ -21,16 +21,33 @@ local sample2 if inrange(year, 1988, 2018)  & estab_patents>5
 local outcome patents3_w1 n_inventors3_w1 n_newinventors3_w1 
 local outcome_log ln_patents3 ln_n_inventors3 ln_n_newinventors3
 
-
-*if `aggregate' == 0 {
-
-		
+	
 ********************************************************************************
 * Events indicator on state-year level: Change at other locations  
-********************************************************************************		
+********************************************************************************
+/*
+forvalues y = 2/3 {	
+use "${TEMP}/final_state_stacked_incr_${dataset}_cz_year_w`y'.dta", clear 
+levelsof event, local(events_final)
+
+clear 
+use "${TEMP}/final_cz_${dataset}.dta"
+* Just set some arbitrary value this will be dropped anyway when merging
+gen event = 1992 
+
+foreach l in `events_final' {
+	append using "${TEMP}/final_cz_${dataset}.dta"
+	replace event = `l'
+}
+compress
+save "${TEMP}/final_cz_${dataset}_w`y'.dta", replace 
+}
+*/
 	
-			use "${TEMP}/final_state_stacked_incr_${dataset}_cz_year.dta", replace 
-			merge m:1 estab_id year using "${TEMP}/final_state_stacked_other_zeros_${dataset}_cz.dta", nogen keep(3)
+forvalues y = 1/3 {	
+	
+			use "${TEMP}/final_cz_${dataset}_w`y'.dta", replace 
+			merge m:1 czone fips_state year event using "${TEMP}/final_state_stacked_incr_${dataset}_cz_year_w`y'.dta", nogen keep(3)
 			drop min_year max_year 
 				
 			bysort assignee_id year event: egen total_patents = total(patents3)
@@ -50,43 +67,32 @@ local outcome_log ln_patents3 ln_n_inventors3 ln_n_newinventors3
 			bysort estab_id event: egen estab_patents = total(patents3)
                  
 			*Generate the event indicators
-			egen estab_event = group(estab_id event)
-			xtset estab_event year 
+	
 			
-			foreach direction in incr {
-			forvalues i=1/4 {
-				gen f`i'_binary = ry_`direction'ease==-`i'
-				label var f`i'_binary "- `i'"
-				gen f`i'_change = l`i'.cz_treated_change_w
-				replace f`i'_change  =0 if missing(f`i'_change )
-				label var f`i'_change "- `i'"
-			}
-
-			forvalues i=0/4 {
-				gen l`i'_binary = ry_`direction'ease==`i'
-				label var l`i'_binary "`i'"
-				gen l`i'_change = l`i'.cz_treated_change_w
-				replace l`i'_change  =0 if missing(l`i'_change )
-				label var l`i'_change "`i'"
-			}
-			}
-			
-			drop f1_binary 
+			drop f1*
 			gen zero_1=1
 			label var zero_1 "-1" 
 				
-			forvalues i =2/2 {
+			forvalues i =1/2 {
 				
 				*Event studies
 				foreach outc in `outcome' {
 									
-					ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `sample`i'', absorb(estab_id#event year#fips_state) cl(estab_id#event)
+					ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `sample`i'', absorb(estab_id#event year#fips_state) cl(czone#fips_state#event)
 					 est sto inventorreg1
 					coefplot inventorreg1, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 					title("Spillovers, Increase - no controls") xtitle("Years since Change") graphregion(color(white))
-						capture noisily graph export "${RESULTS}/stackedregression/spillovers/estab/stacked_other_increase_`outc'_sample`i'_stateyear.png", replace  
+						capture noisily graph export "${RESULTS}/stackedregression/spillovers/estab/stacked_other_increase_`outc'_sample`i'_stateyear_w`y'.png", replace 
+						
+						ppmlhdfe `outc' f4_change f3_change f2_change zero_1 l?_change `sample`i'', absorb(estab_id#event year#fips_state)cl(czone#fips_state#event)
+					 est sto inventorreg2
+					coefplot inventorreg3, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
+					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
+					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+					title("Spillovers, Increase - no controls") xtitle("Years since Change") graphregion(color(white))
+						capture noisily graph export "${RESULTS}/stackedregression/spillovers/estab/stacked_other_change_`outc'_sample`i'_stateyear_w`y'.png", replace  
 						
 
 				}
@@ -100,20 +106,29 @@ local outcome_log ln_patents3 ln_n_inventors3 ln_n_newinventors3
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 					title("Spillovers, `direction' - controls ") xtitle("Years since Change") graphregion(color(white))
-						capture noisily graph export "${RESULTS}/stackedregression/spillovers/estab/stacked_other_increase_`outc'_c2_sample`i'_stateyear.png", replace  
+						capture noisily graph export "${RESULTS}/stackedregression/spillovers/estab/stacked_other_increase_`outc'_c2_sample`i'_stateyear_w`y'.png", replace 
+						
+						
+					reghdfe `outc' f4_change f3_change f2_change zero_1 l?_change `sample`i'', absorb(estab_id#event year#event#fips_state) cl(czone#fips_state#event)
+					 est sto inventorreg4
+					coefplot inventorreg4, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
+					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
+					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+					title("Spillovers, `direction' - controls ") xtitle("Years since Change") graphregion(color(white))
+						capture noisily graph export "${RESULTS}/stackedregression/spillovers/estab/stacked_other_change_`outc'_c2_sample`i'_stateyear_w`y'.png", replace  
 						
 				
 
 			}
 		}			
-	
+}
 *}
 
 
 ********************************************************************************	
 * On Aggregate level 
 ********************************************************************************
-
+/*
 local sample1 if inrange(year, 1988, 2018)
 local sample2 if inrange(year, 1988, 2018)  & multistate_cz==0
  
@@ -178,6 +193,6 @@ local outcome_log ln_patents3 ln_n_inventors3 ln_n_newinventors3
 			}
 			}
 *}
-
+*/
 
 

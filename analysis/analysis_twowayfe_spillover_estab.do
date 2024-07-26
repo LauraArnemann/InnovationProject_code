@@ -91,8 +91,8 @@ local sample7 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1
 local sample8 if inrange(year, 1988, 2018) & tag_local==1
 local sample9 if inrange(year, 1988, 2018) & treated!=1  	
 local sample10 if inrange(year, 1988, 2018) & multistate_cz ==0 
+local sample11 if inrange(year, 1988, 2018) & tag_local==1 & multistate_cz ==0 
 
-			
 
 foreach expl of numlist 1 2 3 4 5 6  { 		
 		
@@ -100,7 +100,7 @@ foreach expl of numlist 1 2 3 4 5 6  {
 	* Regular event studies: No binning off 
 	********************************************************************************
 
-	forvalues i = 1/10 {
+	forvalues i = 11/11 {
 			local cl czone 
 		** Poisson Regression 
 		foreach var of varlist `outcome' {
@@ -154,6 +154,7 @@ foreach expl of numlist 1 2 3 4 5 6  {
 	
 }
 }	
+
 	********************************************************************************
 	* Regular Event Studies: Binning Off 
 	********************************************************************************
@@ -165,14 +166,14 @@ foreach expl of numlist 1 2 3 4 5 6 {
 	}
 		 
 
-	forvalues i = 1/10 {
+	forvalues i = 11/11 {
 			
 		** Poisson Regression
 		foreach var of varlist `outcome' {
 			
 			if `i'!=9 {
 
-			ppmlhdfe `var' F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'', absorb(estab_id year#i.fips_state) cl(`cl')
+			ppmlhdfe `var' F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state) cl(`cl')
 			est sto regres1
 			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
@@ -196,7 +197,7 @@ foreach expl of numlist 1 2 3 4 5 6 {
 		foreach var of varlist `outcome_log'  {
 			
 				if `i'!=9 {
-			reghdfe `var' F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'', absorb(estab_id year#i.fips_state) cl(`cl')
+			reghdfe `var' F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state) cl(`cl')
 			est sto regres3
 			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
@@ -205,7 +206,7 @@ foreach expl of numlist 1 2 3 4 5 6 {
 				}
 			
 		
-			reghdfe `var' F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'', absorb(estab_id year#i.fips_state) cl(`cl')
+			reghdfe `var' change_other_threelargest F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'' , absorb(estab_id year#i.fips_state) cl(`cl')
 			est sto regres3
 			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
