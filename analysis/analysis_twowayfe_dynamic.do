@@ -4,6 +4,9 @@
 // Author: Laura Arnemann 
 // Goal: Regular two-way fixed effects analysis with event studies 
 
+
+
+
 local sample1 if inrange(year, 1988, 2018)
 local sample2 if inrange(year, 1988, 2018)  & total_patents>10 
 local sample3  if inrange(year, 1988, 2018)  & balanced_panel==1
@@ -13,7 +16,7 @@ foreach type in assignee gvkey {
 	
 	use "${TEMP}/final_state_zeros_new_${dataset}_`type'.dta", clear 
 
-	foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3  n_newinventors1 n_newinventors3 {
+	foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 n_newinventors1 n_newinventors3 {
 		gstats winsor `var', cut(1 99) gen(`var'_w1)
 		gstats winsor `var', cut(1 95) gen(`var'_w2)
 		gen ln_`var'=log(`var')
@@ -132,6 +135,7 @@ foreach type in assignee gvkey {
 
 	foreach explaining in $weighting_strategy {
 		foreach x in change_`explaining' increase_`explaining' decrease_`explaining' {
+
 			replace F4_`x'=sum_F4_`x'
 			replace L4_`x'=sum_L4_`x'
 		}

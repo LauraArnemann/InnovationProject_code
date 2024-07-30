@@ -11,8 +11,7 @@
 use "${TEMP}/final_cz_${dataset}.dta", clear 
 drop if missing(assignee_id)
 
-egen estab_id = group(assignee_id fips_state czone)
-xtset estab_id year 	
+
 * Changes in R&D credits
 gen change_cz  = cz_treated_change_w 
 
@@ -40,10 +39,11 @@ forval f = 8(-1)1 {
 
 gen sum_leadslags = F1_change_cz + F2_change_cz + F3_change_cz + F4_change_cz + F5_change_cz + F6_change_cz + F7_change_cz + F8_change_cz + L1_change_cz + L2_change_cz + L3_change_cz + L4_change_cz + L5_change_cz + L6_change_cz + L7_change_cz + L8_change_cz 		
 		
-		
+* Actually too little clean treatments before and after 		
 save  "${TEMP}/final_state_stacked_other_zeros_${dataset}_cz.dta", replace 
 
 
 *********************************************************************************
 * Cleaning 
 *********************************************************************************
+use  "${TEMP}/final_state_stacked_other_zeros_${dataset}_cz.dta", replace 

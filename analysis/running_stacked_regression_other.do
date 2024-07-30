@@ -12,7 +12,10 @@ local sample2 if inrange(year, 1988, 2018)  & total_patents>10
 local sample3  if inrange(year, 1988, 2018)  & balanced_panel==1
 local sample4  if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>10 
 
-foreach type in gvkey {
+global direction incr
+global outcome patents3_w1 n_inventors3_w1 n_newinventors3_w1
+
+foreach type in assignee {
 
 	foreach direction in $direction {
 		
@@ -20,7 +23,7 @@ foreach type in gvkey {
 * Events indicator on state-year level: Change at other locations  
 ********************************************************************************		
 	
-		foreach var2 in "other_$weighting_strategy" {
+		foreach var2 in other_weighted3 {
 			
 			use "${TEMP}/final_state_stacked_`var2'_`direction'_${dataset}_`type'_year.dta", replace 
 			merge m:1 estab year using "${TEMP}/final_state_stacked_other_zeros_${dataset}_`type'.dta", nogen keep(3)

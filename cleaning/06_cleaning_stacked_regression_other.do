@@ -15,7 +15,7 @@ global lag=4	// set lags
 * Stacked Regression for tax changes at other establishment location
 ********************************************************************************
 
-foreach type in assignee gvkey {
+foreach type in assignee  {
 	
 use "${TEMP}/final_state_zeros_new_${dataset}_`type'.dta", clear 
 drop if missing(assignee_id)
