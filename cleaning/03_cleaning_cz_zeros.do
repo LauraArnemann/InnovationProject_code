@@ -596,7 +596,7 @@ drop count sum_count
 save "${TEMP}/final_cz_${dataset}.dta", replace 
 
 
-<<<<<<< HEAD
+
 
 ********************************************************************************
 * Merging data together: Commuting Zone level
@@ -690,5 +690,4 @@ gen byte multistate_cz = count>1
 save "${TEMP}/final_cz_${dataset}_aggregate.dta", replace 
 
 
-=======
->>>>>>> 75edb7df6d53543e9909151be5f9c7bb2ff1efe3
+

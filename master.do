@@ -33,6 +33,8 @@ ssc install ivreg2, replace
 ssc install ranktest, replace
 
 ssc install did_multiplegt_dyn, replace
+
+ssc install egenmore, replace
 */
 
 * Set the global so the paths adjust quickly
@@ -70,7 +72,7 @@ if c(username) == "tbuehrle" {
 	global PATENTDTA "/projekte/tbuehrle/homes/Spillover/Patent Data US_Woeppel/Temp"
 	global TECHDATA "D:/DOCS/3_Forschung/Topics/Spillover migration/2_Empirical/2_1_Data/temp/tech"
 	
-	global CODE "${path}/2_2_Code/cleaning"
+	global CODE "${path}/2_2_Code/"
 	
 	global RESULTS "${path}/2_3_Results"
 	global OVERLEAF "${path}/2_3_Results/overleaf"
