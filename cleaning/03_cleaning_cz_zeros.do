@@ -443,6 +443,7 @@ foreach var in other_threelargest {
 	
 *keep if max_tr_ == 1
 drop  states_present new_states states_total total*
+
 	
 save "${TEMP}/other_threelargest_3_$dataset_treated.dta", replace	
 
@@ -461,6 +462,7 @@ save `patentshelper'
 /*Difficulty in measuring spillover effects atm: We want to measure spillover effects, so 
 we need to exclude the patents of treated units. In my opinion the cleanest approach would be to focus on firms which are only active in one commuting zone  */
 
+
 use "${TEMP}/patentcount_czone_${dataset}_assignee.dta", clear 
 merge 1:1 fips_state czone assignee_id app_year using "${TEMP}/inventorcount_czone_${dataset}_assignee.dta"
 drop _merge 
@@ -477,8 +479,10 @@ rename app_year year
 destring fips_state, replace
 merge m:1 fips_state assignee_id year using "${TEMP}/other_threelargest_3_$dataset_treated.dta"
 * Only  24,901 observations no multistate firms
-	drop if _merge == 2
-	drop _merge
+drop if _merge == 2
+drop _merge
+
+replace change_other_threelargest = . if asg_corp!=1 
 	
 * Creating an indicator for only local firms 
 bysort assignee_id year czone: gen helper = _n 
@@ -500,7 +504,7 @@ bysort fips_state czone year: egen cz_treated_change = mean(change_other_threela
 	replace cz_treated_change = 0 if cz_treated_change == .
 
 	*Weighted:
-	gen inv_count_multistate = n_inventors3 if tag_local != 1 
+	gen inv_count_multistate = n_inventors3 if tag_local != 1 & asg_corp==1
 	bysort fips_state czone year: egen sum_inv_multi = sum(inv_count_multistate)
 	gen weight_multi = inv_count_multistate / sum_inv_multi if inv_count_multistate != .
 	
@@ -516,8 +520,8 @@ bysort fips_state czone year: egen cz_treated_change = mean(change_other_threela
 	xtset estab_id year 
 	
 	* Lagging the number of inventors/patents by one year 
-	gen lag_inventors = l.n_inventors3 if tag_local != 1 
-	gen lag_patents = l.patents3 if tag_local != 1
+	gen lag_inventors = l.n_inventors3 if tag_local != 1 & asg_corp==1
+	gen lag_patents = l.patents3 if tag_local != 1 & asg_corp==1
 	
 	bysort fips_state czone year: egen sum_invent = sum(lag_inventors)
 	bysort fips_state czone year: egen sum_patents = sum(lag_patents)
@@ -527,7 +531,7 @@ bysort fips_state czone year: egen cz_treated_change = mean(change_other_threela
 	gen weighted_change3 = change_other_threelargest *(lag_patents/sum_patents)
 	gen weighted_change4 = change_other_threelargest * n_inventors3
 	gen weighted_change5 = change_other_threelargest * lag_inventors
-	gen weighted_change6 = change_other_threelargest * n_inventors3 
+	gen weighted_change6 = change_other_threelargest * n_inventors3 if asg_corp ==1 
 	replace weighted_change6 = 0 if missing(change_other_threelargest)
 
 	* I think the correct approach for multistate firms would be to exclude them from calculating the weights 
@@ -547,7 +551,38 @@ bysort fips_state czone year: egen cz_treated_change = mean(change_other_threela
 	bysort fips_state czone year: egen cz_treated_change_w6_helper = sum(weighted_change6)
 	gen cz_treated_change_w6 = (cz_treated_change_w6_helper - weighted_change6)/(sum_inv - n_inventors3)
 	
-	drop weighted_change* weight_multi cz_treated_change_w5_helper cz_treated_change_w4_helper cz_treated_change_w6_helper
+	
+*******************************************************************************
+* Calculating the weighted level of the variable 
+*******************************************************************************
+
+	gen weighted_level1 = other_threelargest * weight_multi
+	gen weighted_level2 = other_threelargest *(lag_inventors/sum_invent)
+	gen weighted_level3 = other_threelargest *(lag_patents/sum_patents)
+	gen weighted_level4 = other_threelargest * n_inventors3
+	gen weighted_level5 = other_threelargest * lag_inventors
+	gen weighted_level6 = other_threelargest * n_inventors3 if asg_corp ==1 
+	replace weighted_level6 = 0 if missing(other_threelargest)
+	
+* Generating the weighted variable in levels 	
+	bysort fips_state czone year: egen cz_treated_level_w1 = sum(weighted_level1)
+	bysort fips_state czone year: egen cz_treated_level_w2 = sum(weighted_level2)
+	bysort fips_state czone year: egen cz_treated_level_w3 = sum(weighted_level3)
+	bysort fips_state czone year: egen cz_treated_level_w4_helper = sum(weighted_level4)
+	gen cz_treated_level_w4 = (cz_treated_level_w4_helper - weighted_level4)/(sum_inv - n_inventors3) if other_threelargest!=. 
+	
+	replace cz_treated_level_w4 = cz_treated_level_w4_helper/sum_inv
+	bysort fips_state czone year: egen cz_treated_level_w5_helper = sum(weighted_level5)
+	
+	gen cz_treated_level_w5 = (cz_treated_level_w5_helper - weighted_level5)/(sum_invent - lag_inventors) if other_threelargest!=. 
+	replace cz_treated_level_w5 = cz_treated_level_w5_helper/sum_invent
+	
+	bysort fips_state czone year: egen cz_treated_level_w6_helper = sum(weighted_level6)
+	gen cz_treated_level_w6 = (cz_treated_level_w6_helper - weighted_level6)/(sum_inv - n_inventors3)
+	
+	drop weighted_change* weight_multi cz_treated_change_w5_helper cz_treated_change_w4_helper cz_treated_change_w6_helper  cz_treated_level_w4_helper cz_treated_level_w6_helper cz_treated_level_w5_helper
+	
+	
 	
 xtset estab_id year 
 local x change_other_threelargest
@@ -593,102 +628,5 @@ gen multistate_cz = 0
 replace multistate_cz = 1 if sum_count>1 
 drop count sum_count 
 
-save "${TEMP}/final_cz_${dataset}.dta", replace 
+save "${TEMP}/final_cz_${dataset}_corp_new.dta", replace 
 
-
-<<<<<<< HEAD
-
-********************************************************************************
-* Merging data together: Commuting Zone level
-********************************************************************************
-/*Difficulty in measuring spillover effects atm: We want to measure spillover effects, so 
-we need to exclude the patents of treated units. In my opinion the cleanest approach would be to focus on firms which are only active in one commuting zone  */
-
-use "${TEMP}/patentcount_czone_${dataset}_assignee.dta", clear 
-merge 1:1 fips_state czone assignee_id app_year using "${TEMP}/inventorcount_czone_${dataset}_assignee.dta"
-drop _merge 
-
-destring fips_state, replace
-* Merging in R&D credit observations 
-merge m:1 fips_state app_year using "${TEMP}/state_data_cleaned.dta", keepusing(cit pit rd_credit )
-	drop if _merge ==2
-	drop _merge
-
-*Changes at other locations
-rename app_year year 
-
-
-merge m:1 fips_state assignee_id year using "${TEMP}/other_threelargest_3_$dataset_treated.dta"
-	drop if _merge == 2
-	drop _merge
-
-
-* Creating an indicator for only local firms 
-bysort assignee_id year czone: gen helper = _n 
-replace helper = . if helper!=1 
-bysort assignee_id year: egen total_labs = total(helper)
-bysort assignee_id : egen max_labs = max(total_labs)
-
-gen tag_local = 1 if max_labs == 1 	
-bysort czone year fips_state: gen n_labs = _N 
-
-foreach var of varlist n_inventors3 n_newinventors3 patents3 {
-	gen local_`var' = `var' if tag_local==1 
-}
-	
-*CZ with firms that are treated	
-bysort czone year: egen cz_treated = max(change_other_threelargest_d)
-
-*Average rd_credit change of treated firms within CZ
-bysort czone year: egen cz_treated_change = mean(change_other_threelargest)
-replace cz_treated_change = 0 if cz_treated_change == .
-
-*Weighted:
-gen inv_count_multistate = n_inventors3 if tag_local != 1 
-bysort czone year fips_state: egen sum_inv_multi = sum(inv_count_multistate)
-gen weight_multi = inv_count_multistate / sum_inv_multi if inv_count_multistate != .
-gen weighted_change = change_other_threelargest * weight_multi
-
-* Only patents and inventors of firms which were not treated during a four year period 
-egen estab_id = group(czone assignee_id fips_state) 
-xtset estab_id year 
-
-/*
-forval i =1/4 {
-	gen l`i'_threelargest = l`i'.change_other_threelargest
-	replace l`i'_threelargest = 0 if missing(l`i'_threelargest)
-}
-
-forval i = 1/4 {
-	gen f`i'_threelargest = f`i'.change_other_threelargest
-	replace f`i'_threelargest = 0 if missing(f`i'_threelargest)
-}
-
-
-gen other_changes = l1_threelargest + l2_threelargest + l3_threelargest + l4_threelargest + f1_threelargest + f2_threelargest + f3_threelargest + f4_threelargest 
-sum other_changes, detail
-
-
-* After thinking about this, I don't know if this makes too much sense
-gen tag_untreated = 1 if other_changes == 0 & missing(change_other_threelargest) 
-replace tag_untreated =1 if other_changes ==0 & change_other_threelargest==0
-
-foreach var of varlist n_inventors3 n_newinventors3 patents3 {
-	gen untreated_`var' = `var' if tag_untreated==1 
-}
-	
-*/	
-
-save "${TEMP}/final_cz_${dataset}_preaggregate.dta", replace 
-
-* Collapse everything on commuting zone level 
-collapse (sum) weighted_change n_inventors3 patents3 n_newinventors3 local_n_inventors3 local_n_newinventors3 local_patents3 (max) max_labs = n_labs max_pit = pit max_rd_credit = rd_credit max_cit = cit, by(czone year fips_state)
-
-bysort czone year: gen count = _N 
-gen byte multistate_cz = count>1 
-
-save "${TEMP}/final_cz_${dataset}_aggregate.dta", replace 
-
-
-=======
->>>>>>> 75edb7df6d53543e9909151be5f9c7bb2ff1efe3
