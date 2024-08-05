@@ -98,6 +98,11 @@ else {
 	global RESULTS ${path}/results
 }
 
+
+
+/* Commands to be installed */ 
+* ssc install distinct
+
 /*
 capture noisily {
 do "${CODE}/cleaning/cleaning_giroud_rauh_zeros.do"

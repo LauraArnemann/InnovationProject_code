@@ -18,11 +18,11 @@ local sample7 if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>
 */
 
 global direction incr 
-global weighting_strategy threelargest3
+global weighting_strategy weighted threelargest
 	// all3 weighted3
 
-global outcome patents3 n_inventors3 n_newinventors3 patents3_w1 n_inventors3_w1 n_newinventors3_w1
-global outcome_log ln_patents3 ln_n_inventors3 ln_n_newinventors3
+global outcome patents3 n_inventors3_w1
+global outcome_log ln_n_inventors3
 
 global controls rd_credit pit cit 
 global controls_other pit_other cit_other
@@ -41,18 +41,18 @@ global dataset 4
 *A. MAIN -----------------------------------------------------------------------
 
 * Standard regression
-do "${CODE}/analysis_twowayfe_static.do"
-do "${CODE}/analysis_twowayfe_dynamic.do"
-
+*do "${CODE}/analysis_twowayfe_static.do"
+do "${CODE}/analysis/analysis_twowayfe_dynamic_assignee.do"
+do "${CODE}/analysis/analysis_twowayfe_spillover_estab.do"
 
 *B. ROBUSTNESS -----------------------------------------------------------------
 
 * Stacked cohort approach
-do "${CODE}/running_stacked_regression_current.do"
-do "${CODE}/running_stacked_regression_other.do"
+*do "${CODE}/running_stacked_regression_current.do"
+*do "${CODE}/running_stacked_regression_other.do"
 
 * Chaisemartin
-do "${CODE}/chaisemartin_estimator.do"
+*do "${CODE}/chaisemartin_estimator.do"
 
 ********************************************************************************
 *Second stage: Spillover	

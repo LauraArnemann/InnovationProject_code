@@ -4,8 +4,6 @@
 // Author: Laura Arnemann 
 // Goal: Regular two-way fixed effects analysis with event studies 
 
-global dataset 4
-
 * Information on Assigee Type e.g. if assignee is governmental entity 
 use "${TEMP}/patents_helper_${dataset}.dta", clear
 bysort assignee_id: gen count = _n 
@@ -14,7 +12,7 @@ tempfile patentshelper
 save `patentshelper'
 
 local sample1 if inrange(year, 1988, 2018)
-local sample2 if inrange(year, 1988, 2018) & total_patents>20 
+local sample2 if inrange(year, 1988, 2018) & total_patents>10 
 local sample3 if inrange(year, 1988, 2018) & estab_patents>10 
 local sample4 if inrange(year, 1988, 2018) & patents3>10 
 local sample5 if inrange(year, 1988, 2018) & noncorp_asg 
@@ -23,9 +21,9 @@ local sample7 if inrange(year, 1988, 2018) & noncorp_asg==0 & patents3>10
 local sample8 if inrange(year, 1988, 2018) & asg_corp==1
 local sample9 if inrange(year, 1988, 2018) & asg_corp==1 & patents3>10
 local sample10 if inrange(year, 1988, 2018) & asg_corp==1 & total_patents>20
-local sample11 if inrange(year, 1988, 2018) & asg_corp==1 & patents3<10
 
-foreach type in gvkey {
+
+foreach type in assignee {
 	
 	use "${TEMP}/final_state_zeros_new_${dataset}_`type'.dta", clear 
 	merge m:1 assignee_id using `patentshelper', keepusing(noncorp_asg asg_corp pub_assg)
@@ -96,15 +94,15 @@ foreach type in gvkey {
 ********************************************************************************
 * Regular event studies: No binning off 
 ********************************************************************************
-/*	
-	forvalues i = 10/10 {
+	/*
+	forvalues i = 8/9 {
 		
 		** Poisson Regression 
 		foreach var of varlist $outcome  {
 			foreach explaining in $weighting_strategy  {
 
 				* Generating the local which contains control variables 	
-				local other_controls other_cit_`explaining' other_pit_`explaining' other_unemployment_`explaining' other_gdp_`explaining' 
+				local other_controls other_cit_`explaining' other_pit_`explaining'
 					
 				ppmlhdfe `var'  F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres1
@@ -138,8 +136,8 @@ foreach type in gvkey {
 			}
 		}
 	}
-*/
-	
+
+	*/
 ********************************************************************************
 * Regular Event Studies: Binning Off 
 ********************************************************************************
@@ -152,14 +150,14 @@ foreach type in gvkey {
 		}
 	} 
 
-	forvalues i = 2/2 {
+	forvalues i = 10/10 {
 		
 		** Poisson Regression
 		foreach var of varlist $outcome {
 			foreach explaining in $weighting_strategy {
 				
 				* Generating the local which contains control variables 	
-				local other_controls other_cit_`explaining'  other_pit_`explaining' other_unemployment_`explaining' other_gdp_`explaining'  
+				local other_controls other_cit_`explaining'  other_pit_`explaining' 
 					
 				ppmlhdfe `var'  F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'' , absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres1
@@ -193,13 +191,12 @@ foreach type in gvkey {
 			}
 		}	
 	}
+}
 
-	}
-/*
 ********************************************************************************
 * Regular Event Studies: Binning Off + Balanced Panel
 ********************************************************************************
-
+/*
 	foreach explaining in $weighting_strategy {
 		foreach x in change_`explaining' increase_`explaining' decrease_`explaining' {
 
@@ -214,7 +211,7 @@ foreach type in gvkey {
 		}
 	}
 
-	forvalues i = 1/9 {
+	forvalues i = 10/10 {
 		
 		** Poisson Regression
 		foreach var of varlist $outcome {

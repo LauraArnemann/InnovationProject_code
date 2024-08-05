@@ -6,31 +6,13 @@
 
 global dataset 4
 
-* Information on Assigee Type e.g. if assignee is governmental entity 
-use "${TEMP}/patents_helper_${dataset}.dta", clear
-bysort assignee_id: gen count = _n 
-keep if count ==1  
-tempfile patentshelper
-save `patentshelper'
-
 local sample1 if inrange(year, 1988, 2018)
 local sample2 if inrange(year, 1988, 2018) & total_patents>20 
-local sample3 if inrange(year, 1988, 2018) & estab_patents>10 
-local sample4 if inrange(year, 1988, 2018) & patents3>10 
-local sample5 if inrange(year, 1988, 2018) & noncorp_asg 
-local sample6 if inrange(year, 1988, 2018) & noncorp_asg==0 
-local sample7 if inrange(year, 1988, 2018) & noncorp_asg==0 & patents3>10
-local sample8 if inrange(year, 1988, 2018) & asg_corp==1
-local sample9 if inrange(year, 1988, 2018) & asg_corp==1 & patents3>10
-local sample10 if inrange(year, 1988, 2018) & asg_corp==1 & total_patents>20
-local sample11 if inrange(year, 1988, 2018) & asg_corp==1 & patents3<10
+local sample3 if inrange(year, 1988, 2018) & patents3>10 
 
 foreach type in gvkey {
 	
 	use "${TEMP}/final_state_zeros_new_${dataset}_`type'.dta", clear 
-	merge m:1 assignee_id using `patentshelper', keepusing(noncorp_asg asg_corp pub_assg)
-	drop if _merge ==2 
-	drop _merge 
 
 	foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 n_newinventors1 n_newinventors3 {
 		gstats winsor `var', cut(1 99) gen(`var'_w1)
@@ -152,7 +134,7 @@ foreach type in gvkey {
 		}
 	} 
 
-	forvalues i = 2/2 {
+	forvalues i = 3/3 {
 		
 		** Poisson Regression
 		foreach var of varlist $outcome {

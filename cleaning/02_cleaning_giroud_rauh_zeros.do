@@ -33,7 +33,9 @@ drop dup
 
 duplicates report patnum inventor_id
 
-save "${TEMP}/patents_helper_$dataset.dta", replace 
+do "${CODE}/cleaning/cleaning_gov_uni.do"
+
+save "${TEMP}/patents_helper_${dataset}.dta", replace 
 
 * No more duplicates in terms of patent numbers and inventor identification number
 /* 
@@ -386,15 +388,13 @@ erase "${TEMP}/inventor_helper_$dataset.dta"
 do "${CODE}/02_01_gen_other_variable.do"
     
     
-    
-
 ********************************************************************************
 * Merging things together
 ********************************************************************************
 * Only records active years 
 
-use "${TEMP}/patentcount_state_$dataset.dta", clear 
-merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state_$dataset.dta"
+use "${TEMP}/patentcount_state_$dataset_assignee.dta", clear 
+merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state_$dataset_assignee.dta"
 * There might be some times mismatches since we have different methods for allocating patents and inventors, in my opinion this is correct however maybe we also might want to check this later on
 drop _merge 
 
@@ -472,6 +472,7 @@ bysort assignee_id: egen multistatefirm_max = max(multistatefirm_temp)
 
 duplicates report assignee_id fips_state year // Sanity Check
 compress
+
 save "${TEMP}/final_state_zeros_new_${dataset}_assignee.dta", replace 
 
 

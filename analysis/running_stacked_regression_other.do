@@ -7,27 +7,44 @@
 // Goal: 			Running Stacked Regression: Change in credits at other locations 
 ////////////////////////////////////////////////////////////////////////////////
 
+global dataset 4 
+
+use "${TEMP}/patents_helper_${dataset}.dta", clear
+bysort assignee_id: gen count = _n 
+keep if count ==1  
+tempfile patentshelper
+save `patentshelper'
+
+
 local sample1 if inrange(year, 1988, 2018)
-local sample2 if inrange(year, 1988, 2018)  & total_patents>10 
-local sample3  if inrange(year, 1988, 2018)  & balanced_panel==1
-local sample4  if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>10 
+local sample7 if inrange(year, 1988, 2018) & noncorp_asg==0 & patents3>10
+local sample8 if inrange(year, 1988, 2018) & asg_corp==1
+local sample9 if inrange(year, 1988, 2018) & asg_corp==1 & patents3>10
+local sample10 if inrange(year, 1988, 2018) & asg_corp==1 & total_patents>20
 
 global direction incr
-global outcome patents3_w1 n_inventors3_w1 n_newinventors3_w1
+* patents3 n_inventors3 n_newinventors3 patents3_w1 n_newinventors3_w1
+global outcome  n_inventors3_w1
+*ln_patents3 ln_n_newinventors3
+global outcome_log  ln_n_inventors3 
 
 foreach type in assignee {
 
-	foreach direction in $direction {
+	foreach direction in incr {
 		
 ********************************************************************************
 * Events indicator on state-year level: Change at other locations  
 ********************************************************************************		
-	
-		foreach var2 in other_weighted3 {
+	*other_weighted3 
+		foreach var2 in other_threelargest3 {
 			
 			use "${TEMP}/final_state_stacked_`var2'_`direction'_${dataset}_`type'_year.dta", replace 
 			merge m:1 estab year using "${TEMP}/final_state_stacked_other_zeros_${dataset}_`type'.dta", nogen keep(3)
-				
+			
+				merge m:1 assignee_id using `patentshelper', keepusing(noncorp_asg asg_corp pub_assg)
+				drop if _merge ==2 
+				drop _merge 
+			
 			bysort assignee_id year event: egen total_patents = total(patents3)
 			
 			egen assignee = group(assignee_id)
@@ -60,7 +77,8 @@ foreach type in assignee {
 			gen zero_1=1
 			label var zero_1 "-1" 
 				
-			forvalues i =1/2 {
+				*
+			foreach i of numlist 10 {
 				
 				*Event studies
 				foreach outc in $outcome {
@@ -70,7 +88,7 @@ foreach type in assignee {
 					coefplot inventorreg1, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-					title("`var2', `direction' - no controls") xtitle("Years since Change") graphregion(color(white))
+				 xtitle("Years since Change") graphregion(color(white))
 						capture noisily graph export "${RESULTS}/stackedregression/new_`type'_${dataset}/`outc'/stacked_other_`var2'_`direction'_sample`i'_stateyear.png", replace  
 									
 					ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `var2'_pit `var2'_cit `sample`i'', absorb(estab#event year#event#fips_state) cl(estab#event)
@@ -78,18 +96,27 @@ foreach type in assignee {
 					coefplot inventorreg3, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-					title("`var2', `direction' - controls (incl other)") xtitle("Years since Change") graphregion(color(white))
+					 xtitle("Years since Change") graphregion(color(white))
 						capture noisily graph export "${RESULTS}/stackedregression/new_`type'_${dataset}/`outc'/stacked_other_`var2'_`direction'_c2_sample`i'_stateyear.png", replace  
+				}
 					
 				* Also run the logarithm to give comparability with chaisemartin estimator 
-				foreach outc in $outcome_log {					
+				foreach outc in $outcome_log {	
+			
+			reghdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `sample`i'', absorb(estab#event year#event#fips_state) cl(estab#event)
+					 est sto inventorreg3
+					coefplot inventorreg3, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
+					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
+					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+				xtitle("Years since Change") graphregion(color(white))
+						capture noisily graph export "${RESULTS}/stackedregression/new_`type'_${dataset}/`outc'/stacked_other_`var2'_`direction'_c2_sample`i'_stateyear.png", replace 
 				
 					reghdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `var2'_pit `var2'_cit `sample`i'', absorb(estab#event year#event#fips_state) cl(estab#event)
 					 est sto inventorreg3
 					coefplot inventorreg3, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-					title("`var2', `direction' - controls (incl other)") xtitle("Years since Change") graphregion(color(white))
+				 xtitle("Years since Change") graphregion(color(white))
 						capture noisily graph export "${RESULTS}/stackedregression/new_`type'_${dataset}/`outc'/stacked_other_`var2'_`direction'_c2_sample`i'_stateyear.png", replace  
 
 				}
@@ -97,4 +124,4 @@ foreach type in assignee {
 		}			
 	}
 }
-}
+

@@ -150,6 +150,7 @@ rename assignee_id_num assignee_id
 *Important to generate the sum of inventors on commuting zone level
 
 bysort czone year: egen sum_inventors = sum(n_inventors3)
+replace sum_inventors = sum_inventors - n_inventors3
 
 keep if asg_corp ==1 
 drop if missing(other_threelargest3)

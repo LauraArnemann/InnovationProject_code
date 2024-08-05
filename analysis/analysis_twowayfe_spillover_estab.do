@@ -12,8 +12,9 @@
 ********************************************************************************
 * Analysis on assignee level 
 ********************************************************************************	
+global dataset 4 
 
-use "${TEMP}/final_cz_${dataset}.dta", clear 
+use "${TEMP}/final_cz_${dataset}_corp.dta", clear 
 
 	foreach var of varlist patents3 n_inventors3 n_newinventors3 {
 		gstats winsor `var', cut(1 99) gen(`var'_w1)
@@ -65,7 +66,7 @@ drop F1*
 gen zero_1=1
 label var zero_1 "-1"
 
-bysort assignee_id: egen total_patents = total(patents3)
+bysort assignee_id year: egen total_patents = total(patents3)
 replace change_other_threelargest = 0 if missing(change_other_threelargest)
 
 
@@ -75,8 +76,9 @@ replace change_other_threelargest = 0 if missing(change_other_threelargest)
 *CHANGES -----------------------------------------------------------------------
 
 * Outcome Variables 
-local outcome n_inventors3_w1 patents3_w1 n_newinventors3_w1 
-local outcome_log ln_n_inventors3 ln_patents3 ln_n_newinventors3 
+*patents3_w1 n_newinventors3_w1 
+local outcome n_inventors3_w1 
+local outcome_log ln_n_inventors3 
 
 local direction change
 
@@ -92,16 +94,16 @@ local sample8 if inrange(year, 1988, 2018) & tag_local==1
 local sample9 if inrange(year, 1988, 2018) & treated!=1  	
 local sample10 if inrange(year, 1988, 2018) & multistate_cz ==0 
 local sample11 if inrange(year, 1988, 2018) & tag_local==1 & multistate_cz ==0 
-
-
+local sample12 if inrange(year, 1988, 2018) & noncorp_asg==1
+/*
 foreach expl of numlist 1 2 3 4 5 6  { 		
 		
 	********************************************************************************
 	* Regular event studies: No binning off 
 	********************************************************************************
 
-	forvalues i = 11/11 {
-			local cl czone 
+	forvalues i = 1/11 {
+		
 		** Poisson Regression 
 		foreach var of varlist `outcome' {
  
@@ -112,7 +114,7 @@ foreach expl of numlist 1 2 3 4 5 6  {
 			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				xtitle("Years since `direction'") ytitle(`var') graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/weight`expl'/`var'_spillover_sample`i'_c1_nobin_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/`var'_spillover_sample`i'_c1_nobin_`direction'.png", replace
 					
 		
 		* Also control for the change in other states 
@@ -123,7 +125,7 @@ foreach expl of numlist 1 2 3 4 5 6  {
 			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				xtitle("Years since `direction'") ytitle(`var') graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/weight`expl'/`var'_spillover_sample`i'_c2_nobin_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/`var'_spillover_sample`i'_c2_nobin_`direction'.png", replace
 		}
 		
 
@@ -138,7 +140,7 @@ foreach expl of numlist 1 2 3 4 5 6  {
 			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				xtitle("Years since `direction'") ytitle(`var') graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/weight`expl'/var`var'_spillover_sample`i'_c1_nobin_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c1_nobin_`direction'.png", replace
 				
 				
 		reghdfe `var' change_other_threelargest F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'', absorb(estab_id year#i.fips_state) cl(`cl')
@@ -146,7 +148,7 @@ foreach expl of numlist 1 2 3 4 5 6  {
 			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				xtitle("Years since `direction'") ytitle(`var') graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/weight`expl'/var`var'_spillover_sample`i'_c2_nobin_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c2_nobin_`direction'.png", replace
 				
 				
 
@@ -155,19 +157,20 @@ foreach expl of numlist 1 2 3 4 5 6  {
 }
 }	
 
+*/
 	********************************************************************************
 	* Regular Event Studies: Binning Off 
 	********************************************************************************
-
-foreach expl of numlist 1 2 3 4 5 6 { 		
+*1 2 3 4 5 
+foreach expl of numlist 6 { 		
 	foreach x in change_otherstates`expl' {
 		replace F4_`x'=sum_F4_`x'
 		replace L4_`x'=sum_L4_`x'
 	}
 		 
 
-	forvalues i = 11/11 {
-			
+	forvalues i = 1/1 {
+				local cl czone 
 		** Poisson Regression
 		foreach var of varlist `outcome' {
 			
@@ -177,8 +180,8 @@ foreach expl of numlist 1 2 3 4 5 6 {
 			est sto regres1
 			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-				xtitle("Years since `direction'") ytitle(`var') graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/weight`expl'/var`var'_spillover_sample`i'_c1_binning_`direction'.png", replace
+				xtitle("Years since Change")  graphregion(color(white))
+			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c1_binning_`direction'.png", replace
 			}
 			
 			
@@ -186,8 +189,8 @@ foreach expl of numlist 1 2 3 4 5 6 {
 			est sto regres1
 			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-				xtitle("Years since `direction'") ytitle(`var') graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/weight`expl'/var`var'_spillover_sample`i'_c2_binning_`direction'.png", replace
+				xtitle("Years since Change") graphregion(color(white))
+			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c2_binning_`direction'.png", replace
 				
 
 		}
@@ -201,8 +204,8 @@ foreach expl of numlist 1 2 3 4 5 6 {
 			est sto regres3
 			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-				xtitle("Years since `direction'") ytitle(`var') graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/weight`expl'/var`var'_spillover_sample`i'_c1_binning_`direction'.png", replace
+				xtitle("Years since Change") graphregion(color(white))
+			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c1_binning_`direction'.png", replace
 				}
 			
 		
@@ -210,8 +213,8 @@ foreach expl of numlist 1 2 3 4 5 6 {
 			est sto regres3
 			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-				xtitle("Years since `direction'") ytitle(`var') graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/weight`expl'/var`var'_spillover_sample`i'_c2_binning_`direction'.png", replace
+				xtitle("Years since Change") graphregion(color(white))
+			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c2_binning_`direction'.png", replace
 			
 
 		}
