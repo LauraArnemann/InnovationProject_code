@@ -630,3 +630,14 @@ drop count sum_count
 
 save "${TEMP}/final_cz_${dataset}_corp_new.dta", replace 
 
+
+
+* Collapse everything on commuting zone level 
+collapse (sum) weighted_change n_inventors3 patents3 n_newinventors3 local_n_inventors3 local_n_newinventors3 local_patents3 (max) max_labs = n_labs max_pit = pit max_rd_credit = rd_credit max_cit = cit, by(czone year fips_state)
+
+bysort czone year: gen count = _N 
+gen byte multistate_cz = count>1 
+
+save "${TEMP}/final_cz_${dataset}_aggregate.dta", replace 
+
+
