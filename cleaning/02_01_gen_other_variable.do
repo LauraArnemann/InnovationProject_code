@@ -17,12 +17,12 @@ use "${TEMP}/patentcount_state.dta", clear
 }
 
 if `num' == 1 {
-	use "${TEMP}/patents1_$dataset.dta", clear 
+	use "${TEMP}/patents1_3.dta", clear 
 }
 
 
 if `num' == 3 {
-	use "${TEMP}/patents3_$dataset.dta", clear 
+	use "${TEMP}/patents3_3.dta", clear 
 }
 
 
@@ -72,7 +72,7 @@ forvalues i =1/`b' {
 }
 
 keep assignee_id app_year states_present new_states 
-save "${TEMP}/helper_dataset`num'_$dataset.dta", replace 
+save "${TEMP}/helper_dataset`num'_3.dta", replace 
 
 
 
@@ -83,24 +83,24 @@ save "${TEMP}/helper_dataset`num'_$dataset.dta", replace
 * Merging based on whether there was RD activity in the state when the establishment was first active 
 
 
-use "${TEMP}/helper_dataset`num'_$dataset.dta", clear 
+use "${TEMP}/helper_dataset`num'_3.dta", clear 
 rename app_year min_year_estab 
 tempfile helper1 
 save `helper1'
 
 
 if `num' == 0 {
-	use "${TEMP}/patentcount_state_$dataset.dta", clear 
+	use "${TEMP}/patentcount_state_3.dta", clear 
 }
 
 if `num' == 1 {
-  use "${TEMP}/patents1_$dataset.dta", clear
+  use "${TEMP}/patents1_3.dta", clear
  
 }
 
 
 if `num' == 3 {
-  use "${TEMP}/patents3_$dataset.dta", clear 
+  use "${TEMP}/patents3_3.dta", clear 
 }
 
 drop if missing(assignee_id)
@@ -170,7 +170,7 @@ keep if count==1
 
 keep fips_state assignee_id app_year other*
 rename app_year year 
-save "${TEMP}/other_first`num'_$dataset.dta", replace 
+save "${TEMP}/other_first`num'_3.dta", replace 
 
 
 
@@ -185,14 +185,14 @@ might address this in a robustness check   */
 
 
 if `num' == 0 {
-	use "${TEMP}/patentcount_state_$dataset.dta", clear 
+	use "${TEMP}/patentcount_state_3.dta", clear 
 	rename fips_state other_fips_state
 	tempfile patents
 	save `patents'
 }
 
 if `num' == 1 {
-  use "${TEMP}/patents1_$dataset.dta", clear
+  use "${TEMP}/patents1_3.dta", clear
   rename fips_state other_fips_state
   tempfile patents
   save `patents'
@@ -200,7 +200,7 @@ if `num' == 1 {
 
 
 if `num' == 3 {
-  use "${TEMP}/patents3_$dataset.dta", clear 
+  use "${TEMP}/patents3_3.dta", clear 
   rename fips_state other_fips_state
   tempfile patents
   save `patents'
@@ -209,16 +209,16 @@ if `num' == 3 {
 
 
 if `num' == 0 {
-	use "${TEMP}/patentcount_state_$dataset.dta", clear 
+	use "${TEMP}/patentcount_state_3.dta", clear 
 }
 
 if `num' == 1 {
-  use "${TEMP}/patents1_$dataset.dta", clear 
+  use "${TEMP}/patents1_3.dta", clear 
 }
 
 
 if `num' == 3 {
-  use "${TEMP}/patents3_$dataset.dta", clear 
+  use "${TEMP}/patents3_3.dta", clear 
 }
 
 drop if missing(assignee_id)
@@ -246,7 +246,7 @@ gen app_year = 1969+count_obs
 
 keep if inrange(app_year, min_year_estab, max_year_estab)
 
-merge m:1 assignee_id app_year using "${TEMP}/helper_dataset`num'_$dataset.dta"
+merge m:1 assignee_id app_year using "${TEMP}/helper_dataset`num'_3.dta"
 keep if _merge ==3 
 drop _merge 
 
@@ -276,11 +276,11 @@ egen id = group(fips_state assignee_id app_year)
 gen count = _n
 drop other_fips_state*
 
-save "${TEMP}/helper_other_v`num'_$dataset.dta", replace 
+save "${TEMP}/helper_other_v`num'_3.dta", replace 
 
 
 	
-use "${TEMP}/helper_other_v`num'_$dataset.dta", clear 
+use "${TEMP}/helper_other_v`num'_3.dta", clear 
 
 drop count
 reshape long max_other_fips_state, i(id) j(count)
@@ -305,7 +305,7 @@ drop _merge
 */
 rename app_year year
 
-save "${TEMP}/helper_other_cleaned`num'_$dataset.dta", replace 
+save "${TEMP}/helper_other_cleaned`num'_3.dta", replace 
 
 
 * Generate the different variables weighted by the patenters respective inventors 
@@ -365,7 +365,7 @@ duplicates drop fips_state assignee_id year, force
 
 
 keep fips_state assignee_id year other* 
-save "${TEMP}/other_all_`num'_$dataset.dta", replace 
+save "${TEMP}/other_all_`num'_3.dta", replace 
 
 
 
@@ -375,7 +375,7 @@ save "${TEMP}/other_all_`num'_$dataset.dta", replace
 * observe patenting activity at this establishment, only three largest estabs
 ********************************************************************************
 
-use "${TEMP}/helper_other_cleaned`num'_$dataset.dta", clear 
+use "${TEMP}/helper_other_cleaned`num'_3.dta", clear 
 duplicates drop fips_state assignee_id year other_fips_state, force
 * This should not delete anything
 * assignee_id=="10b96cde-e590-4dfb-ba21-127c1c54214e"
@@ -430,14 +430,14 @@ label var other_unemployment_threelargest "Unemployment, three largest locations
 
 bysort fips_state assignee_id year: gen count = _n 
 keep if count ==1 
-save "${TEMP}/other_threelargest_`num'_$dataset.dta", replace 
+save "${TEMP}/other_threelargest_`num'_3.dta", replace 
 
 
 * Erasing all the helper files I created along the way to keep storage space clean
-*erase "${TEMP}/other_all`i'_`num'_$dataset.dta"
-erase "${TEMP}/helper_dataset`num'_$dataset.dta"
-erase  "${TEMP}/helper_other_v`num'_$dataset.dta"
-erase   "${TEMP}/helper_other_cleaned`num'_$dataset.dta"
+*erase "${TEMP}/other_all`i'_`num'_3.dta"
+erase "${TEMP}/helper_dataset`num'_3.dta"
+erase  "${TEMP}/helper_other_v`num'_3.dta"
+erase   "${TEMP}/helper_other_cleaned`num'_3.dta"
 	}
 
 
