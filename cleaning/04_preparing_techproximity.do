@@ -141,6 +141,7 @@ save "${TEMP}/new_dataset3_techspill.dta", replace
 
 
 * Preparing the Commuting Zone data 
+global dataset 4 
 
 use "${TEMP}/final_cz_${dataset}.dta", clear 
 merge m:1 assignee_id using "${TEMP}/new_dataset3_techspill_assignee_ids.dta", nogen keep(3) 
@@ -153,8 +154,8 @@ bysort czone year: egen sum_inventors = sum(n_inventors3)
 replace sum_inventors = sum_inventors - n_inventors3
 
 keep if asg_corp ==1 
-drop if missing(other_threelargest3)
-keep assignee_id czone year other_threelargest3 n_inventors3 sum_inventors
+drop if missing(change_other_threelargest)
+keep assignee_id czone year change_other_threelargest n_inventors3 sum_inventors
 rename assignee_id assignee_id_pat 
 save "${TEMP}/cz_preaggregate.dta", replace
 

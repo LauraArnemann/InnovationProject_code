@@ -13,7 +13,7 @@
 *File: Patent count at state level
 ********************************************************************************
 
-use "${inventordata}", clear 
+use "${TEMP}/new_dataset3.dta", clear 
 
 *-Drop if missings in important variables
 drop if missing(app_year)

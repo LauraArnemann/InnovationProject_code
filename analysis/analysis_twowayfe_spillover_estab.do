@@ -14,7 +14,7 @@
 ********************************************************************************	
 global dataset 4 
 
-use "${TEMP}/final_cz_${dataset}_corp.dta", clear 
+use "${TEMP}/final_cz_${dataset}_corp_new_07_08.dta", clear 
 
 	foreach var of varlist patents3 n_inventors3 n_newinventors3 {
 		gstats winsor `var', cut(1 99) gen(`var'_w1)
@@ -169,7 +169,7 @@ foreach expl of numlist 6 {
 	}
 		 
 
-	forvalues i = 1/1 {
+	forvalues i = 2/2 {
 				local cl czone 
 		** Poisson Regression
 		foreach var of varlist `outcome' {
@@ -181,7 +181,7 @@ foreach expl of numlist 6 {
 			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				xtitle("Years since Change")  graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c1_binning_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c1_binning_`direction'_new.png", replace
 			}
 			
 			
@@ -190,7 +190,7 @@ foreach expl of numlist 6 {
 			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				xtitle("Years since Change") graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c2_binning_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c2_binning_`direction'_new.png", replace
 				
 
 		}
@@ -205,7 +205,7 @@ foreach expl of numlist 6 {
 			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				xtitle("Years since Change") graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c1_binning_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c1_binning_`direction'_new.png", replace
 				}
 			
 		
@@ -214,7 +214,7 @@ foreach expl of numlist 6 {
 			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				xtitle("Years since Change") graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c2_binning_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c2_binning_`direction'_new.png", replace
 			
 
 		}

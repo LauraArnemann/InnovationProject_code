@@ -21,11 +21,9 @@ global direction incr
 global weighting_strategy weighted threelargest
 	// all3 weighted3
 
-global outcome patents3 n_inventors3_w1
-global outcome_log ln_n_inventors3
-
-global controls rd_credit pit cit 
-global controls_other pit_other cit_other
+	*patents3 n_inventors3_w1 ln_n_inventors3
+global outcome 
+global outcome_log inventor_productivity
 
 
 global dataset 4
@@ -42,8 +40,8 @@ global dataset 4
 
 * Standard regression
 *do "${CODE}/analysis_twowayfe_static.do"
-do "${CODE}/analysis/analysis_twowayfe_dynamic_assignee.do"
-do "${CODE}/analysis/analysis_twowayfe_spillover_estab.do"
+*do "${CODE}/analysis/analysis_twowayfe_dynamic_assignee.do"
+*do "${CODE}/analysis/analysis_twowayfe_spillover_estab.do"
 
 *B. ROBUSTNESS -----------------------------------------------------------------
 
@@ -58,7 +56,7 @@ do "${CODE}/analysis/analysis_twowayfe_spillover_estab.do"
 *Second stage: Spillover	
 ********************************************************************************
 
-do "${CODE}/analysis_twowayfe_spillover.do"
+*do "${CODE}/analysis_twowayfe_spillover.do"
 
 
 

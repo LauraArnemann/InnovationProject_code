@@ -29,6 +29,8 @@ foreach type in assignee {
 	merge m:1 assignee_id using `patentshelper', keepusing(noncorp_asg asg_corp pub_assg)
 	drop if _merge ==2 
 	drop _merge 
+	
+	gen inventor_productivity = patents3/n_inventors3 
 
 	foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 n_newinventors1 n_newinventors3 {
 		gstats winsor `var', cut(1 99) gen(`var'_w1)

@@ -8,7 +8,7 @@
 ********************************************************************************
 * Generate Number of Patents on CZ level, by assignee id 
 ********************************************************************************
-
+/*
 use "$inventordata", clear 
 
 *-Drop if missings in important variables
@@ -413,7 +413,7 @@ merge 1:1 fips_state czone assignee_id app_year using "${TEMP}/inventor2_czone_$
 drop _merge 
 
 save "${TEMP}/inventorcount_czone_${dataset}_assignee.dta", replace 
-
+*/
 
 ********************************************************************************
 * Firm establishments facing tax changes in other locations 
@@ -442,7 +442,7 @@ foreach var in other_threelargest {
 }
 	
 *keep if max_tr_ == 1
-drop  states_present new_states states_total total*
+drop  states_present new_states states_total total* rank count
 
 	
 save "${TEMP}/other_threelargest_3_$dataset_treated.dta", replace	
@@ -542,11 +542,11 @@ bysort fips_state czone year: egen cz_treated_change = mean(change_other_threela
 	bysort fips_state czone year: egen cz_treated_change_w4_helper = sum(weighted_change4)
 	gen cz_treated_change_w4 = (cz_treated_change_w4_helper - weighted_change4)/(sum_inv - n_inventors3) if change_other_threelargest!=. 
 	
-	replace cz_treated_change_w4 = cz_treated_change_w4_helper/sum_inv
+	replace cz_treated_change_w4 = cz_treated_change_w4_helper/sum_inv if missing(change_other_threelargest)
 	bysort fips_state czone year: egen cz_treated_change_w5_helper = sum(weighted_change5)
 	
 	gen cz_treated_change_w5 = (cz_treated_change_w5_helper - weighted_change5)/(sum_invent - lag_inventors) if change_other_threelargest!=. 
-	replace cz_treated_change_w5 = cz_treated_change_w5_helper/sum_invent
+	replace cz_treated_change_w5 = cz_treated_change_w5_helper/sum_invent if missing(change_other_threelargest)
 	
 	bysort fips_state czone year: egen cz_treated_change_w6_helper = sum(weighted_change6)
 	gen cz_treated_change_w6 = (cz_treated_change_w6_helper - weighted_change6)/(sum_inv - n_inventors3)
@@ -556,33 +556,38 @@ bysort fips_state czone year: egen cz_treated_change = mean(change_other_threela
 * Calculating the weighted level of the variable 
 *******************************************************************************
 
-	gen weighted_level1 = other_threelargest * weight_multi
-	gen weighted_level2 = other_threelargest *(lag_inventors/sum_invent)
-	gen weighted_level3 = other_threelargest *(lag_patents/sum_patents)
-	gen weighted_level4 = other_threelargest * n_inventors3
-	gen weighted_level5 = other_threelargest * lag_inventors
-	gen weighted_level6 = other_threelargest * n_inventors3 if asg_corp ==1 
-	replace weighted_level6 = 0 if missing(other_threelargest)
+rename other_threelargest other_credit_threelargest 
+
+foreach tax in credit pit cit {
+	gen weighted_level`tax'1 = other_`tax'_threelargest * weight_multi
+	gen weighted_level`tax'2 = other_`tax'_threelargest *(lag_inventors/sum_invent)
+	gen weighted_level`tax'3 = other_`tax'_threelargest *(lag_patents/sum_patents)
+	gen weighted_level`tax'4 = other_`tax'_threelargest * n_inventors3
+	gen weighted_level`tax'5 = other_`tax'_threelargest * lag_inventors
+	gen weighted_level`tax'6 = other_`tax'_threelargest * n_inventors3 if asg_corp ==1 
+	replace weighted_level`tax'6 = 0 if missing(other_threelargest)
 	
 * Generating the weighted variable in levels 	
-	bysort fips_state czone year: egen cz_treated_level_w1 = sum(weighted_level1)
-	bysort fips_state czone year: egen cz_treated_level_w2 = sum(weighted_level2)
-	bysort fips_state czone year: egen cz_treated_level_w3 = sum(weighted_level3)
-	bysort fips_state czone year: egen cz_treated_level_w4_helper = sum(weighted_level4)
-	gen cz_treated_level_w4 = (cz_treated_level_w4_helper - weighted_level4)/(sum_inv - n_inventors3) if other_threelargest!=. 
+	bysort fips_state czone year: egen cz_treated_level`tax'_w1 = sum(weighted_level`tax'1)
+	bysort fips_state czone year: egen cz_treated_level`tax'_w2 = sum(weighted_level`tax'2)
+	bysort fips_state czone year: egen cz_treated_level`tax'_w3 = sum(weighted_level`tax'3)
+	bysort fips_state czone year: egen cz_treated_level_w4_helper = sum(weighted_level`tax'4)
+	gen cz_treated_level`tax'_w4 = (cz_treated_level_w4_helper - weighted_level`tax'4)/(sum_inv - n_inventors3) if other_threelargest!=. 
 	
-	replace cz_treated_level_w4 = cz_treated_level_w4_helper/sum_inv
-	bysort fips_state czone year: egen cz_treated_level_w5_helper = sum(weighted_level5)
+	replace cz_treated_level`tax'_w4 = cz_treated_level_w4_helper/sum_inv
+	bysort fips_state czone year: egen cz_treated_level_w5_helper = sum(weighted_level`tax'5)
 	
-	gen cz_treated_level_w5 = (cz_treated_level_w5_helper - weighted_level5)/(sum_invent - lag_inventors) if other_threelargest!=. 
-	replace cz_treated_level_w5 = cz_treated_level_w5_helper/sum_invent
+	gen cz_treated_level`tax'_w5 = (cz_treated_level_w5_helper - weighted_level5)/(sum_invent - lag_inventors) if other_threelargest!=. 
+	replace cz_treated_level`tax'_w5 = cz_treated_level_w5_helper/sum_invent
 	
-	bysort fips_state czone year: egen cz_treated_level_w6_helper = sum(weighted_level6)
-	gen cz_treated_level_w6 = (cz_treated_level_w6_helper - weighted_level6)/(sum_inv - n_inventors3)
+	bysort fips_state czone year: egen cz_treated_level_w6_helper = sum(weighted_level`tax'6)
+	gen cz_treated_level`tax'_w6 = (cz_treated_level_w6_helper - weighted_level`tax'6)/(sum_inv - n_inventors3)
 	
-	drop weighted_change* weight_multi cz_treated_change_w5_helper cz_treated_change_w4_helper cz_treated_change_w6_helper  cz_treated_level_w4_helper cz_treated_level_w6_helper cz_treated_level_w5_helper
+	drop  cz_treated_level_w4_helper cz_treated_level_w6_helper cz_treated_level_w5_helper
 	
+	}
 	
+	drop weighted_change* weight_multi cz_treated_change_w5_helper cz_treated_change_w4_helper cz_treated_change_w6_helper 
 	
 xtset estab_id year 
 local x change_other_threelargest

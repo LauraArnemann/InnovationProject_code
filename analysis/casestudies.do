@@ -103,7 +103,7 @@ bysort assignee_id app_year: egen total_patents = sum(patents3)
 
 *patents3 n_inventors3 n_newinventors3 patents3_w1  n_newinventors3_w1 
 
-forvalues i =5/5 {
+forvalues i =6/6 {
 
 foreach fips in CA {
 foreach var of varlist n_inventors3_w1 {
@@ -112,6 +112,7 @@ foreach var of varlist n_inventors3_w1 {
       local sample3 & max_multistate ==1 & everpresent_`fips'!=1 
       local sample4 & max_multistate ==1 & everpresent_`fips'!=1 & patents3_w1>=10 & patents3_w1!=.
 	  local sample5 & max_multistate ==1 & everpresent_`fips'!=1 & asg_corp==1
+	  local sample6 & max_multistate ==1 & everpresent_`fips'!=1 & asg_corp==1 & clean_control_CA==0
 	  *local sample6 & max_multistate ==1 & everpresent_`fips'!=1 & asg_corp==1 & nocontrol_`fips'!=1
 	  *local sample7 & max_multistate ==1 & everpresent_`fips'!=1 & asg_corp==1 & total_patents>10  
 	  *local sample5 & max_multistate ==1 & everpresent_`fips'!=1 & patents3_w1>=10 
@@ -157,7 +158,7 @@ foreach var of varlist ln_n_inventors3   {
 }
  
 
-
+/*
 ********************************************************************************
 * Spillover Analysis 
 ******************************************************************************** 

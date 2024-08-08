@@ -38,7 +38,7 @@ ssc install egenmore, replace
 */
 
 * Set the global so the paths adjust quickly
-
+global dataset 4 
 
 if c(username) == "laura" {
 	
