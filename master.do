@@ -37,6 +37,10 @@ ssc install did_multiplegt_dyn, replace
 ssc install egenmore, replace
 */
 
+*Graphing scheme:
+set scheme plotplainblind
+
+
 * Set the global so the paths adjust quickly
 global dataset 4 
 
