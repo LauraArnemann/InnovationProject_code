@@ -6,6 +6,8 @@
 
 
 global dataset 4 
+
+
 * Information on Assigee Type e.g. if assignee is governmental entity 
 use "${TEMP}/patents_helper_${dataset}.dta", clear
 bysort assignee_id: gen count = _n 
@@ -15,7 +17,7 @@ save `patentshelper'
 
 
 
-use "${TEMP}/final_state_zeros_new_4_assignee.dta", clear 
+use "${TEMP}/final_state_zeros_new_4_assignee_24_08_08.dta", clear 
 rename multistatefirm_max max_multistate
 
 merge m:1 assignee_id using `patentshelper', keepusing(noncorp_asg asg_corp pub_assg)
@@ -97,13 +99,14 @@ foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_in
 			}
 						
 gen zero_1 = 1	
+label var zero_1 "-1"
 
 bysort assignee_id app_year: egen total_patents = sum(patents3)
 
 
 *patents3 n_inventors3 n_newinventors3 patents3_w1  n_newinventors3_w1 
 
-forvalues i =6/6 {
+forvalues i =5/5 {
 
 foreach fips in CA {
 foreach var of varlist n_inventors3_w1 {
@@ -112,7 +115,7 @@ foreach var of varlist n_inventors3_w1 {
       local sample3 & max_multistate ==1 & everpresent_`fips'!=1 
       local sample4 & max_multistate ==1 & everpresent_`fips'!=1 & patents3_w1>=10 & patents3_w1!=.
 	  local sample5 & max_multistate ==1 & everpresent_`fips'!=1 & asg_corp==1
-	  local sample6 & max_multistate ==1 & everpresent_`fips'!=1 & asg_corp==1 & clean_control_CA==0
+	  *local sample6 & max_multistate ==1 & everpresent_`fips'!=1 & asg_corp==1 & clean_control_CA==0
 	  *local sample6 & max_multistate ==1 & everpresent_`fips'!=1 & asg_corp==1 & nocontrol_`fips'!=1
 	  *local sample7 & max_multistate ==1 & everpresent_`fips'!=1 & asg_corp==1 & total_patents>10  
 	  *local sample5 & max_multistate ==1 & everpresent_`fips'!=1 & patents3_w1>=10 
@@ -130,7 +133,7 @@ foreach var of varlist n_inventors3_w1 {
 	local c = 48 
     }
 	
-	ppmlhdfe `var' F?_treated_`fips' zero_1 L?_treated_`fips' if fips!=`c' `sample`i'' , absorb(state_estab app_year#fips_state) cl(state_estab)
+	ppmlhdfe `var' F4_treated_`fips' F3_treated_`fips' F2_treated_`fips' zero_1 L?_treated_`fips' if fips!=`c' `sample`i'' , absorb(state_estab app_year#fips_state) cl(state_estab)
 	est sto inventorreg1 
 	* Exporting the graph 
 	coefplot inventorreg1, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
@@ -143,7 +146,7 @@ foreach var of varlist n_inventors3_w1 {
 *ln_n_newinventors3 ln_patents3 
 foreach var of varlist ln_n_inventors3   {
     
-	reghdfe `var' F?_treated_`fips' zero_1 L?_treated_`fips' if fips!=`c' `sample`i'' , absorb(state_estab app_year#fips_state) cl(state_estab)
+	reghdfe `var' F4_treated_CA F3_treated_CA F2_treated_CA zero_1 L?_treated_`fips' if fips!=`c' `sample`i'' , absorb(state_estab app_year#fips_state) cl(state_estab)
 	est sto inventorreg1 
 	* Exporting the graph 
 	coefplot inventorreg1, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///
@@ -158,10 +161,16 @@ foreach var of varlist ln_n_inventors3   {
 }
  
 
-/*
+
 ********************************************************************************
 * Spillover Analysis 
 ******************************************************************************** 
+* Information on Assigee Type e.g. if assignee is governmental entity 
+use "${TEMP}/patents_helper_${dataset}.dta", clear
+bysort assignee_id: gen count = _n 
+keep if count ==1  
+tempfile patentshelper
+save `patentshelper'
 
 
 use "${TEMP}/patentcount_czone_${dataset}_assignee.dta", clear 
@@ -306,6 +315,7 @@ foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_in
 			}
 						
 gen zero_1 = 1	
+label var zero_1 "-1"
 
 * Run everything on assignee level 
   
@@ -337,7 +347,7 @@ foreach var of varlist  n_inventors3_w1 {
 	local c = 48 
     }
 	
-	ppmlhdfe `var' F?_treated_`fips' zero_1 L?_treated_`fips' if fips!=`c' `sample`i'' , absorb(state_estab app_year#fips_state) cl(czone)
+	ppmlhdfe `var' F4_treated_CA F3_treated_CA F2_treated_CA zero_1 L?_treated_`fips' if fips!=`c' `sample`i'' , absorb(state_estab app_year#fips_state) cl(czone)
 	est sto inventorreg1 
 	* Exporting the graph 
 	coefplot inventorreg1, vertical levels(95) recast(connected) omitted graphregion(color(white)) ///

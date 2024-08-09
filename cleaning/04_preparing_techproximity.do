@@ -146,7 +146,53 @@ keep assignee_id czone year change_other_threelargest n_inventors3 sum_inventors
 rename assignee_id assignee_id_pat 
 save "${TEMP}/cz_preaggregate.dta", replace
 
+*xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+*PYTHON	...
+*xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
  
+ 
+*Combine Python-generated files
+use "${TEMP}/final_cz_4_corp_new_07_08.dta", clear
+
+levelsof czone, local(all_cz) 
+
+
+display `all_cz'
+
+clear
+
+foreach cz of local all_cz {
+	forv y=1988/2018 {
+		cap append using "${TEMP}/czone/tech_index/tech_index`cz'_`y'.0year.dta"
+	}
+	display `cz'
+}
+
+
+drop index 
+
+duplicates drop
+duplicates report assignee_id czone year // should be unique id
+
+*Merge back string ids
+rename assignee_id assignee_id_num
+merge m:1 assignee_id_num using "${TEMP}/new_dataset3_techspill_assignee_ids.dta", nogen keep(3)
+
+save "${TEMP}/spill_output", replace
+	
+use "${TEMP}/final_cz_4_corp_new_07_08.dta", clear
+	merge m:1 assignee_id czone year using "${TEMP}/spill_output"
+	drop if _merge == 2
+	drop _merge
+	
+	label var weightedtec_change1 "Tech weighting excl inv"
+	label var weightedtec_change2 "Tech weighting incl inv"
+	
+	replace weightedtec_change1 = 0 if missing(weightedtec_change1) 
+	replace weightedtec_change2 = 0 if missing(weightedtec_change2)
+
+save "${TEMP}/final_cz_4_tech.dta", replace
+
 
 /*
 forvalues state = 1(1)56 {	// 1-56
@@ -178,53 +224,8 @@ foreach cz of local all_cz {
 
 *A2 - Crete technological spillover measure	x	x	x	x	x	x	x	x	x
 
-*xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-*PYTHON	...
-*xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-*Combine Python-generated files
-use "${TEMP}/final_cz_4_corp_new.dta", clear
-
-levelsof czone, local(all_cz) 
-local tmin=1988
-local tmax=2018
-
-display `all_cz'
-
-use "${TEMP}/tech_index/tech_index100_1988.0year.dta", clear
-
-foreach cz of local all_cz {
-	forv y=`tmin'(1)`tmax' {
-		cap append using "${TEMP}/tech_index/tech_index`cz'_`y'.0year.dta"
-	}
-	display `cz'
-}
-
-
-drop index 
-
-duplicates drop
-duplicates report assignee_id czone year // should be unique id
-
-*Merge back string ids
-rename assignee_id assignee_id_num
-merge m:1 assignee_id_num using "${TEMP}/new_dataset3_techspill_assignee_ids.dta", nogen keep(3)
-
-save "${TEMP}/spill_output", replace
-	
-use "${TEMP}/final_cz_4_corp_new.dta", clear
-	merge m:1 assignee_id czone year using "${TEMP}/spill_output"
-	drop if _merge == 2
-	drop _merge
-	
-	label var weightedtec_change1 "Tech weighting excl inv"
-	label var weightedtec_change2 "Tech weighting incl inv"
-	
-	replace weightedtec_change1 = 0 if missing(weightedtec_change1) 
-	replace weightedtec_change2 = 0 if missing(weightedtec_change2)
-
-save "${TEMP}/final_cz_4_tech.dta", replace
 
 
 /*

@@ -5,22 +5,39 @@
 // Goal: Descriptive Statistics and Heat Maps
 
 
+global dataset 4
 
 
+
+use "${TEMP}/patents_helper_${dataset}.dta", clear
+bysort assignee_id: gen count = _n 
+keep if count ==1  
+tempfile patentshelper
+save `patentshelper'
 ********************************************************************************
 * Table with Descriptive Statistics: State Level 
 ********************************************************************************
 *use "${TEMP}/final_state.dta", clear
-use "${TEMP}/final_state_zeros_new_${dataset}_assignee.dta", clear
-foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 {
+use "${TEMP}/final_state_zeros_new_${dataset}_assignee_24_08_08.dta", clear
+
+
+merge m:1 assignee_id using `patentshelper', keepusing(noncorp_asg asg_corp pub_assg)
+	drop if _merge ==2 
+	drop _merge 
+
+foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 n_newinventors3 {
 	gstats winsor `var', cut(1 99) gen(`var'_w1)
 	gstats winsor `var', cut(1 95) gen(`var'_w2)
 	gen ln_`var'=log(`var')
 }
 
-reg patents3 unemployment gdp pit cit multistatefirm_temp 
+
+egen estab_id= group(assignee_id fips_state)
+
+
+reghdfe n_inventors3_w1 other_rd_credit_threelargest if inrange(year, 1988, 2018) & asg_corp==1, absorb(estab_id year#i.fips_state) 
 gen in_sample=1 if e(sample)==1
-replace n_inventors3=0 if missing(n_inventors3)
+*replace n_inventors3=0 if missing(n_inventors3)
 
 replace gdp=gdp/1000000000
 *replace gdp_other=gdp_other/1000000000
@@ -41,7 +58,7 @@ label var other_cit_threelargest3 "Average CIT"
 label var patents3 "Patents"
 label var n_inventors3 "Inventors"
 
-estpost sum patents3_w1 n_inventors3_w1 multistatefirm_temp nstates rd_credit pit cit other_rd_credit_threelargest3 other_pit_threelargest3 other_cit_threelargest3 if in_sample==1, detail
+estpost sum patents3_w1 n_inventors3_w1 n_newinventors3_w1 nstates rd_credit pit cit other_rd_credit_threelargest3 other_pit_threelargest3 other_cit_threelargest3 if in_sample==1, detail
 est sto firmvars
 esttab firmvars using "${RESULTS}/tables/descriptives1.tex", replace cells("mean(fmt(%9.2f)) sd(fmt(%9.2f)) p25(fmt(%9.2f))  p50(fmt(%9.2f))  p75(fmt(%9.2f)) count(fmt(%9.0g))") nonum label noobs collabels(\multicolumn{1}{c}{{Mean}} \multicolumn{1}{c}{{Std.Dev.}} \multicolumn{1}{l}{{25thPerc.}} \multicolumn{1}{l}{{Median}} \multicolumn{1}{l}{{75thPerc.}} \multicolumn{1}{l}{{Obs}}) refcat(patents3 "\textbf{\emph{Firm Variables}}" rd_credit "\textbf{\emph{State Variables}}" total_rd_credit "\textbf{\emph{Other State Variables}}", nolabel)
 
@@ -50,33 +67,33 @@ esttab firmvars using "${RESULTS}/tables/descriptives1.tex", replace cells("mean
 * Table with Descriptive Statistics: CZ Level 
 ********************************************************************************
 
-use "${TEMP}/final_cz_${dataset}_corp.dta", clear
+use "${TEMP}/final_cz_${dataset}_corp_new_07_08.dta", clear
 
 
-foreach var of varlist patents3 n_inventors total_labs {
+foreach var of varlist patents3 n_inventors3 n_newinventors3 {
 	gstats winsor `var', cut(1 99) gen(`var'_w1)
 	gstats winsor `var', cut(1 95) gen(`var'_w2)
 	gen ln_`var'=log(`var')
 }
 
-label var patents_w1 "Patents Commuting Zone"
-label var n_inventors_w1 "Inventors Commuting Zone"
+label var patents3_w1 "Patents"
+label var n_inventors3_w1 "Inventors"
+label var n_newinventors3_w1 "New Inventors"
 label var rd_credit "R\&D Credit"
-label var rd_credit_other_w1 "R\&D Credit, other"
 label var pit "PIT"
 label var cit "CIT"
-label var pit_other_w1 "PIT, other"
-label var cit_other_w1 "CIT, other"
+label var cz_treated_level_w6 "Weighted Change"
+replace patents3_w1 = 0 if missing(patents3_w1)
 
+bysort assignee_id year: egen total_patents = total(patents3)
 
-reg patents_cz3_w1 rd_credit rd_credit_other_w1 pit cit if year>=1992 & multistatefirm_temp==0
+ppmlhdfe n_inventors3_w1 cz_treated_level_w6 if inrange(year, 1988, 2018), absorb(estab_id year#i.fips_state) 
 gen in_sample=1 if e(sample)==1
 *replace inventors_cz3_w1 =0 if missing(inventors_cz3_w1)
 
-estpost sum patents_cz3_w1 inventors_cz3_w1 rd_credit pit cit rd_credit_other_w1 pit_other_w1 cit_other_w1 if in_sample==1, detail
+estpost sum patents3_w1 n_inventors3_w1 n_newinventors3_w1 rd_credit pit cit cz_treated_level_w6 if in_sample==1, detail
 est sto firmvars
 esttab firmvars using "${RESULTS}/tables/descriptives2.tex", replace cells("mean(fmt(%9.2f)) sd(fmt(%9.2f)) p25(fmt(%9.2f))  p50(fmt(%9.2f))  p75(fmt(%9.2f)) count(fmt(%9.0g))") nonum label noobs collabels(\multicolumn{1}{c}{{Mean}} \multicolumn{1}{c}{{Std.Dev.}} \multicolumn{1}{l}{{25thPerc.}} \multicolumn{1}{l}{{Median}} \multicolumn{1}{l}{{75thPerc.}} \multicolumn{1}{l}{{Obs}}) refcat(patents3_cz_w1 "\textbf{\emph{Firm Variables}}" rd_credit "\textbf{\emph{State Variables}}" rd_credit_other_w1 "\textbf{\emph{Other State Variables}}", nolabel)
-
 
 
 
@@ -271,17 +288,6 @@ drop indicator_largedecrease
 
 
 
-use "${TEMP}/other_all_3.dta", clear 
-
-egen estab = group(assignee_id fips_state)
-xtset estab year 
-
-gen change_otherall3 = other_rd_credit_all - l.other_rd_credit_all
-rename year app_year 
-
-merge m:1 assignee_id app_year using "${TEMP}/helper_dataset3.dta" , keepusing(states_present new_states)
-keep if _merge==3 
-drop _merge 
 * Also seems like other all variable was generated properly 
 
 

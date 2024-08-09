@@ -7,7 +7,6 @@
 ********************************************************************************
 * Inventor Productivity on State Level 
 ********************************************************************************
-/*
 * Generating the helper file
 use "${TEMP}/new_dataset3.dta", clear 
 duplicates drop state_fips_inventor assignee_id inventor_id, force
@@ -105,10 +104,10 @@ merge m:1 fips_state year assignee_id using "${TEMP}/final_state_zeros_new_${dat
 keep if _merge ==3
 drop _merge 
 
-keep other* assignee_id inventor_id n_patents year sample1 sample2 asg_corp noncorp_asg
+keep other* assignee_id inventor_id n_patents year sample1 sample2 asg_corp noncorp_asg fips_state 
 
-save "${TEMP}/inventor_productivity_$dataset_state.dta", replace 
-*/
+save "${TEMP}/inventor_productivity_state.dta", replace 
+/*
 ********************************************************************************
 * Inventor Productivity on Commuting Zone Level 
 ********************************************************************************

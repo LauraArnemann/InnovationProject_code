@@ -77,7 +77,7 @@ replace change_other_threelargest = 0 if missing(change_other_threelargest)
 
 * Outcome Variables 
 *patents3_w1 n_newinventors3_w1 
-local outcome n_inventors3_w1 
+local outcome n_inventors3_w1
 local outcome_log ln_n_inventors3 
 
 local direction change
@@ -170,7 +170,7 @@ foreach expl of numlist 6 {
 		 
 
 	forvalues i = 2/2 {
-				local cl czone 
+				local cl estab_id
 		** Poisson Regression
 		foreach var of varlist `outcome' {
 			
@@ -179,7 +179,7 @@ foreach expl of numlist 6 {
 			ppmlhdfe `var' F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state) cl(`cl')
 			est sto regres1
 			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(-0.4(0.2)-0.4 , labsize(medlarge)) ///
 				xtitle("Years since Change")  graphregion(color(white))
 			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c1_binning_`direction'_new.png", replace
 			}

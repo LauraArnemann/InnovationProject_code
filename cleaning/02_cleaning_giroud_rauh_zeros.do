@@ -8,7 +8,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-
+global dataset 4 
 ********************************************************************************
 *File: Patent count at state level
 ********************************************************************************
@@ -33,9 +33,16 @@ drop dup
 
 duplicates report patnum inventor_id
 
-do "${CODE}/cleaning/cleaning_gov_uni.do"
 
-save "${TEMP}/patents_helper_${dataset}.dta", replace 
+* Creating an indicator for assignee type 
+   do "${CODE}/cleaning/02_03_cleaning_gov_uni.do"
+   gen pub_assg = 0 
+   replace pub_assg=1 if !missing(gvkey)
+
+   gen noncorp_asg = 0 
+   replace noncorp_asg =1 if asg_hospital ==1 | asg_institute==1 | asg_gov==1 
+
+save "${TEMP}/patents_helper_4.dta", replace 
 
 * No more duplicates in terms of patent numbers and inventor identification number
 /* 
@@ -199,7 +206,7 @@ drop _merge
 merge 1:1 fips_state assignee_id app_year using "${TEMP}/patents2_$dataset.dta", keepusing(patents2)
 drop _merge 
 
-save "${TEMP}/patentcount_state_$dataset.dta", replace 
+save "${TEMP}/patentcount_state_$dataset_assignee.dta", replace 
 
 * We still need these datasets for generating the other variables 
 *erase "${TEMP}/patents1_$dataset.dta"
@@ -214,7 +221,7 @@ save "${TEMP}/patentcount_state_$dataset.dta", replace
 * Helper data set for the inventors: balanced panel from 1970 - 2020 
 *-------------------------------------------------------------------------------
 
-use "$inventordata", clear 
+use "${TEMP}/new_dataset3.dta", clear 
 duplicates drop state_fips_inventor assignee_id inventor_id, force
 keep state_fips_inventor assignee_id inventor_id
 drop if state_fips_inventor == . 
@@ -226,9 +233,7 @@ save "${TEMP}/helper_$dataset.dta", replace
 
 * Helper data set for the inventors: patent count per firm, location and year 
 *-------------------------------------------------------------------------------
-
-use "$inventordata", clear 
-
+use "${TEMP}/new_dataset3.dta", clear 
 * Drop if missings in important variables
 drop if missing(app_year)
 drop if missing(assignee_id)
@@ -351,13 +356,23 @@ save "${TEMP}/inventor_1_$dataset.dta", replace
 	duplicates tag app_year inventor_id, gen(dup)
 	drop if dup>0
 	drop dup
+	
+	* Generate an indicator when an inventor is observed for the first time
 	gen new_inventor = 1 if app_year==min_year 
+	
+	bysort assignee_id inventor_id: egen assignee_firstmax = min(max_year)
+	bysort assignee_id inventor_id: egen assignee_lastmax = max(max_year)
+	gen relocating_inventor = 1 if max_year < assignee_lastmax 
+	replace relocating_inventor = . if app_year != max_year 
+	
+	
 	
 bysort state_fips_inventor assignee_id app_year: gen count=_N
 
-	collapse (count) n_inventors3=count n_newinventors3 = new_inventor, by(state_fips_inventor assignee_id app_year)
+	collapse (count) n_inventors3=count n_newinventors3 = new_inventor n_relocatinginventors = relocating_inventor, by(state_fips_inventor assignee_id app_year)
 	label var n_inventors3 "Number of Inventors, 3"
 	label var n_newinventors3 "Number of New Inventors, 3"
+	label var n_relocatinginventors "Number of relocating inventors "
 	save "${TEMP}/inventor_3_$dataset.dta", replace
 
 
@@ -370,7 +385,7 @@ drop _merge
 order n_inventors1 n_inventors2 n_inventors3 
 *n_inventors3b
 rename state_fips_inventor fips_state 
-save "${TEMP}/inventorcount_state_$dataset.dta", replace 
+save "${TEMP}/inventorcount_state_$dataset_assignee.dta", replace 
 
 erase "${TEMP}/helper_$dataset.dta"
 erase "${TEMP}/inventor_1_$dataset.dta"
@@ -385,7 +400,7 @@ erase "${TEMP}/inventor_helper_$dataset.dta"
 ********************************************************************************
 
 * This dofile generates the variables based on all years the establishment is present
-do "${CODE}/02_01_gen_other_variable.do"
+*do "${CODE}/02_01_gen_other_variable.do"
     
     
 ********************************************************************************

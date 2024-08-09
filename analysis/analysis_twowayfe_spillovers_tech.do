@@ -88,14 +88,14 @@ local direction change
 local clusterlevel czone
 
 
-foreach expl of numlist 2 {
+foreach expl of numlist 1 2 {
 	
 	foreach x in `direction'_otherstates`expl' {
 		replace F4_`x'=sum_F4_`x'
 		replace L4_`x'=sum_L4_`x'
 	}
 	
-	forvalues i = 1/12 {
+	forvalues i = 1/2 {
 		
 		** Poisson regression
 		foreach var of varlist `outcome' {
