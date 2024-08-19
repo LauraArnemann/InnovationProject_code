@@ -24,9 +24,10 @@ local sample10 if inrange(year, 1988, 2018) & asg_corp==1 & total_patents>20
 
 global direction incr
 * patents3 n_inventors3 n_newinventors3 patents3_w1 n_newinventors3_w1
-global outcome  n_inventors3_w1
-*ln_patents3 ln_n_newinventors3
-global outcome_log  ln_n_inventors3 
+global outcome  
+*ln_patents3 ln_n_newinventors3 n_lasttimeinventor n_relocatinginventors 
+global outcome_log inventor_productivity
+*ln_n_inventors3 
 
 foreach type in assignee {
 
@@ -47,9 +48,12 @@ foreach type in assignee {
 			
 			bysort assignee_id year event: egen total_patents = total(patents3)
 			
+			gen inventor_productivity = patents3/n_inventors3 
+			replace inventor_productivity = 0 if missing(patents3)
+			
 			egen assignee = group(assignee_id)
 
-			foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 n_newinventors3 {
+			foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 n_newinventors3 n_relocatinginventors n_lasttimeinventor {
 				gstats winsor `var', cut(1 99) gen(`var'_w1)
 				gstats winsor `var', cut(1 95) gen(`var'_w2)
 				gen ln_`var'=log(`var')

@@ -69,6 +69,9 @@ label var zero_1 "-1"
 bysort assignee_id year: egen total_patents = total(patents3)
 replace change_other_threelargest = 0 if missing(change_other_threelargest)
 
+gen inventor_productivity = patents3/n_inventors3 
+replace inventor_productivity = 0 if missing(patents3)
+
 
 *SAMPLE SLECTION:: ROBUSTNESS CHECK
 *keep if tag_local == 1
@@ -77,8 +80,8 @@ replace change_other_threelargest = 0 if missing(change_other_threelargest)
 
 * Outcome Variables 
 *patents3_w1 n_newinventors3_w1 
-local outcome n_inventors3_w1
-local outcome_log ln_n_inventors3 
+local outcome 
+local outcome_log inventor_productivity
 
 local direction change
 
@@ -170,9 +173,9 @@ foreach expl of numlist 6 {
 		 
 
 	forvalues i = 2/2 {
-				local cl estab_id
+				local cl czone
 		** Poisson Regression
-		foreach var of varlist `outcome' {
+	/*	foreach var of varlist `outcome' {
 			
 			if `i'!=9 {
 
@@ -193,7 +196,7 @@ foreach expl of numlist 6 {
 			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c2_binning_`direction'_new.png", replace
 				
 
-		}
+		}*/
 
 			
 		** Regular Regression

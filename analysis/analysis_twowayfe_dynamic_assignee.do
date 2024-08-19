@@ -6,9 +6,9 @@
 
 
 
-global outcome n_relocatinginventors
+global outcome n_lasttimeinventor n_relocatinginventors 
 global outcome_log inventor_productivity 
-global weighting_strategy threelargest weighted 
+global weighting_strategy threelargest 
 
 * Information on Assigee Type e.g. if assignee is governmental entity 
 use "${TEMP}/patents_helper_${dataset}.dta", clear
@@ -39,7 +39,7 @@ foreach type in assignee {
 	gen inventor_productivity = patents3/n_inventors3 
 	replace inventor_productivity = 0 if missing(patents3)
 
-	foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 n_newinventors1 n_newinventors3 n_relocatinginventors {
+	foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 n_newinventors1 n_newinventors3 n_relocatinginventors n_lasttimeinventor {
 		gstats winsor `var', cut(1 99) gen(`var'_w1)
 		gstats winsor `var', cut(1 95) gen(`var'_w2)
 		gen ln_`var'=log(`var')

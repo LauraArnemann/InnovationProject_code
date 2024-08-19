@@ -365,14 +365,17 @@ save "${TEMP}/inventor_1_$dataset.dta", replace
 	gen relocating_inventor = 1 if max_year < assignee_lastmax 
 	replace relocating_inventor = . if app_year != max_year 
 	
+	gen lasttime_inventor = 1 if app_year == max_year 
+	
 	
 	
 bysort state_fips_inventor assignee_id app_year: gen count=_N
 
-	collapse (count) n_inventors3=count n_newinventors3 = new_inventor n_relocatinginventors = relocating_inventor, by(state_fips_inventor assignee_id app_year)
+	collapse (count) n_inventors3=count n_newinventors3 = new_inventor n_relocatinginventors = relocating_inventor n_lasttimeinventor = lasttime_inventor , by(state_fips_inventor assignee_id app_year)
 	label var n_inventors3 "Number of Inventors, 3"
 	label var n_newinventors3 "Number of New Inventors, 3"
 	label var n_relocatinginventors "Number of relocating inventors "
+	label var n_lasttimeinventor "Number of lasttime Inventors"
 	save "${TEMP}/inventor_3_$dataset.dta", replace
 
 

@@ -6,7 +6,7 @@
 
 
 
-use "${TEMP}/final_cz_${dataset}_corp_new.dta", clear 
+use "${TEMP}/final_cz_${dataset}_corp_new_07_08.dta", clear 
 
 	foreach var of varlist patents3 n_inventors3 n_newinventors3 {
 		gstats winsor `var', cut(1 99) gen(`var'_w1)
@@ -19,10 +19,6 @@ use "${TEMP}/final_cz_${dataset}_corp_new.dta", clear
  
 replace other_threelargest = 0 if missing(other_threelargest)
  
-local sample1 if inrange(year, 1988, 2018)
-local sample2 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1 
-local sample3 if inrange(year, 1988, 2018) & total_patents>10 
-local sample4 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1  & total_patents>10
 
 /*
 local sample2 if inrange(year, 1988, 2018) & total_patents>10 
@@ -44,12 +40,13 @@ local sample1 if inrange(year, 1988, 2018)
 local sample2 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1 
 local sample3 if inrange(year, 1988, 2018) & total_patents>10 
 local sample4 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1  & total_patents>10
-
+local sample5 if inrange(year, 1988, 2018) & total_patents>10 & multistate_cz==0
+local sample6 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1  & total_patents>10 & multistate_cz==0
 
 local explaining cz_treated_level_w6
 foreach var of varlist n_inventors3_w1 patents3_w1 n_newinventors3_w1  {
 	
-forvalues i =1/4 {
+forvalues i =5/6 {
 	
 	 ppmlhdfe `var' `explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(czone)
        est sto regres1`i'
@@ -67,6 +64,7 @@ forvalues i =1/4 {
 
 local explaining cz_treated_level_w6
 	  * Exporting the Results in a log file, since no excel and tex available
+	  /*
 esttab regres11 regres21 regres12 regres22 using "${RESULTS}/tables/spillovers/var`var'_spillovers1.tex", replace noconstant mtitles keep(`explaining') ///
 				cells(b(star fmt(%9.3f)) se(par)) stats( estabfe stateyearfe othercontrols N, ///
 				fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "R\&D Credit, other" "Observations")) mgroups("All" "No Treatment", pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///
@@ -74,6 +72,12 @@ esttab regres11 regres21 regres12 regres22 using "${RESULTS}/tables/spillovers/v
 				
 
 esttab regres13 regres23 regres14 regres24 using "${RESULTS}/tables/spillovers/var`var'_spillovers2.tex", replace noconstant mtitles keep(`explaining') ///
+				cells(b(star fmt(%9.3f)) se(par)) stats( estabfe stateyearfe othercontrols N, ///
+				fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "R\&D Credit, other" "Observations")) mgroups("All" "No Treatment", pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///
+				collabels(none) starl(* .10 ** .05 *** .01) label 
+				*/ 
+				
+esttab regres15 regres25 regres16 regres26 using "${RESULTS}/tables/spillovers/var`var'_spillovers2.tex", replace noconstant mtitles keep(`explaining') ///
 				cells(b(star fmt(%9.3f)) se(par)) stats( estabfe stateyearfe othercontrols N, ///
 				fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "R\&D Credit, other" "Observations")) mgroups("All" "No Treatment", pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///
 				collabels(none) starl(* .10 ** .05 *** .01) label 
