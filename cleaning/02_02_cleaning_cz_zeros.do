@@ -554,12 +554,14 @@ rename app_year year
 destring fips_state, replace
 
 * Merging in the variables at other locations
-
+foreach num of numlist $patentvar {
 	if $gvkey == 0 {
-		merge 1:1 fips_state year assignee_id using "${TEMP}/other_threelargest`num'_treated.dta", keepusing(other*)
-}
+		merge m:1 fips_state year assignee_id using "${TEMP}/other_threelargest`num'_treated.dta"
+	}
 	if $gvkey == 1 {
-		merge 1:1 fips_state year assignee_id using "${TEMP}/other_threelargest`num'_treated_gvkey.dta", keepusing(other*)
+		merge m:1 fips_state year assignee_id using "${TEMP}/other_threelargest`num'_treated_gvkey.dta"
+	}
+
 }
 
 drop if _merge == 2
@@ -646,19 +648,19 @@ foreach tax in credit pit cit {
 	gen weighted_level`tax'4 = other_`tax'_threelargest * n_inventors3
 	gen weighted_level`tax'5 = other_`tax'_threelargest * lag_inventors
 	gen weighted_level`tax'6 = other_`tax'_threelargest * n_inventors3 if asg_corp ==1 
-	replace weighted_level`tax'6 = 0 if missing(other_threelargest)
+	replace weighted_level`tax'6 = 0 if missing(other_`tax'_threelargest)
 	
 	* Generating the weighted variable in levels 	
 	bysort fips_state czone year: egen cz_treated_level`tax'_w1 = sum(weighted_level`tax'1)
 	bysort fips_state czone year: egen cz_treated_level`tax'_w2 = sum(weighted_level`tax'2)
 	bysort fips_state czone year: egen cz_treated_level`tax'_w3 = sum(weighted_level`tax'3)
 	bysort fips_state czone year: egen cz_treated_level_w4_helper = sum(weighted_level`tax'4)
-	gen cz_treated_level`tax'_w4 = (cz_treated_level_w4_helper - weighted_level`tax'4)/(sum_inv - n_inventors3) if other_threelargest!=. 
+	gen cz_treated_level`tax'_w4 = (cz_treated_level_w4_helper - weighted_level`tax'4)/(sum_inv - n_inventors3) if other_`tax'_threelargest!=. 
 	
 	replace cz_treated_level`tax'_w4 = cz_treated_level_w4_helper/sum_inv
 	bysort fips_state czone year: egen cz_treated_level_w5_helper = sum(weighted_level`tax'5)
 	
-	gen cz_treated_level`tax'_w5 = (cz_treated_level_w5_helper - weighted_level5)/(sum_invent - lag_inventors) if other_threelargest!=. 
+	gen cz_treated_level`tax'_w5 = (cz_treated_level_w5_helper - weighted_level`tax'5)/(sum_invent - lag_inventors) if other_`tax'_threelargest!=. 
 	replace cz_treated_level`tax'_w5 = cz_treated_level_w5_helper/sum_invent
 	
 	bysort fips_state czone year: egen cz_treated_level_w6_helper = sum(weighted_level`tax'6)
@@ -667,7 +669,6 @@ foreach tax in credit pit cit {
 	drop  cz_treated_level_w4_helper cz_treated_level_w6_helper cz_treated_level_w5_helper
 }
 	
-	drop weighted_change* weight_multi cz_treated_change_w5_helper cz_treated_change_w4_helper cz_treated_change_w6_helper 
 	
 * Define time and treatment dummies	
 xtset estab_id year 
@@ -703,7 +704,8 @@ merge m:1 fips_state app_year using "${TEMP}/state_data_cleaned.dta"
 	drop _merge
 
 rename app_year year
-drop count 
+
+cap drop count
 bysort czone fips_state: gen count = _n 
 replace count = . if count!=1
 
@@ -712,8 +714,6 @@ bysort czone year: egen sum_count = sum(count)
 gen multistate_cz = 0 
 replace multistate_cz = 1 if sum_count>1 
 drop count sum_count 
-
-save "${TEMP}/final_cz_${dataset}_corp_new.dta", replace 
 
 compress
 
@@ -726,8 +726,10 @@ if $gvkey == 1 {
 }
 
 * Collapse everything on commuting zone level 
-collapse (sum) weighted_change n_inventors3 patents3 n_newinventors3 local_n_inventors3 local_n_newinventors3 local_patents3 (max) max_labs = n_labs max_pit = pit max_rd_credit = rd_credit max_cit = cit, by(czone year fips_state)
-
+collapse (sum) weighted_level* cz_treated_level* n_inventors3 patents3 n_newinventors3  ///
+	(max) max_labs = n_labs max_pit = pit max_rd_credit = rd_credit max_cit = cit, by(czone year fips_state)
+	//THERE WAS A VARIABLE ON LOCAL INVENTORS AND PATENTS IN THERE WHICH IS NEVER DEFINED?
+	
 bysort czone year: gen count = _N 
 gen byte multistate_cz = count>1 
 
