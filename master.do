@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	20/11/2023
-// Last Update:    	31/05/2024
+// Last Update:    	17/10/2024
 // Authors:         	Laura Arnemann
 //			Theresa Bührle
 // Goal: 		Master
@@ -9,11 +9,13 @@
    
 clear
 *set maxvar 120000
+*set max_memory 80g, permanently
 set more off
 
 /*
 *Programs
-ssc install rangestat
+ssc install rangestat, replace
+ssc install distinct, replace
 
 // Maps: https://www.stata.com/support/faqs/graphics/spmap-and-maps/
 ssc install spmap, replace
@@ -33,17 +35,13 @@ ssc install ivreg2, replace
 ssc install ranktest, replace
 
 ssc install did_multiplegt_dyn, replace
-
 ssc install egenmore, replace
 */
 
 *Graphing scheme:
 set scheme plotplainblind
 
-
 * Set the global so the paths adjust quickly
-global dataset 4 
-
 if c(username) == "laura" {
 	
 	global path C:/Users/laura/Desktop/InnovationProject
@@ -66,23 +64,35 @@ if c(username) == "laura" {
 
 if c(username) == "tbuehrle" {
 	
-	*global path "/projekte/tbuehrle/homes/Spillover/2_Empirical"
 	global path "C:/Users/tbuehrle/OneDrive - DIW Berlin/3_Forschung/Topics/Spillover migration/2_Empirical"
 	
 	global IN "${path}/2_1_Data/raw"
 	global TEMP "${path}/2_1_Data/temp"
 	global OUT  "${path}/2_1_Data/final"
 	global LINKING  "${path}/2_1_Data/linking_tables"
-	global PATENTDTA "/projekte/tbuehrle/homes/Spillover/Patent Data US_Woeppel/Temp"
 	global TECHDATA "D:/DOCS/3_Forschung/Topics/Spillover migration/2_Empirical/2_1_Data/temp/tech"
 	
 	global CODE "${path}/2_2_Code/"
 	
 	global RESULTS "${path}/2_3_Results"
-	global OVERLEAF "${path}/2_3_Results/overleaf"
-	
+	global OVERLEAF "${path}/2_3_Results/overleaf"	
 } 
 
+if c(username) == "there" {
+	
+	global path "D:/DOCS/3_Forschung/Topics/Spillover migration/2_Empirical"
+	
+	global IN "${path}/2_1_Data/raw"
+	global TEMP "${path}/2_1_Data/temp"
+	global OUT  "${path}/2_1_Data/final"
+	global LINKING  "${path}/2_1_Data/linking_tables"
+	global TECHDATA "D:/DOCS/3_Forschung/Topics/Spillover migration/2_Empirical/2_1_Data/temp/tech"
+	
+	global CODE "C:/Users/there/Desktop/Forschung/Topics/Spillover migration/2_2_Code"
+	
+	global RESULTS "${path}/2_3_Results"
+	global OVERLEAF "${path}/2_3_Results/overleaf"
+} 
 
 else {
 	
@@ -105,26 +115,7 @@ else {
 }
 
 
-
-/* Commands to be installed */ 
-* ssc install distinct
-
 /*
-capture noisily {
-do "${CODE}/cleaning/cleaning_giroud_rauh_zeros.do"
-}
-beep_me
-*/
-
-* Creating the distinct data files 
-
-/*
-use "C:/Users/laura/Desktop/InnovationProject/data/matched_with_miles.dta", clear 
-gen count =_n 
-keep if count>20000
-drop count
-save "C:/Users/laura/Desktop/InnovationProject/data/matched_with_miles_theresa.dta", replace
-
 
 
 *-------------------------------------------------------------------------------
@@ -198,7 +189,7 @@ do "${code}/checking_RD_expenditure.do"
 *2. ANALYSIS
 *-------------------------------------------------------------------------------
 
-Stacked reg: running_stacked_regression.do
+*Stacked reg: running_stacked_regression.do
 
 
 

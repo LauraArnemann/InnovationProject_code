@@ -7,9 +7,6 @@
 // Goal: 			Technological proximity 
 ///////////////////////////////////////////////////////////////////////////////
 
-
-
-
 *Data source: Patensview, https://patentsview.org/download/data-download-tables
 
 *A. CITATIONS
@@ -73,6 +70,7 @@ keep patnum section ipc_class ipc_group_3
 rename ipc_group_3 ipc_group
 duplicates drop
 
+compress
 save "${IN}/main_data/data_new/Patentsview/Classification/g_ipc_at_issue.dta", replace
 
 *Create patent dataset 	-	-	-	-	-	-	-	-	-	-	-	-	-	-
@@ -85,7 +83,7 @@ Solution: By state
 */
 
 * Read in the patents data from Patentsview
-use "${TEMP}/new_dataset3.dta", clear
+use "${TEMP}/patentdata.dta", clear
 
 duplicates drop patnum assignee_id gvkey, force
 keep patnum assignee_id gvkey app_year 	
@@ -117,21 +115,20 @@ preserve
 keep assignee_id assignee_id_num
 duplicates drop
 	
-save "${TEMP}/new_dataset3_techspill_assignee_ids.dta", replace
+compress	
+save "${TEMP}/patentdata_techspill_assignee_ids.dta", replace
 
 restore
 drop assignee_id
 rename assignee_id_num assignee_id
 
 compress
-save "${TEMP}/new_dataset3_techspill.dta", replace
+save "${TEMP}/patentdata_techspill.dta", replace
 
 
 * Preparing the Commuting Zone data 
-global dataset 4 
-
-use "${TEMP}/final_cz_${dataset}.dta", clear 
-merge m:1 assignee_id using "${TEMP}/new_dataset3_techspill_assignee_ids.dta", nogen keep(3) 
+use "${TEMP}/final_cz_zeros_assignee.dta", clear 
+merge m:1 assignee_id using "${TEMP}/patentdata_techspill_assignee_ids.dta", nogen keep(3) 
 drop assignee_id 
 rename assignee_id_num assignee_id
 
@@ -144,6 +141,8 @@ keep if asg_corp ==1
 drop if missing(change_other_threelargest)
 keep assignee_id czone year change_other_threelargest n_inventors3 sum_inventors
 rename assignee_id assignee_id_pat 
+
+compress
 save "${TEMP}/cz_preaggregate.dta", replace
 
 *xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -176,8 +175,9 @@ duplicates report assignee_id czone year // should be unique id
 
 *Merge back string ids
 rename assignee_id assignee_id_num
-merge m:1 assignee_id_num using "${TEMP}/new_dataset3_techspill_assignee_ids.dta", nogen keep(3)
+merge m:1 assignee_id_num using "${TEMP}/patentdata_techspill_assignee_ids.dta", nogen keep(3)
 
+compress
 save "${TEMP}/spill_output", replace
 	
 use "${TEMP}/final_cz_4_corp_new_07_08.dta", clear
@@ -191,7 +191,8 @@ use "${TEMP}/final_cz_4_corp_new_07_08.dta", clear
 	replace weightedtec_change1 = 0 if missing(weightedtec_change1) 
 	replace weightedtec_change2 = 0 if missing(weightedtec_change2)
 
-save "${TEMP}/final_cz_4_tech.dta", replace
+compress
+save "${TEMP}/final_cz_tech.dta", replace
 
 
 /*

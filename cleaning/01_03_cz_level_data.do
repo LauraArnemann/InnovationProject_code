@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	09/07/2024
-// Last Update:    	09/07/2024
+// Last Update:    	17/10/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			CZ-level controls
@@ -66,6 +66,7 @@ destring county_fips, replace
 drop if year < 1990
 drop if ct_population == .
 
+compress
 save "${IN}/indep_var/var_cz/BEA/population_income.dta", replace 
 
 *CAINC4 - Personal income and employment by major component
@@ -101,6 +102,7 @@ destring county_fips, replace
 drop if year < 1990
 drop if ct_empl_total == .
 
+compress
 save "${IN}/indep_var/var_cz/BEA/employment.dta", replace 
 
 *CAEMP25S - Total full-time and part-time employment by SIC industry
@@ -144,6 +146,7 @@ destring county_fips, replace
 reshape long empl_, i(county_fips industry_desc) j(year)
 reshape wide empl_, i(county_fips year) j(industry_desc) string
 
+compress
 save "${IN}/indep_var/var_cz/BEA/employment_SIC.dta", replace 
 
 *CAEMP25N - Total full-time and part-time employment by NAICS industry
@@ -195,6 +198,7 @@ destring county_fips, replace
 
 reshape wide empl_, i(county_fips year) j(industry_desc) string
 
+compress
 save "${IN}/indep_var/var_cz/BEA/employment_NAICS.dta", replace 
 
 merge 1:1 county_fips year using "${IN}/indep_var/var_cz/BEA/employment_SIC.dta", nogen
@@ -202,6 +206,7 @@ sort county_fips year
 
 drop if year < 1990
 
+compress
 save "${IN}/indep_var/var_cz/BEA/employment_industry.dta", replace
 
  
@@ -269,6 +274,7 @@ duplicates drop
 
 rename county_fips_comb county_fips
 
+compress
 save "${IN}/indep_var/var_cz/density/county_area.dta", replace 
 
 ********************************************************************************
@@ -301,6 +307,7 @@ rename StateAbr state_abbr
 
 destring urban_1990, replace
 
+compress
 save "${IN}/indep_var/var_cz/urbanisation/urbanisation_county_codes.dta", replace 
 
 ********************************************************************************
@@ -364,6 +371,7 @@ bysort inst_id: replace zipcode = zipcode[_n+1] if zipcode == "" &  zipcode[_n+1
 
 collapse (sum) uni_RandD, by(year zipcode)
 
+compress
 save "${IN}/indep_var/var_cz/HERD/university_RandD_zipcode.dta", replace 
 
 
@@ -392,6 +400,7 @@ gen share_selfemployed = ct_empl_proprietor / ct_population
 
 order state state_abbr county_name county_fips 
 
+compress
 save "${IN}/indep_var/var_cz/cz_level_controls.dta", replace 
 
 

@@ -17,7 +17,7 @@ global lag=4	// set lags
 
 foreach type in assignee gvkey {
 	
-use "${TEMP}/final_state_zeros_new_${dataset}_`type'.dta", clear 
+use "${TEMP}/final_state_zeros_`type'.dta", clear 
 drop if missing(assignee_id)
 
 * Only keep multistate firms for all others the values for the other variables will be zero 
@@ -70,7 +70,7 @@ foreach var in  other_all3 other_weighted3 other_threelargest3 {
 drop max_year min_year nstates multistatefirm_temp multistatefirm_max
 
 compress	
-save  "${TEMP}/final_state_stacked_other_zeros_${dataset}_`type'.dta", replace 
+save  "${TEMP}/final_state_stacked_other_zeros_`type'.dta", replace 
 
 
 ********************************************************************************
@@ -80,7 +80,7 @@ save  "${TEMP}/final_state_stacked_other_zeros_${dataset}_`type'.dta", replace
 foreach var in other_all3 other_weighted3 other_threelargest3 {
 	  
 	  
-	  use  "${TEMP}/final_state_stacked_other_zeros_${dataset}_`type'.dta", clear  
+	  use  "${TEMP}/final_state_stacked_other_zeros_`type'.dta", clear  
 	  
 	  drop if `var'==. 
 	  levelsof state_year if change_`var'>0 & change_`var'!=., local(years_final)
@@ -89,7 +89,7 @@ foreach var in other_all3 other_weighted3 other_threelargest3 {
 	
 		foreach l in `helper_years' { 
 		
-			use  "${TEMP}/final_state_stacked_other_zeros_${dataset}_`type'.dta", clear 
+			use  "${TEMP}/final_state_stacked_other_zeros_`type'.dta", clear 
 		
 	
 			gen indicator = 0 
@@ -168,14 +168,15 @@ foreach var in other_all3 other_weighted3 other_threelargest3 {
 		
 		keep fips_state estab year assignee_id treated max_treated max_change min_change multiple_events ry_increase event balanced_panel
 		compress
-		save "${TEMP}/final_state_stacked_`var'_incr_${dataset}_`type'_stateyear.dta", replace 
+		save "${TEMP}/final_state_stacked_`var'_incr_`type'_stateyear.dta", replace 
 		 
-}
-
 }
 
 
 /*
+
+
+
 ********************************************************************************
 * Decreases 
 ********************************************************************************
@@ -184,14 +185,14 @@ foreach var in other_all3 other_weighted3 other_threelargest3 {
 
 foreach var in other_all3 other_weighted3 other_threelargest3 other_first3 {
 
-	  use  "${TEMP}/final_state_stacked_other_zeros_${dataset}_`type'.dta", clear  
+	  use  "${TEMP}/final_state_stacked_other_zeros_`type'.dta", clear  
 	  
 	  levelsof state_year if change_`var'<0, local(years_final)
 	  levelsof state_year if change_`var'<0, local(helper_years)
 
 		foreach l of local `helper_years' { 
 		
-			use  "${TEMP}/final_state_stacked_other_zeros_${dataset}_`type'.dta", clear 
+			use  "${TEMP}/final_state_stacked_other_zeros_`type'.dta", clear 
 
 			gen indicator = 0 
 			replace indicator = 1 if state_year == `l'
@@ -264,10 +265,11 @@ foreach var in other_all3 other_weighted3 other_threelargest3 other_first3 {
 		
 		keep fips_state estab year assignee_id treated max_treated max_change min_change multiple_events ry_decrease event
 		compress
-		save "${TEMP}/final_state_stacked_other_total_`var'_decr_${dataset}_`type'.dta", replace 
+		save "${TEMP}/final_state_stacked_other_total_`var'_decr_`type'.dta", replace 
 		 
 }
 
+*/
 
 }
 

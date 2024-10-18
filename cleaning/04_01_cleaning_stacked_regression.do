@@ -14,7 +14,7 @@ global lag=4	// set lags
 * Stacked Regression for tax changes at establishment location
 ********************************************************************************
 
-use  "${TEMP}/final_state_zeros_new.dta", clear 
+use  "${TEMP}/final_state_zeros_assignee.dta", clear 
 drop if missing(assignee_id)
 
 egen estab = group(assignee_id fips_state)

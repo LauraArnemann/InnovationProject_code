@@ -3,52 +3,72 @@
 // Creation Date:  	06/12/2023
 // Last Update:    	02/10/2024
 // Authors:         Laura Arnemann
-// Goal: 			Cleaning the data from the Harvard Patent Database 
+//					Theresa Bührle
+// Goal: 			Cleaning patent data
 ///////////////////////////////////////////////////////////////////////////////
 
-/* Data sources: 
-* Dyevre data set : https://github.com/arnauddyevre/compustat-patents
-* Dorn data set: https://www.ddorn.net/data.htm
-* Data avaialable until 2010: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/5F1RRI
-* Data available until 2018: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/KPMMPV
-* Data used in Dyevre Paper: https://patentsview.org/download/data-download-tables; Data downloaded: g_location_disambiguated; g_assignee_disambiguated; g_application.tsv; g_inventor_disambiguated.tsv
+/*
+Data source: Patentsview (used in Dyevre Paper)
+Link: https://patentsview.org/download/data-download-tables 
+Data downloaded: g_location_disambiguated; g_assignee_disambiguated; g_application.tsv; g_inventor_disambiguated.tsv
+
+Dyevre data set : https://github.com/arnauddyevre/compustat-patents
 */
 
-********************************************************************************
-* Reading in the State data 
-********************************************************************************
-
-do "${CODE}/cleaning/02_02_cleaning_state.do"
-
 
 ********************************************************************************
-* Filling in the county data for the observations with missing county information
+* Import files
 ********************************************************************************
 
-do "${CODE}/cleaning/01_filling_counties.do"
-// Requires running some Python Code inbetween 
+* Dyevre match patent data to Compustat
+*-------------------------------------------------------------------------------
 
+forvalues i =1/8 { 
+import delimited "${IN}/main_data/data_new/Dyevre/staticTranche`i'.csv", clear 
+tempfile static`i'
+save `static`i''
+}
 
-********************************************************************************
-*2018 Data from PatentsView used in the Dyevre data set  
-********************************************************************************
+clear 
+forvalues i=1/8 {
+	append using `static`i''
+}
 
-import delimited "${IN}/main_data/data_new/Patentsview/g_location_disambiguated.tsv", clear
-save "${TEMP}/location.dta", replace 
+bysort patent_id: gen count=_n 
+keep gvkeyfr patent_id count 
+* It is a bit questionable whether we also want information on the ultimate owner of a patent 
+reshape wide gvkeyfr, i(patent_id) j(count)
+save "${TEMP}/dyevre_link.dta", replace 
 
-import delimited "${IN}/main_data/data_new/Patentsview/g_assignee_disambiguated.tsv", clear
-* Drop all patents with multiple assignees
-duplicates tag patent_id, gen(dup)
-drop if dup>0 
-*538,141 observations deleted)
-drop dup
-save "${TEMP}/assignee.dta", replace 
-
+* Patent info (g_application)
+*-------------------------------------------------------------------------------
 import delimited "${IN}/main_data/data_new/Patentsview/g_application.tsv", clear 
 save "${TEMP}/application.dta", replace 
 
+* Inventor location (g_location_disambiguated)
+*-------------------------------------------------------------------------------
+import delimited "${IN}/main_data/data_new/Patentsview/g_location_disambiguated.tsv", clear
+save "${TEMP}/location.dta", replace 
 
+* Assignee/ firm info (g_assignee_disambiguated)
+*-------------------------------------------------------------------------------
+import delimited "${IN}/main_data/data_new/Patentsview/g_assignee_disambiguated.tsv", clear
+
+* Drop all patents with multiple assignees
+duplicates tag patent_id, gen(dup)
+drop if dup>0 // 538,141 observations deleted)
+drop dup
+save "${TEMP}/assignee.dta", replace 
+
+* Inventor info (g_inventor_disambiguated)
+*-------------------------------------------------------------------------------
 import delimited "${IN}/main_data/data_new/Patentsview/g_inventor_disambiguated.tsv", clear
+
+
+********************************************************************************
+* Merge files
+********************************************************************************
+
 merge m:1 patent_id using "${TEMP}/assignee.dta"
 keep if _merge==3 
 drop _merge 
@@ -100,12 +120,13 @@ drop assignee_sequence disambig_assignee_individual_nam v5 location_id filing_da
 drop if missing(patnum)
 destring patnum, replace force 
 
-save "${TEMP}/new_dataset3.dta", replace 
+compress
+save "${TEMP}/patentdata.dta", replace 
 
-*erase ${TEMP}/assignee.dta
-*erase ${TEMP}/application.dta
-*erase ${TEMP}/location.dta
-
+erase "${TEMP}/assignee.dta"
+erase "${TEMP}/application.dta"
+erase "${TEMP}/location.dta"
+erase "${TEMP}/dyevre_link.dta"
 
 
 
