@@ -26,11 +26,11 @@ global outcome
 global outcome_log inventor_productivity
 
 
-global dataset 4
-	// 1 = Woeppel
-	// 2 = Harvard, 2010
-	// 3 = Harvard, 2018
-	// 4 = Patentsview, 2018
+********************************************************************************
+*Descriptives	
+********************************************************************************
+
+*do "${CODE}/analysis/01_descriptive_stats.do"
 
 ********************************************************************************
 *First stage: Relocation	

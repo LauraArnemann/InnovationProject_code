@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	06/12/2023
-// Last Update:    	02/10/2024
+// Last Update:    	21/10/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Master Data Creation
@@ -24,12 +24,9 @@ do "${CODE}/cleaning/01_03_cz_level_data.do"
 ********************************************************************************
 * 02 COMPILE REGRESSION DATA WITH CHANGES IN OTHER LOCATIONS
 ********************************************************************************
-* Set variables
-global gvkey = 0	// 0 = assignee_id, 1 = gvkey
-global patentvar = 3	// patent strategies 1,2 and/or 3
 
 * Generate state-level innovative activity based on Giroud/Rauh (patent, inventor count)
-do "${CODE}/cleaning/02_01_cleaning_giroud_rauh_zeros.do"
+do "${CODE}/cleaning/02_01_cleaning_state_zeros.do"
 	// Includes sub-routine "sub_clean_gov_uni_entitites"
 	// Includes sub-routine "sub_gen_other_var"
 	

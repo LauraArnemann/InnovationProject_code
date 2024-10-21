@@ -1,10 +1,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	20/11/2023
-// Last Update:    	17/10/2024
-// Authors:         	Laura Arnemann
-//			Theresa Bührle
-// Goal: 		Master
+// Last Update:    	21/10/2024
+// Authors:        	Laura Arnemann
+//					Theresa Bührle
+// Goal: 			Master
 ////////////////////////////////////////////////////////////////////////////////
    
 clear
@@ -40,6 +40,10 @@ ssc install egenmore, replace
 
 *Graphing scheme:
 set scheme plotplainblind
+
+* Set variables
+global gvkey = 0	// 0 = assignee_id, 1 = gvkey
+global patentvar = 3	// patent strategies 1,2 and/or 3
 
 * Set the global so the paths adjust quickly
 if c(username) == "laura" {

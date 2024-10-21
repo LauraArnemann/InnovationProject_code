@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	06/12/2023
-// Last Update:    	17/10/2024
+// Last Update:    	21/10/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Generating innovative activity per firm-establishment-year at state level
@@ -49,14 +49,28 @@ duplicates report patnum inventor_id // Check, should be zero
    replace noncorp_asg =1 if asg_hospital ==1 | asg_institute==1 | asg_gov==1 
 
 compress
-save "${TEMP}/patentdata_clean.dta", replace 
+
+if $gvkey == 0 {
+    save "${TEMP}/patentdata_clean.dta", replace 
+}
+
+if $gvkey == 1 {
+    save "${TEMP}/patentdata_clean_gvkey.dta", replace 
+}
+
 
 *Patent count ------------------------------------------------------------------
 
 *1 Only keep patents which can be uniquely assigned to one state during a year
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
-use "${TEMP}/patentdata_clean.dta", clear 
+if $gvkey == 0 {
+    use "${TEMP}/patentdata_clean.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/patentdata_clean_gvkey.dta", clear 
+}
 
 bysort patnum state_fips_inventor app_year: gen state_count=_N 
 bysort patnum app_year: gen count=_N
@@ -99,7 +113,13 @@ save "${TEMP}/patents1.dta", replace
 *2 Weight patents by number of patents recorded in each state
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
-use "${TEMP}/patentdata_clean.dta", clear 
+if $gvkey == 0 {
+    use "${TEMP}/patentdata_clean.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/patentdata_clean_gvkey.dta", clear 
+}
 
 bysort patnum state_fips_inventor app_year: gen state_count=_N 
 bysort patnum app_year: gen count=_N
@@ -145,7 +165,13 @@ save "${TEMP}/patents2.dta", replace
 *3 Keep observation with the highest number of patents in one year  
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
-use "${TEMP}/patentdata_clean.dta", clear 
+if $gvkey == 0 {
+    use "${TEMP}/patentdata_clean.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/patentdata_clean_gvkey.dta", clear 
+}
 
 bysort patnum state_fips_inventor app_year: gen state_count=_N 
 bysort patnum app_year: egen max_state=max(state_count)
@@ -202,7 +228,9 @@ save "${TEMP}/patentcount_state_assignee.dta", replace
 *erase "${TEMP}/patents1.dta"
 *erase "${TEMP}/patents2.dta"
 *erase "${TEMP}/patents3.dta"
-erase "${TEMP}/patentdata_clean.dta"
+
+* We still need this dataset for descriptives
+*erase "${TEMP}/patentdata_clean.dta"
 
 ********************************************************************************
 *File: Inventor count at state level
