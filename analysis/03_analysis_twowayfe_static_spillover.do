@@ -16,7 +16,6 @@ use "${TEMP}/final_cz_${dataset}_corp_new_07_08.dta", clear
  
 * Local with the type of explaining variation we want to use  
 
- 
 replace other_threelargest = 0 if missing(other_threelargest)
  
 

@@ -203,7 +203,7 @@ foreach type in assignee {
 }
 
 ********************************************************************************
-* Regular Event Studies: Binning Off + Balanced Panel
+* Regular Event Studies: Binning Off + Unbalanced Panel
 ********************************************************************************
 /*
 	foreach explaining in $weighting_strategy {
