@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	05/08/2024
-// Last Update:    	05/08/2024
+// Last Update:    	29/10/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Calculating spillover effects with two-way fixed effects analysis
@@ -12,7 +12,7 @@
 *SAMPLE
 ********************************************************************************
 
-use "${TEMP}/final_cz_4_tech.dta", clear 
+use "${TEMP}/final_cz_tech.dta", clear 
 
 foreach var of varlist patents3 n_inventors3 n_newinventors3 {
 	gstats winsor `var', cut(1 99) gen(`var'_w1)
@@ -22,7 +22,7 @@ foreach var of varlist patents3 n_inventors3 n_newinventors3 {
 
 
 replace change_other_threelargest = 0 if missing(change_other_threelargest)
-replace other_threelargest = 0 if missing(other_threelargest)
+replace other_credit_threelargest = 0 if missing(other_credit_threelargest)
 bysort assignee_id year: egen total_patents = total(patents3)
 
 xtset estab_id year 
@@ -87,7 +87,6 @@ local outcome_log ln_n_inventors3
 local direction change
 local clusterlevel czone
 
-
 foreach expl of numlist 1 2 {
 	
 	foreach x in `direction'_otherstates`expl' {
@@ -101,7 +100,7 @@ foreach expl of numlist 1 2 {
 		foreach var of varlist `outcome' {
 			
 			if `i'!=9 {
-				ppmlhdfe `var' F?_`direction'_otherstates`expl' L?_`direction'_otherstates`expl'  zero_1 `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state) cl(`clusterlevel')
+				ppmlhdfe `var' F?_`direction'_otherstates`expl' L?_`direction'_otherstates`expl' zero_1 `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state) cl(`clusterlevel')
 						est sto regres1
 						coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 							keep( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
@@ -109,7 +108,7 @@ foreach expl of numlist 1 2 {
 							xtitle("Years since `direction'") graphregion(color(white)) 
 				capture noisily graph export "$RESULTS/eventstudies/tech/weight`expl'/`var'_spillover_sample`i'_c1_bin_`direction'.png", replace
 				
-				ppmlhdfe `var' F?_`direction'_otherstates`expl' L?_`direction'_otherstates`expl'  zero_1 `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state year#czone) cl(`clusterlevel')
+				ppmlhdfe `var' F?_`direction'_otherstates`expl' L?_`direction'_otherstates`expl' zero_1 `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state year#czone) cl(`clusterlevel')
 						est sto regres1
 						coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 							keep( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///

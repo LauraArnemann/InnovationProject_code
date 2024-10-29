@@ -10,13 +10,13 @@
 global lead=4 	// set leads
 global lag=4	// set lags
 
-foreach type in assignee gvkey {
+
 
 ********************************************************************************
 * Stacked Regression for tax changes at other establishment location
 ********************************************************************************
 	
-use "${TEMP}/final_state_zeros_`type'.dta", clear 
+use "${TEMP}/final_state_zeros_assignee.dta", clear 
 drop if missing(assignee_id)
 
 * Only keep multistate firms for all others the values for the other variables will be zero 
@@ -67,7 +67,7 @@ foreach var in  other_all3 other_weighted3 other_threelargest3 {
 drop max_year min_year nstates multistatefirm_temp multistatefirm_max
 
 compress	
-save  "${TEMP}/final_state_stacked_other_zeros_`type'.dta", replace 
+save  "${TEMP}/final_state_stacked_other_zeros.dta", replace 
 
 
 ********************************************************************************
@@ -78,12 +78,12 @@ save  "${TEMP}/final_state_stacked_other_zeros_`type'.dta", replace
 
 foreach var in other_all3 other_weighted3 other_threelargest3  {
 		
-	use "${TEMP}/final_state_stacked_other_zeros_`type'.dta", clear 
+	use "${TEMP}/final_state_stacked_other_zeros.dta", clear 
 	    levelsof year if year>= 1992 & year<=2018, local(years_final)
 		di `years_final'	
 
 		forvalues i = 1992/2018 { 
-			use  "${TEMP}/final_state_stacked_other_zeros_`type'.dta", clear
+			use  "${TEMP}/final_state_stacked_other_zeros.dta", clear
 			
 			* We want to have values without any tax changes 9 years before and 9 years after the tax change 
 			local a = `i' - ${lead} - ${lead}
@@ -155,7 +155,7 @@ foreach var in other_all3 other_weighted3 other_threelargest3  {
 		
 		keep fips_state estab year assignee_id treated max_treated max_change min_change multiple_events ry_increase event balanced_panel
 		compress
-		save "${TEMP}/final_state_stacked_`var'_incr_year_`type'.dta", replace 
+		save "${TEMP}/final_state_stacked_other_total_`var'_incr.dta", replace 
 		 
 	}
 
@@ -170,12 +170,12 @@ foreach var in other_all3 other_weighted3 other_threelargest3 {
 	// pit cit 
 	// Loop with `var'_other_b  `var'_l1_other_b `var'_l2_other_b `var'_l3_other_b `var'_l4_other_b 
 	
-        use  "${TEMP}/final_state_stacked_other_zeros_`type'.dta", clear 
+        use  "${TEMP}/final_state_stacked_other_zeros.dta", clear 
 		levelsof year if year>= 1992 & year<=2018, local(years_final)
 		di `years_final'
 
 		forvalues i = 1992/2018 { 
-			use  "${TEMP}/final_state_stacked_other_zeros_`type'.dta", clear 
+			use  "${TEMP}/final_state_stacked_other_zeros.dta", clear 
 			local a = `i' - ${lead} 
 			local b = `i' + ${lag}
 			
@@ -243,7 +243,7 @@ foreach var in other_all3 other_weighted3 other_threelargest3 {
 		
 		keep fips_state estab year assignee_id treated max_treated max_change min_change multiple_events ry_decrease event balanced_panel
 		compress
-		save "${TEMP}/final_state_stacked_other_total_`var'_decr_year_`type'.dta", replace 
+		save "${TEMP}/final_state_stacked_other_total_`var'_decr.dta", replace 
 		 
 	}
 

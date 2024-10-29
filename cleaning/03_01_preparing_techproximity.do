@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	11/07/2024
-// Last Update:    	11/07/2024
+// Last Update:    	29/10/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Technological proximity 
@@ -127,7 +127,7 @@ save "${TEMP}/patentdata_techspill.dta", replace
 
 
 * Preparing the Commuting Zone data 
-use "${TEMP}/final_cz_zeros_assignee.dta", clear 
+use "${TEMP}/final_cz_corp_assignee.dta", clear 
 merge m:1 assignee_id using "${TEMP}/patentdata_techspill_assignee_ids.dta", nogen keep(3) 
 drop assignee_id 
 rename assignee_id_num assignee_id
@@ -151,22 +151,19 @@ save "${TEMP}/cz_preaggregate.dta", replace
  
  
 *Combine Python-generated files
-use "${TEMP}/final_cz_4_corp_new_07_08.dta", clear
+use "${TEMP}/final_cz_corp_assignee.dta", clear
 
 levelsof czone, local(all_cz) 
-
-
 display `all_cz'
 
 clear
 
 foreach cz of local all_cz {
 	forv y=1988/2018 {
-		cap append using "${TEMP}/czone/tech_index/tech_index`cz'_`y'.0year.dta"
+		cap append using "${TEMP}/tech_index/tech_index`cz'_`y'.0year.dta"
 	}
 	display `cz'
 }
-
 
 drop index 
 
@@ -180,7 +177,7 @@ merge m:1 assignee_id_num using "${TEMP}/patentdata_techspill_assignee_ids.dta",
 compress
 save "${TEMP}/spill_output", replace
 	
-use "${TEMP}/final_cz_4_corp_new_07_08.dta", clear
+use "${TEMP}/final_cz_corp_assignee.dta", clear
 	merge m:1 assignee_id czone year using "${TEMP}/spill_output"
 	drop if _merge == 2
 	drop _merge

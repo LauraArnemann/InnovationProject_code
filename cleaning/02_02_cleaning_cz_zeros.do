@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project: Inventor Relocation
 // Creation Date: 	10/02/2024
-// Last Update: 	17/10/2024
+// Last Update: 	29/10/2024
 // Author: 			Laura Arnemann 
 //					Theresa Bührle					
 // Goal: 			Merging the data set with the number of inventors 
@@ -53,14 +53,27 @@ duplicates report patnum inventor_id
    replace noncorp_asg =1 if asg_hospital ==1 | asg_institute==1 | asg_gov==1 
    
 compress   
-save "${TEMP}/patentdata_clean_cz.dta", replace 
+
+if $gvkey == 0 {
+    save "${TEMP}/patentdata_clean_cz_assignee.dta", replace 
+}
+
+if $gvkey == 1 {
+    save "${TEMP}/patentdata_clean_cz_gvkey.dta", replace 
+}
 
 *Patent count ------------------------------------------------------------------
 
 * 1 Only keep patents which can be uniquely assigned to one commuting zone during a year
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
-use "${TEMP}/patentdata_clean_cz.dta", clear
+if $gvkey == 0 {
+    use "${TEMP}/patentdata_clean_cz_assignee.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/patentdata_clean_cz_gvkey.dta", clear 
+}
  
 rename county_fips_inventor county_fips
 rename state_fips_inventor fips_state
@@ -112,7 +125,13 @@ save "${TEMP}/patents1_cz.dta", replace
 * 2 Weight patents by number of patents recorded in each czone
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
  
-use "${TEMP}/patentdata_clean_cz.dta", clear
+if $gvkey == 0 {
+    use "${TEMP}/patentdata_clean_cz_assignee.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/patentdata_clean_cz_gvkey.dta", clear 
+}
 
 rename county_fips_inventor county_fips
 rename state_fips_inventor fips_state
@@ -166,7 +185,13 @@ save "${TEMP}/patents2_cz.dta", replace
 *3 Assign Patent to the Commuting Zone where the most inventors are located
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
-use "${TEMP}/patentdata_clean_cz.dta", clear
+if $gvkey == 0 {
+    use "${TEMP}/patentdata_clean_cz_assignee.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/patentdata_clean_cz_gvkey.dta", clear 
+}
 
 rename county_fips_inventor county_fips
 rename state_fips_inventor fips_state
@@ -227,7 +252,14 @@ merge 1:1 fips_state czone assignee_id app_year using "${TEMP}/patents2_cz.dta",
 drop _merge 
 
 compress
-save "${TEMP}/patentcount_cz_assignee.dta", replace 
+
+if $gvkey == 0 {
+    save "${TEMP}/patentcount_cz_assignee.dta", replace 
+}
+
+if $gvkey == 1 {
+    save "${TEMP}/patentcount_cz_gvkey.dta", replace 
+}
 
 
 ********************************************************************************
@@ -279,11 +311,18 @@ expand 51
 bysort fips_state czone assignee_id inventor_id: gen count_obs = _n
 gen app_year = 1969+count_obs
 
-save "${TEMP}/helper_inventor_cz.dta", replace 
+compress
+
+if $gvkey == 0 {
+    save "${TEMP}/helper_inventor_cz_assignee.dta", replace 
+}
+
+if $gvkey == 1 {
+    save "${TEMP}/helper_inventor_cz_gvkey.dta", replace 
+}
 
 * Inventor Count on Commuting Zone level 
 use "${TEMP}/patentdata.dta", clear 
-
 
 if $gvkey == 1 {
     drop assignee_id 
@@ -334,14 +373,28 @@ bysort inventor_id app_year: gen pat_count=_N
 drop if pat_count>=3 
 drop pat_count 
 
-save "${TEMP}/inventordata_clean_cz.dta", replace 
+compress
+
+if $gvkey == 0 {
+    save "${TEMP}/inventordata_clean_cz_assignee.dta", replace 
+}
+
+if $gvkey == 1 {
+    save "${TEMP}/inventordata_clean_cz_gvkey.dta", replace 
+}
 
 *Inventor count	 ---------------------------------------------------------------
 
 *1 Only keep inventors which can be uniquely assigned to one cz during a year
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
-use "${TEMP}/inventordata_clean_cz.dta", clear 
+if $gvkey == 0 {
+    use "${TEMP}/inventordata_clean_cz_assignee.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/inventordata_clean_cz_gvkey.dta", clear 
+}
 
 bysort inventor_id app_year: gen count_pats=_N 
 bysort inventor_id app_year fips_state czone: gen count_state=_N
@@ -352,7 +405,14 @@ duplicates tag inventor_id fips_state czone assignee_id app_year, gen(dup)
 drop if dup!=0
 drop dup
 
-merge m:1 fips_state czone assignee_id inventor_id app_year using "${TEMP}/helper_inventor_cz.dta"
+if $gvkey == 0 {
+    merge m:1 fips_state czone assignee_id inventor_id app_year using "${TEMP}/helper_inventor_cz_assignee.dta"
+}
+
+if $gvkey == 1 {
+    merge m:1 fips_state czone assignee_id inventor_id app_year using "${TEMP}/helper_inventor_cz_gvkey.dta"
+}
+
 drop if _merge==1 // Observations from year 2021
 bysort fips_state czone assignee_id inventor_id: egen max_merge=max(_merge)
 	
@@ -389,7 +449,13 @@ save "${TEMP}/inventor1_cz.dta", replace
 *2 Weight inventors by number of patents recorded in each state
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
-use "${TEMP}/inventordata_clean_cz.dta", clear 
+if $gvkey == 0 {
+    use "${TEMP}/inventordata_clean_cz_assignee.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/inventordata_clean_cz_gvkey.dta", clear 
+}
 
 bysort inventor_id app_year: egen total_patents=total(n_patents)
 gen share_patents= n_patents/total_patents 
@@ -407,7 +473,13 @@ save "${TEMP}/inventor2_cz.dta", replace
 *3 Keep observation with the highest number of patents in one year 
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x 
 
-use "${TEMP}/inventordata_clean_cz.dta", clear 
+if $gvkey == 0 {
+    use "${TEMP}/inventordata_clean_cz_assignee.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/inventordata_clean_cz_gvkey.dta", clear 
+}
 
 bysort inventor_id app_year: egen max_patents=max(n_patents)
 keep if max_patents==n_patents 
@@ -422,7 +494,14 @@ drop if dup!=0
 drop dup
 bysort czone assignee_id app_year: gen cz_count=_N
 
-merge m:1 fips_state czone assignee_id inventor_id app_year using "${TEMP}/helper_inventor_cz.dta"
+if $gvkey == 0 {
+    merge m:1 fips_state czone assignee_id inventor_id app_year using "${TEMP}/helper_inventor_cz_assignee.dta"
+}
+
+if $gvkey == 1 {
+    merge m:1 fips_state czone assignee_id inventor_id app_year using "${TEMP}/helper_inventor_cz_gvkey.dta"
+}
+
 drop if _merge==1	// Observations from year 2021
 bysort fips_state czone assignee_id inventor_id: egen max_merge=max(_merge)
 keep if max_merge==3 
@@ -466,14 +545,18 @@ merge 1:1 fips_state czone assignee_id app_year using "${TEMP}/inventor2_cz.dta"
 drop _merge 
 
 compress
-save "${TEMP}/inventorcount_cz_assignee.dta", replace 
 
-erase "${TEMP}/helper_inventor_cz.dta"
+if $gvkey == 0 {
+    save "${TEMP}/inventorcount_cz_assignee.dta", replace 
+}
+
+if $gvkey == 1 {
+    save "${TEMP}/inventorcount_cz_gvkey.dta", replace 
+}
+
 erase "${TEMP}/inventor1_cz.dta"
 erase "${TEMP}/inventor2_cz.dta"
 erase "${TEMP}/inventor3_cz.dta"
-erase "${TEMP}/inventordata_clean_cz.dta"
-
 
 ********************************************************************************
 * Firm establishments facing tax changes in other locations 
@@ -524,7 +607,13 @@ foreach num of numlist $patentvar {
 ********************************************************************************
 *  Merging in data on assignee type 
 ********************************************************************************
-use "${TEMP}/patentdata_clean_cz.dta", clear
+if $gvkey == 0 {
+    use "${TEMP}/patentdata_clean_cz_assignee.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/patentdata_clean_cz_gvkey.dta", clear 
+}
 
 bysort assignee_id: gen count = _n 
 keep if count ==1  
@@ -537,9 +626,16 @@ save `patentshelper'
 /*Difficulty in measuring spillover effects atm: We want to measure spillover effects, so 
 we need to exclude the patents of treated units. In my opinion the cleanest approach would be to focus on firms which are only active in one commuting zone  */
 
-use "${TEMP}/patentcount_cz_assignee.dta", clear 
+if $gvkey == 0 {
+    use "${TEMP}/patentcount_cz_assignee.dta", clear 
+	merge 1:1 fips_state czone assignee_id app_year using "${TEMP}/inventorcount_cz_assignee.dta"
+}
 
-merge 1:1 fips_state czone assignee_id app_year using "${TEMP}/inventorcount_cz_assignee.dta"
+if $gvkey == 1 {
+    use "${TEMP}/patentcount_cz_gvkey.dta", clear 
+	merge 1:1 fips_state czone assignee_id app_year using "${TEMP}/inventorcount_cz_gvkey.dta"
+}
+
 drop _merge 
 
 merge m:1 assignee_id using `patentshelper', keepusing(noncorp_asg asg_corp pub_assg)
@@ -718,7 +814,7 @@ drop count sum_count
 compress
 
 if $gvkey == 0 {
-    save "${TEMP}/final_cz_corp.dta", replace 
+    save "${TEMP}/final_cz_corp_assignee.dta", replace 
 }
 
 if $gvkey == 1 {
@@ -743,5 +839,7 @@ if $gvkey == 1 {
     save "${TEMP}/final_cz_zeros_gvkey.dta", replace 
 }
 
-erase "${TEMP}/patentcount_cz_assignee.dta"
-erase "${TEMP}/inventorcount_cz_assignee.dta"
+cap erase "${TEMP}/patentcount_cz_assignee.dta"
+cap erase "${TEMP}/inventorcount_cz_assignee.dta"
+cap erase "${TEMP}/patentcount_cz_gvkey.dta"
+cap erase "${TEMP}/inventorcount_cz_gvkey.dta"

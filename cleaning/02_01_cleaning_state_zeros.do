@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	06/12/2023
-// Last Update:    	21/10/2024
+// Last Update:    	29/10/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Generating innovative activity per firm-establishment-year at state level
@@ -51,7 +51,7 @@ duplicates report patnum inventor_id // Check, should be zero
 compress
 
 if $gvkey == 0 {
-    save "${TEMP}/patentdata_clean.dta", replace 
+    save "${TEMP}/patentdata_clean_assignee.dta", replace 
 }
 
 if $gvkey == 1 {
@@ -65,7 +65,7 @@ if $gvkey == 1 {
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
 if $gvkey == 0 {
-    use "${TEMP}/patentdata_clean.dta", clear 
+    use "${TEMP}/patentdata_clean_assignee.dta", clear 
 }
 
 if $gvkey == 1 {
@@ -114,7 +114,7 @@ save "${TEMP}/patents1.dta", replace
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
 if $gvkey == 0 {
-    use "${TEMP}/patentdata_clean.dta", clear 
+    use "${TEMP}/patentdata_clean_assignee.dta", clear 
 }
 
 if $gvkey == 1 {
@@ -166,7 +166,7 @@ save "${TEMP}/patents2.dta", replace
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
 if $gvkey == 0 {
-    use "${TEMP}/patentdata_clean.dta", clear 
+    use "${TEMP}/patentdata_clean_assignee.dta", clear 
 }
 
 if $gvkey == 1 {
@@ -222,15 +222,19 @@ merge 1:1 fips_state assignee_id app_year using "${TEMP}/patents2.dta", keepusin
 drop _merge 
 
 compress
-save "${TEMP}/patentcount_state_assignee.dta", replace 
+
+if $gvkey == 0 {
+    save "${TEMP}/patentcount_state_assignee.dta", replace 
+}
+
+if $gvkey == 1 {
+    save "${TEMP}/patentcount_state_gvkey.dta", replace 
+}
 
 * We still need these datasets for generating the other variables, erase after that 
 *erase "${TEMP}/patents1.dta"
 *erase "${TEMP}/patents2.dta"
 *erase "${TEMP}/patents3.dta"
-
-* We still need this dataset for descriptives
-*erase "${TEMP}/patentdata_clean.dta"
 
 ********************************************************************************
 *File: Inventor count at state level
@@ -258,8 +262,15 @@ bysort state_fips_inventor assignee_id inventor_id: gen count_obs = _n
 gen app_year = 1969+count_obs
 
 compress
-save "${TEMP}/helper_inventor.dta", replace 
 
+if $gvkey == 0 {
+    save "${TEMP}/helper_inventor_assignee.dta", replace 
+}
+
+if $gvkey == 1 {
+    save "${TEMP}/helper_inventor_gvkey.dta", replace 
+}
+ 
 * Helper data set for the inventors: patent count per firm, location and year 
 use "${TEMP}/patentdata.dta", clear 
 
@@ -294,7 +305,15 @@ drop if count>=3 	// 125,029 observations deleted
 drop count 
 
 compress
-save "${TEMP}/inventordata_clean.dta", replace 
+
+if $gvkey == 0 {
+    save "${TEMP}/inventordata_clean_assignee.dta", replace 
+}
+
+if $gvkey == 1 {
+    save "${TEMP}/inventordata_clean_gvkey.dta", replace 
+}
+ 
 
 *Inventor count	 ---------------------------------------------------------------
 // Generate similar options to above 
@@ -302,7 +321,13 @@ save "${TEMP}/inventordata_clean.dta", replace
 *1 Only keep inventors which can be uniquely assigned to one state during a year
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
-use "${TEMP}/inventordata_clean.dta", clear 
+if $gvkey == 0 {
+    use "${TEMP}/inventordata_clean_assignee.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/inventordata_clean_gvkey.dta", clear 
+}
 
 bysort inventor_id app_year: gen count_pats=_N 
 bysort inventor_id app_year state_fips_inventor: gen count_state=_N
@@ -313,7 +338,14 @@ duplicates tag inventor_id state_fips_inventor assignee_id app_year, gen(dup)
 drop if dup!=0
 drop dup
 
-merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper_inventor.dta"
+if $gvkey == 0 {
+	merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper_inventor_assignee.dta"
+}
+
+if $gvkey == 1 {
+	merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper_inventor_gvkey.dta"
+}
+
 drop if _merge==1 // Observations from year 2021
 bysort state_fips_inventor assignee_id inventor_id: egen max_merge=max(_merge)
 	
@@ -351,7 +383,13 @@ save "${TEMP}/inventor1.dta", replace
 *2 Weight inventors by number of patents recorded in each state
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
 
-use "${TEMP}/inventordata_clean.dta", clear
+if $gvkey == 0 {
+    use "${TEMP}/inventordata_clean_assignee.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/inventordata_clean_gvkey.dta", clear 
+}
 
 bysort inventor_id app_year: egen total_patents=total(n_patents)
 gen share_patents= n_patents/total_patents 
@@ -369,7 +407,13 @@ save "${TEMP}/inventor2.dta", replace
 *3 Keep observation with the highest number of patents in one year
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
   
-use "${TEMP}/inventordata_clean.dta", clear
+if $gvkey == 0 {
+    use "${TEMP}/inventordata_clean_assignee.dta", clear 
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/inventordata_clean_gvkey.dta", clear 
+}
 
 bysort inventor_id app_year: egen max_patents=max(n_patents)
 keep if max_patents==n_patents 
@@ -384,7 +428,14 @@ drop if dup!=0
 drop dup
 bysort state_fips_inventor assignee_id app_year: gen count=_N
 
-merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper_inventor.dta"
+if $gvkey == 0 {
+	merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper_inventor_assignee.dta"
+}
+
+if $gvkey == 1 {
+	merge m:1 state_fips_inventor assignee_id inventor_id app_year using "${TEMP}/helper_inventor_gvkey.dta"
+}
+
 drop if _merge==1	// Observations from year 2021
 bysort state_fips_inventor assignee_id inventor_id: egen max_merge=max(_merge)
 keep if max_merge==3 
@@ -440,13 +491,18 @@ drop _merge
 order n_inventors1 n_inventors2 n_inventors3 
 
 rename state_fips_inventor fips_state 
-save "${TEMP}/inventorcount_state_assignee.dta", replace 
 
-erase "${TEMP}/helper_inventor.dta"
+if $gvkey == 0 {
+    save "${TEMP}/inventorcount_state_assignee.dta", replace 
+}
+
+if $gvkey == 1 {
+    save "${TEMP}/inventorcount_state_gvkey.dta", replace 
+}
+ 
 erase "${TEMP}/inventor1.dta"
 erase "${TEMP}/inventor2.dta"
 erase "${TEMP}/inventor3.dta"
-erase "${TEMP}/inventordata_clean.dta"
 		
 ********************************************************************************
 * Generate the variables indicating tax changes in other locations 
@@ -465,8 +521,16 @@ erase "${TEMP}/patents3.dta"
 ********************************************************************************
 * Only records active years 
 
-use "${TEMP}/patentcount_state_assignee.dta", clear 
-merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state_assignee.dta"
+if $gvkey == 0 {
+    use "${TEMP}/patentcount_state_assignee.dta", clear 
+	merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state_assignee.dta"
+}
+
+if $gvkey == 1 {
+    use "${TEMP}/patentcount_state_gvkey.dta", clear 
+	merge 1:1 fips_state assignee_id app_year using "${TEMP}/inventorcount_state_gvkey.dta"
+}
+
 // There might be some times mismatches since we have different methods for allocating patents and inventors, 
 // in my opinion this is correct however maybe we also might want to check this later on
 drop _merge 
@@ -538,8 +602,10 @@ if $gvkey == 0 {
 }
 
 if $gvkey == 1 {
-    save "${TEMP}/final_state_zeros_assignee_gvkey.dta", replace 
+    save "${TEMP}/final_state_zeros_gvkey.dta", replace 
 }
 
-erase "${TEMP}/patentcount_state_assignee.dta"
-erase "${TEMP}/inventorcount_state_assignee.dta"
+cap erase "${TEMP}/patentcount_state_assignee.dta"
+cap erase "${TEMP}/inventorcount_state_assignee.dta"
+cap erase "${TEMP}/patentcount_state_gvkey.dta"
+cap erase "${TEMP}/inventorcount_state_gvkey.dta"

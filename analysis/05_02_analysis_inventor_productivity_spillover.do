@@ -6,11 +6,7 @@
 
 
 
-********************************************************************************
-* Analysis on State Level 
-********************************************************************************
-
-use "${TEMP}/inventor_productivity_czone.dta", replace 
+use "${TEMP}/inventor_productivity_cz_assignee.dta", replace 
 
 egen estab_id = group(assignee_id fips_state)
 egen inventor_firm = group(assignee_id inventor_id czone)
@@ -72,7 +68,7 @@ capture noisily graph export"$RESULTS/eventstudies/inventor_productivity/product
 * Generating the Leads and Lags on firm level 
 ********************************************************************************
 
-use "${TEMP}/final_cz_${dataset}_corp_new.dta", clear 
+use "${TEMP}/final_cz_corp_assignee.dta", clear 
 
 forvalues i =1/6 {
 gen change_otherstates`i' = cz_treated_change_w`i' 
@@ -115,7 +111,7 @@ label var zero_1 "-1"
 * Generating Leads and Lags on Establishment Level 
 ********************************************************************************
 	
-use "${TEMP}/inventor_productivity_$dataset_state.dta", replace 
+use "${TEMP}/inventor_productivity_state_assignee.dta", replace 
 merge m:1 assignee_id year fips_state using `leadslags', keepusing(F* L* zero_1 treated change_other_threelargest)
 keep if _merge ==3 
 drop _merge 

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	06/12/2023
-// Last Update:    	21/10/2024
+// Last Update:    	29/10/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Master Data Creation
@@ -43,11 +43,16 @@ foreach num of numlist $patentvar {
 }
 
 ********************************************************************************
-* 03 MEASURE TECHNOLOGICAL PROXIMITY
+* 03 ADDITIONAL MEASURES
 ********************************************************************************
 
 // CAREFUL: INCLUDES PARTS RUN IN PYTHON!
-do "${CODE}/cleaning/04_preparing_techproximity.do"
+
+* Technological proximity
+do "${CODE}/cleaning/03_01_preparing_techproximity.do"
+
+* Inventor productivity
+do "${CODE}/cleaning/03_02_gen_inventor_productivity.do"
 
 
 ********************************************************************************
@@ -56,3 +61,7 @@ do "${CODE}/cleaning/04_preparing_techproximity.do"
 
 do "${CODE}/cleaning/04_01_cleaning_stacked_regression.do" 
 do "${CODE}/cleaning/04_02_cleaning_stacked_regression_other.do" 
+
+
+
+

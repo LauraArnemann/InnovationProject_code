@@ -7,7 +7,7 @@
 
 global weighting_strategy threelargest3 weighted3
 
-use "${TEMP}/patents_helper_${dataset}.dta", clear
+use "${TEMP}/patentdata_clean_assignee.dta", clear
 bysort assignee_id: gen count = _n 
 keep if count ==1  
 tempfile patentshelper
@@ -16,7 +16,7 @@ save `patentshelper'
 *local sample1 if inrange(year, 1988, 2018)
 
 
-use "${TEMP}/final_state_zeros_new_${dataset}_assignee.dta", clear 
+use "${TEMP}/final_state_zeros_assignee.dta", clear 
 
 
 merge m:1 assignee_id using `patentshelper', keepusing(noncorp_asg asg_corp pub_assg)

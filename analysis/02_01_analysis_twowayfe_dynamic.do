@@ -4,19 +4,6 @@
 // Author: Laura Arnemann 
 // Goal: Regular two-way fixed effects analysis with event studies 
 
-
-
-global outcome n_lasttimeinventor n_relocatinginventors 
-global outcome_log inventor_productivity 
-global weighting_strategy threelargest 
-
-* Information on Assigee Type e.g. if assignee is governmental entity 
-use "${TEMP}/patents_helper_${dataset}.dta", clear
-bysort assignee_id: gen count = _n 
-keep if count ==1  
-tempfile patentshelper
-save `patentshelper'
-
 local sample1 if inrange(year, 1988, 2018)
 local sample2 if inrange(year, 1988, 2018) & total_patents>10 
 local sample3 if inrange(year, 1988, 2018) & estab_patents>10 
@@ -28,10 +15,17 @@ local sample8 if inrange(year, 1988, 2018) & asg_corp==1
 local sample9 if inrange(year, 1988, 2018) & asg_corp==1 & patents3>10
 local sample10 if inrange(year, 1988, 2018) & asg_corp==1 & total_patents>20
 
-
 foreach type in assignee {
+    // gvkey
+    
+	* Information on Assigee Type e.g. if assignee is governmental entity 
+	use "${TEMP}/patentdata_clean_`type'.dta", clear 
+	bysort assignee_id: gen count = _n 
+	keep if count ==1  
+	tempfile patentshelper
+	save `patentshelper'
 	
-	use "${TEMP}/final_state_zeros_new_${dataset}_`type'.dta", clear 
+	use "${TEMP}/final_state_zeros_`type'.dta", clear 
 	merge m:1 assignee_id using `patentshelper', keepusing(noncorp_asg asg_corp pub_assg)
 	drop if _merge ==2 
 	drop _merge 
@@ -39,11 +33,14 @@ foreach type in assignee {
 	gen inventor_productivity = patents3/n_inventors3 
 	replace inventor_productivity = 0 if missing(patents3)
 
-	foreach var of varlist patents1 patents2 patents3 n_inventors1 n_inventors2 n_inventors3 n_newinventors1 n_newinventors3 n_relocatinginventors n_lasttimeinventor {
+	foreach var of varlist patents1 patents2 patents3 ///
+		n_inventors1 n_inventors2 n_inventors3 ///
+		n_newinventors1 n_newinventors3 n_relocatinginventors n_lasttimeinventor {
+		    
 		gstats winsor `var', cut(1 99) gen(`var'_w1)
 		gstats winsor `var', cut(1 95) gen(`var'_w2)
 		gen ln_`var'=log(`var')
-}
+	}
 
 	gen ln_gdp=log(gdp)
 
@@ -98,11 +95,10 @@ foreach type in assignee {
 	drop F1* 
 	gen zero_1=1
 	label var zero_1 "-1"
-
 	
-********************************************************************************
-* Regular event studies: No binning off 
-********************************************************************************
+	********************************************************************************
+	* Regular event studies: No binning off 
+	********************************************************************************
 	/*
 	forvalues i = 8/9 {
 		
@@ -200,12 +196,12 @@ foreach type in assignee {
 			}
 		}	
 	}
-}
+
 
 ********************************************************************************
 * Regular Event Studies: Binning Off + Unbalanced Panel
 ********************************************************************************
-/*
+	/*
 	foreach explaining in $weighting_strategy {
 		foreach x in change_`explaining' increase_`explaining' decrease_`explaining' {
 
@@ -261,5 +257,6 @@ foreach type in assignee {
 			}
 		}
 	}
+	*/
 }
 
