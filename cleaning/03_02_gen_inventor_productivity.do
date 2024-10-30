@@ -19,14 +19,7 @@ if $gvkey == 1 {
     use "${TEMP}/inventordata_clean_gvkey.dta", clear 
 }
 
-	do "${CODE}/cleaning/sub_clean_gov_uni_entitites.do"
-   *gen pub_assg = 0 
-   *replace pub_assg=1 if !missing(gvkey)
-
-   gen noncorp_asg = 0 
-   replace noncorp_asg =1 if asg_hospital ==1 | asg_institute==1 | asg_gov==1 
-
- * Generating indicator variables for the sample restrictions 
+* Generating indicator variables for the sample restrictions 
 bysort inventor_id app_year: gen count_pats=_N 
 bysort inventor_id app_year state_fips_inventor: gen count_state=_N
 gen byte sample1 = count_state==count_pats
@@ -80,7 +73,7 @@ if $gvkey == 1 {
 keep if _merge ==3
 drop _merge 
 
-keep other* assignee_id inventor_id n_patents year sample1 sample2 asg_corp noncorp_asg fips_state 
+keep other* assignee_id inventor_id n_patents year sample1 sample2 pub_assg noncorp_asg fips_state 
 
 if $gvkey == 0 {
     save "${TEMP}/inventor_productivity_state_assignee.dta", replace 

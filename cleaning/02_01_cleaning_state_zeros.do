@@ -296,8 +296,16 @@ duplicates tag patnum inventor_id assignee_id, gen(dup)
 drop if dup!=0
 drop dup
 
+* Creating an indicator for assignee type 
+   do "${CODE}/cleaning/sub_clean_gov_uni_entitites.do"
+   gen pub_assg = 0 
+   replace pub_assg=1 if !missing(gvkey)
+
+   gen noncorp_asg = 0 
+   replace noncorp_asg =1 if asg_hospital ==1 | asg_institute==1 | asg_gov==1 
+
 * Patent count by inventor - assignee - state - year
-collapse (count) n_patents=patnum, by(inventor_id assignee_id state_fips_inventor app_year)
+collapse (count) n_patents=patnum, by(inventor_id assignee_id noncorp_asg pub_assg state_fips_inventor app_year)
 
 * Drop all inventors working in 3 or more firms and working in 3 or more states 
 bysort inventor_id app_year: gen count=_N
