@@ -247,4 +247,4 @@ foreach var in other_all3 other_weighted3 other_threelargest3 {
 		 
 	}
 
-}
+

@@ -91,7 +91,7 @@ foreach direction in incr {
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 					xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "${RESULTS}/stackedregression/`outc'/stacked_other_`var2'_`direction'_sample`i'_stateyear.png", replace  
+				capture noisily graph export "${RESULTS}/stackedregression/stacked_other_`outc'_`var2'_`direction'_sample`i'_stateyear.png", replace  
 									
 				ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `var2'_pit `var2'_cit `sample`i'', absorb(estab#event year#event#fips_state) cl(estab#event)
 					est sto inventorreg3
@@ -99,7 +99,7 @@ foreach direction in incr {
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 					 xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "${RESULTS}/stackedregression/`outc'/stacked_other_`var2'_`direction'_c2_sample`i'_stateyear.png", replace  
+				capture noisily graph export "${RESULTS}/stackedregression/stacked_other_`outc'_`var2'_`direction'_c2_sample`i'_stateyear.png", replace  
 				}
 					
 			* Also run the logarithm to give comparability with chaisemartin estimator 
@@ -111,7 +111,7 @@ foreach direction in incr {
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 					xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "${RESULTS}/stackedregression/`outc'/stacked_other_`var2'_`direction'_c2_sample`i'_stateyear.png", replace 
+				capture noisily graph export "${RESULTS}/stackedregression/stacked_other_`outc'_`var2'_`direction'_c2_sample`i'_stateyear.png", replace 
 				
 				reghdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `var2'_pit `var2'_cit `sample`i'', absorb(estab#event year#event#fips_state) cl(estab#event)
 					est sto inventorreg3
@@ -119,7 +119,7 @@ foreach direction in incr {
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 					xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "${RESULTS}/stackedregression/`outc'/stacked_other_`var2'_`direction'_c2_sample`i'_stateyear.png", replace  
+				capture noisily graph export "${RESULTS}/stackedregression/stacked_other_`outc'_`var2'_`direction'_c2_sample`i'_stateyear.png", replace  
 
 			}
 		}

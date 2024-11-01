@@ -190,7 +190,7 @@ foreach expl of numlist 6 {
 				coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 					keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 					xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c1_binning_`direction'_new.png", replace
+				capture noisily graph export "$RESULTS/eventstudies/stage2/var`var'_spillover_sample`i'_c1_binning_`direction'.png", replace
 			}
 					
 			reghdfe `var' change_other_threelargest F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'' , absorb(estab_id year#i.fips_state) cl(`cl')
@@ -198,7 +198,7 @@ foreach expl of numlist 6 {
 			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
 				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 				xtitle("Years since Change") graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c2_binning_`direction'_new.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/stage2/var`var'_spillover_sample`i'_c2_binning_`direction'_`expl'.png", replace
 		}
 	}
 

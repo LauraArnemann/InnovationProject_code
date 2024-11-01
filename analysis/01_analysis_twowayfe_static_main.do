@@ -63,7 +63,7 @@ foreach var of varlist n_relocatinginventors_w1 n_lasttimeinventor_w1  {
 	  * Exporting the Results in a log file, since no excel and tex available
 			*log using "$RESULTS/tables/new_assignee_4/var`var'_`explaining'.log", replace 
 
-			esttab regres12 regres22 regres13 regres23 using "${RESULTS}/tables/new_assignee_4/var`var'_`explaining'.tex", replace noconstant mtitles drop(`other_controls' _cons) ///
+			esttab regres12 regres22 regres13 regres23 using "${RESULTS}/tables/stage1/var`var'_`explaining'.tex", replace noconstant mtitles drop(`other_controls' _cons) ///
 				cells(b(star fmt(%9.3f)) se(par)) stats(yearfe estabfe stateyearfe othercontrols N, ///
 				fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "Other Controls" "Observations")) ///
 				mgroups("Corporate Assigness" "Large Corporate Assignees", pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///

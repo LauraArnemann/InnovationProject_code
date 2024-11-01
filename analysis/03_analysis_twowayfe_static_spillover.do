@@ -59,7 +59,7 @@ local explaining cz_treated_levelcredit_w6
 		collabels(none) starl(* .10 ** .05 *** .01) label 
 	*/ 
 				
-	esttab regres15 regres25 regres16 regres26 using "${RESULTS}/tables/spillovers/var`var'_spillovers2.tex", replace noconstant mtitles keep(`explaining') ///
+	esttab regres15 regres25 regres16 regres26 using "${RESULTS}/tables/stage2/var`var'_spillovers2.tex", replace noconstant mtitles keep(`explaining') ///
 		cells(b(star fmt(%9.3f)) se(par)) stats( estabfe stateyearfe othercontrols N, ///
 		fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "R\&D Credit, other" "Observations")) ///
 		mgroups("All" "No Treatment", pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///

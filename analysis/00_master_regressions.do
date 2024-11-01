@@ -18,7 +18,7 @@ local sample7 if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>
 */
 
 global direction incr 
-global weighting_strategy threelargest threelargest3 weighted3
+global weighting_strategy threelargest3 weighted3
 	// all3 weighted3 weighted threelargest
 
 	*patents3 n_inventors3_w1 ln_n_inventors3
@@ -39,25 +39,29 @@ global outcome_log inventor_productivity
 *A. MAIN -----------------------------------------------------------------------
 
 * Standard regression
-*do "${CODE}/analysis_twowayfe_static.do"
-*do "${CODE}/analysis/analysis_twowayfe_dynamic_assignee.do"
-*do "${CODE}/analysis/analysis_twowayfe_spillover_estab.do"
+do "${CODE}/analysis/01_analysis_twowayfe_static_main.do"
+do "${CODE}/analysis/02_analysis_twowayfe_dynamic.do"
 
 *B. ROBUSTNESS -----------------------------------------------------------------
 
 * Stacked cohort approach
-*do "${CODE}/running_stacked_regression_current.do"
-*do "${CODE}/running_stacked_regression_other.do"
+do "${CODE}/analysis/06_running_stacked_regression_main.do"
 
-* Chaisemartin
-*do "${CODE}/chaisemartin_estimator.do"
+*C. ADDITIONAL -----------------------------------------------------------------
+
+do "${CODE}/analysis/08_heterogeneity_analysis.do"
+
 
 ********************************************************************************
 *Second stage: Spillover	
 ********************************************************************************
 
-*do "${CODE}/analysis_twowayfe_spillover.do"
+do "${CODE}/analysis/03_analysis_twowayfe_static_spillover.do"
+do "${CODE}/analysis/04_01_analysis_twowayfe_dynamic_spillover.do"
 
+do "${CODE}/analysis/04_02_analysis_twowayfe_dynamic_spillover_tech.do"
+do "${CODE}/analysis/05_01_analysis_inventor_productivity_main.do"
+do "${CODE}/analysis/05_02_analysis_inventor_productivity_spillover.do"
 
 
 
