@@ -82,8 +82,6 @@ local sample11 if inrange(year, 1988, 2018) & tag_local==1 & multistate_cz ==0
 local sample12 if inrange(year, 1988, 2018) & noncorp_asg==1
 
 *Set regression elements
-local outcome n_inventors3_w1 
-local outcome_log ln_n_inventors3 
 local direction change
 local clusterlevel czone
 
@@ -97,66 +95,78 @@ foreach expl of numlist 1 2 {
 	forvalues i = 1/2 {
 		
 		** Poisson regression
-		foreach var of varlist `outcome' {
+		foreach var of varlist $outcome {
 			
 			if `i'!=9 {
 				ppmlhdfe `var' F?_`direction'_otherstates`expl' L?_`direction'_otherstates`expl' zero_1 `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state) cl(`clusterlevel')
 						est sto regres1
-						coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-							keep( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+						coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+							keep(F3_`direction'_otherstates`expl' F2_`direction'_otherstates`expl' F1_`direction'_otherstates`expl' zero_1 ///
+							L0_`direction'_otherstates`expl' L1_`direction'_otherstates`expl' L2_`direction'_otherstates`expl' L3_`direction'_otherstates`expl') ///
+							yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 							order( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) ///
 							xtitle("Years since `direction'") graphregion(color(white)) 
-				capture noisily graph export "$RESULTS/eventstudies/tech/weight`expl'/`var'_spillover_sample`i'_c1_bin_`direction'.png", replace
+				capture noisily graph export "$RESULTS/eventstudies/tech/`var'_spillover_sample`i'_c1_bin_`direction'_tech`expl'.png", replace
 				
 				ppmlhdfe `var' F?_`direction'_otherstates`expl' L?_`direction'_otherstates`expl' zero_1 `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state year#czone) cl(`clusterlevel')
 						est sto regres1
-						coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-							keep( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+						coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+							keep(F3_`direction'_otherstates`expl' F2_`direction'_otherstates`expl' F1_`direction'_otherstates`expl' zero_1 ///
+							L0_`direction'_otherstates`expl' L1_`direction'_otherstates`expl' L2_`direction'_otherstates`expl' L3_`direction'_otherstates`expl') ///
+							yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 							order( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) ///
 							xtitle("Years since `direction'") graphregion(color(white)) 
-				capture noisily graph export "$RESULTS/eventstudies/tech/weight`expl'/`var'_spillover_sample`i'_c1b_bin_`direction'.png", replace
+				capture noisily graph export "$RESULTS/eventstudies/tech/`var'_spillover_sample`i'_c1b_bin_`direction'_tech`expl'.png", replace
 				
 				
 			}
 			
 			ppmlhdfe `var' F?_`direction'_otherstates`expl' L?_`direction'_otherstates`expl' change_other_threelargest zero_1 `sample`i'', absorb(estab_id year#i.fips_state) cl(`clusterlevel')
 					est sto regres2
-					coefplot regres2, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-						keep( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+					coefplot regres2, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+						keep(F3_`direction'_otherstates`expl' F2_`direction'_otherstates`expl' F1_`direction'_otherstates`expl' zero_1 ///
+							L0_`direction'_otherstates`expl' L1_`direction'_otherstates`expl' L2_`direction'_otherstates`expl' L3_`direction'_otherstates`expl') ///
+						yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 						order( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) ///
 						xtitle("Years since `direction'")  graphregion(color(white)) 
-			capture noisily graph export "$RESULTS/eventstudies/tech/weight`expl'/`var'_spillover_sample`i'_c2_bin_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/tech/`var'_spillover_sample`i'_c2_bin_`direction'_tech`expl'.png", replace
 			
 			ppmlhdfe `var' F?_`direction'_otherstates`expl' L?_`direction'_otherstates`expl' change_other_threelargest zero_1 `sample`i'', absorb(estab_id year#i.fips_state year#czone) cl(`clusterlevel')
 					est sto regres2
-					coefplot regres2, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-						keep( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+					coefplot regres2, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+						keep(F3_`direction'_otherstates`expl' F2_`direction'_otherstates`expl' F1_`direction'_otherstates`expl' zero_1 ///
+							L0_`direction'_otherstates`expl' L1_`direction'_otherstates`expl' L2_`direction'_otherstates`expl' L3_`direction'_otherstates`expl') /// 
+						yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 						order( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) ///
 						xtitle("Years since `direction'")  graphregion(color(white)) 
-			capture noisily graph export "$RESULTS/eventstudies/tech/weight`expl'/`var'_spillover_sample`i'_c2b_bin_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/tech/`var'_spillover_sample`i'_c2b_bin_`direction'_tech`expl'.png", replace
 		}
 		
 		/*
 		** Regular regression
-		foreach var of varlist `outcome_log' {
+		foreach var of varlist $outcome_log {
 			
 			if `i'!=9 {
 				reghdfe `var' F?_`direction'_otherstates`expl' L?_`direction'_otherstates`expl'  zero_1 `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state) cl(`cl')
 						est sto regres3
-						coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-							keep( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+						coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+							keep(F3_`direction'_otherstates`expl' F2_`direction'_otherstates`expl' F1_`direction'_otherstates`expl' zero_1 ///
+							L0_`direction'_otherstates`expl' L1_`direction'_otherstates`expl' L2_`direction'_otherstates`expl' L3_`direction'_otherstates`expl') ///
+							yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 							order( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) ///
 							xtitle("Years since `direction'") graphregion(color(white)) 
-				capture noisily graph export "$RESULTS/eventstudies/tech/weight`expl'/`var'_spillover_sample`i'_c1_bin_`direction'.png", replace
+				capture noisily graph export "$RESULTS/eventstudies/tech/`var'_spillover_sample`i'_c1_bin_`direction'.png", replace
 			}
 			
 			reghdfe `var' F?_`direction'_otherstates`expl' L?_`direction'_otherstates`expl' change_other_threelargest zero_1 `sample`i'', absorb(estab_id year#i.fips_state) cl(`cl')
 					est sto regres4
-					coefplot regres4, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-						keep( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+					coefplot regres4, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+						keep(F3_`direction'_otherstates`expl' F2_`direction'_otherstates`expl' F1_`direction'_otherstates`expl' zero_1 ///
+							L0_`direction'_otherstates`expl' L1_`direction'_otherstates`expl' L2_`direction'_otherstates`expl' L3_`direction'_otherstates`expl') ///
+						yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 						order( F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' ) ///
 						xtitle("Years since `direction'")  graphregion(color(white)) 
-			capture noisily graph export "$RESULTS/eventstudies/tech/weight`expl'/`var'_spillover_sample`i'_c2_bin_`direction'.png", replace
+			capture noisily graph export "$RESULTS/eventstudies/tech/`var'_spillover_sample`i'_c2_bin_`direction'.png", replace
 		}
 		*/
 	}
@@ -174,70 +184,70 @@ local sample4 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1  & tot
 local sample5 if inrange(year, 1988, 2018) & tag_local ==1  
 
 *Set regression elements
-local outcome n_inventors3_w1 
-local outcome_log ln_n_inventors3 
 local direction change
 local clusterlevel czone
 
 foreach expl of numlist 2  {
 	
 	** Poisson regression
-	foreach var of varlist `outcome' {
+	foreach var of varlist $outcome {
 	
 		forvalues i = 1/5 {
 			
 			capture noisily ppmlhdfe `var' weightedtec_change`expl' `sample`i'', absorb(estab_id year#i.fips_state) cl(`clusterlevel')
 			cap est sto regres1`i'_p
-			estadd local yearfe "\checkmark", replace
+			estadd local stateyearfe "\checkmark", replace
 			estadd local estabfe "\checkmark", replace
 			
 			capture noisily ppmlhdfe `var' weightedtec_change`expl' `sample`i'', absorb(estab_id year#i.fips_state year#czone) cl(`clusterlevel')
 			est sto regres1b`i'_p
-			estadd local yearfe "\checkmark", replace
+			estadd local stateyearfe "\checkmark", replace
 			estadd local estabfe "\checkmark", replace
+			estadd local czyearfe "\checkmark", replace
 				
-			capture noisily ppmlhdfe n_inventors3_w1 weightedtec_change`expl' other_threelargest `sample`i'', absorb(estab_id year#i.fips_state) cl(`clusterlevel')
+			capture noisily ppmlhdfe `var' weightedtec_change`expl' change_other_threelargest `sample`i'', absorb(estab_id year#i.fips_state) cl(`clusterlevel')
 			est sto regres2`i'_p
 			estadd local stateyearfe "\checkmark", replace
 			estadd local estabfe "\checkmark", replace
 			estadd local othercontrols "\checkmark", replace
 			
-			capture noisily ppmlhdfe n_inventors3_w1 weightedtec_change`expl' other_threelargest `sample`i'', absorb(estab_id year#i.fips_state year#czone) cl(`clusterlevel')
+			capture noisily ppmlhdfe `var' weightedtec_change`expl' change_other_threelargest `sample`i'', absorb(estab_id year#i.fips_state year#czone) cl(`clusterlevel')
 			est sto regres2b`i'_p
 			estadd local stateyearfe "\checkmark", replace
 			estadd local estabfe "\checkmark", replace
 			estadd local othercontrols "\checkmark", replace
+			estadd local czyearfe "\checkmark", replace
 			
 			
 		}
 		
-	esttab regres11_p regres21_p regres12_p regres22_p using "${RESULTS}/tables/spillovers/var`var'_spillovers1_tech_p.tex", replace noconstant mtitles keep(`explaining') ///
+	esttab regres11_p regres21_p regres12_p regres22_p using "${RESULTS}/tables/stage2/`var'_spillovers1_tech_p`expl'.tex", replace noconstant mtitles keep(`explaining') ///
 				cells(b(star fmt(%9.3f)) se(par)) stats( estabfe stateyearfe othercontrols N, ///
 				fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "R\&D Credit, other" "Observations")) mgroups("All" "No Treatment", ///
 				pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///
 				collabels(none) starl(* .10 ** .05 *** .01) label 
 	
-	esttab regres1b1_p regres2b1_p regres1b2_p regres2b2_p using "${RESULTS}/tables/spillovers/var`var'_spillovers1b_tech_p.tex", replace noconstant mtitles keep(`explaining') ///
+	esttab regres1b1_p regres2b1_p regres1b2_p regres2b2_p using "${RESULTS}/tables/stage2/`var'_spillovers1b_tech_p`expl'.tex", replace noconstant mtitles keep(`explaining') ///
 				cells(b(star fmt(%9.3f)) se(par)) stats(estabfe stateyearfe czyearfe othercontrols N, ///
 				fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "CZ-year FE" "R\&D Credit, other" "Observations")) mgroups("All" "No Treatment", ///
 				pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///
 				collabels(none) starl(* .10 ** .05 *** .01) label 
 				
 	
-	esttab regres13_p regres23_p regres14_p regres24_p using "${RESULTS}/tables/spillovers/var`var'_spillovers2_tech_p.tex", replace noconstant mtitles keep(`explaining') ///
+	esttab regres13_p regres23_p regres14_p regres24_p using "${RESULTS}/tables/stage2/`var'_spillovers2_tech_p`expl'.tex", replace noconstant mtitles keep(`explaining') ///
 				cells(b(star fmt(%9.3f)) se(par)) stats( estabfe stateyearfe othercontrols N, ///
 				fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "R\&D Credit, other" "Observations")) mgroups("All" "No Treatment", ///
 				pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///
 				collabels(none) starl(* .10 ** .05 *** .01) label 
 				
-	esttab regres1b3_p regres2b3_p regres1b4_p regres2b4_p using "${RESULTS}/tables/spillovers/var`var'_spillovers2b_tech_p.tex", replace noconstant mtitles keep(`explaining') ///
+	esttab regres1b3_p regres2b3_p regres1b4_p regres2b4_p using "${RESULTS}/tables/stage2/`var'_spillovers2b_tech_p`expl'.tex", replace noconstant mtitles keep(`explaining') ///
 				cells(b(star fmt(%9.3f)) se(par)) stats( estabfe stateyearfe czyearfe othercontrols N, ///
 				fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE" "CZ-year FE"  "R\&D Credit, other" "Observations")) mgroups("All" "No Treatment", ///
 				pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///
 				collabels(none) starl(* .10 ** .05 *** .01) label 
 				
 				
-	esttab regres15_p regres25_p  regres1b5_p regres2b5_p using "${RESULTS}/tables/spillovers/var`var'_spillovers3_tech_p.tex", replace noconstant mtitles keep(`explaining') ///
+	esttab regres15_p regres25_p  regres1b5_p regres2b5_p using "${RESULTS}/tables/stage2/`var'_spillovers3_tech_p`expl'.tex", replace noconstant mtitles keep(`explaining') ///
 				cells(b(star fmt(%9.3f)) se(par)) stats( estabfe stateyearfe othercontrols N, ///
 				fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "R\&D Credit, other" "Observations")) mgroups("Local" "Large local", ///
 				pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///
@@ -246,7 +256,7 @@ foreach expl of numlist 2  {
 	}
 	/*
 	** Regular regression
-	foreach var of varlist `outcome_log' {
+	foreach var of varlist $outcome_log {
 		
 		forvalues i = 5/6 {
 			capture noisily reghdfe `var' weightedtec_change`expl' `sample`i'', absorb(estab_id year#i.fips_state) cl(`clusterlevel')

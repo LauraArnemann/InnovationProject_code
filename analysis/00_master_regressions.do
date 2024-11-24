@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	01/07/2024
-// Last Update:    	29/10/2024
+// Last Update:    	21/11/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Master Regression
@@ -19,11 +19,13 @@ local sample7 if inrange(year, 1988, 2018)  & balanced_panel==1 & total_patents>
 
 global direction incr 
 global weighting_strategy threelargest3 weighted3
-	// all3 weighted3 weighted threelargest
+	// all3 weighted3
 
-	*patents3 n_inventors3_w1 ln_n_inventors3
-global outcome n_lasttimeinventor n_relocatinginventors 
-global outcome_log inventor_productivity
+global outcome n_inventors3_w1
+*patents3_w1  n_newinventors3_w1 n_lasttimeinventor n_relocatinginventors n_inventors2_w1 n_inventors1_w1
+global outcome_log ln_n_inventors3 
+	*inventor_productivity 	ln_patents3 ln_n_newinventors3   	
+	
 
 
 ********************************************************************************

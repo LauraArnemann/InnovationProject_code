@@ -63,8 +63,9 @@ foreach var of varlist n_inventors3_w1 patents3_w1 n_newinventors3_w1  {
        estadd local estabfe "\checkmark", replace
        estadd local othercontrols "\checkmark", replace
 	}
+**# Bookmark #1
 	  * Exporting the Results in a log file, since no excel and tex available
-			log using "$RESULTS/tables/new_assignee_4/var`var'_`explaining'_heterogeneity.log", replace 
+			log using "$RESULTS/tables/stage1/var`var'_`explaining'_heterogeneity.log", replace 
 
 			esttab regres12 regres22 regres13 regres23 regres14 regres24 , replace noconstant nomtitles drop(`other_controls' _cons) ///
 				cells(b(star fmt(%9.3f)) se(par)) stats(estabfe  stateyearfe  othercontrols N, ///
@@ -99,8 +100,9 @@ foreach var of varlist n_inventors3_w1 patents3_w1 n_newinventors3_w1  {
        estadd local estabfe "\checkmark", replace
        estadd local othercontrols "\checkmark", replace
 	}
+**# Bookmark #2
 	  * Exporting the Results in a log file, since no excel and tex available
-			log using "$RESULTS/tables/new_assignee_4/var`var'_`explaining'_het`het'.log", replace 
+			log using "$RESULTS/tables/stage1/var`var'_`explaining'_het`het'.log", replace 
 
 			esttab regres12 regres22 regres13 regres23 regres14 regres24 , replace noconstant nomtitles drop(`other_controls' _cons) ///
 				cells(b(star fmt(%9.3f)) se(par)) stats(estabfe  stateyearfe  othercontrols N, ///

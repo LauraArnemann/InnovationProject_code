@@ -1,14 +1,28 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	04/07/2024
-// Last Update:    	05/07/2024
+// Last Update:    	22/11/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Calculating spillover with two-way fixed effects analysis
 ////////////////////////////////////////////////////////////////////////////////
 	*https://github.com/sergiocorreia/ppmlhdfe/blob/master/guides/separation_primer.md
-	
 
+local direction change
+		
+local sample1 if inrange(year, 1988, 2018)
+local sample2 if inrange(year, 1988, 2018) & total_patents>10 
+local sample3 if inrange(year, 1988, 2018) & total_patents<10 
+local sample4 if inrange(year, 1988, 2018) & pub_assg==1 
+local sample5 if inrange(year, 1988, 2018) & asg_corp==1
+local sample6 if inrange(year, 1988, 2018) & noncorp_asg==0
+local sample7 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1 
+local sample8 if inrange(year, 1988, 2018) & tag_local==1
+local sample9 if inrange(year, 1988, 2018) & treated!=1  	
+local sample10 if inrange(year, 1988, 2018) & multistate_cz ==0 
+local sample11 if inrange(year, 1988, 2018) & tag_local==1 & multistate_cz ==0 
+local sample12 if inrange(year, 1988, 2018) & noncorp_asg==1	
+	
 ********************************************************************************
 * Analysis on assignee level 
 ********************************************************************************	
@@ -70,30 +84,73 @@ replace change_other_threelargest = 0 if missing(change_other_threelargest)
 gen inventor_productivity = patents3/n_inventors3 
 replace inventor_productivity = 0 if missing(patents3)
 
-*SAMPLE SLECTION:: ROBUSTNESS CHECK
-*keep if tag_local == 1
+********************************************************************************
+* Regular Event Studies: Binning Off 
+********************************************************************************
+*1 2 3 4 5 
+foreach expl of numlist 6 { 		
+	foreach x in change_otherstates`expl' {
+		replace F4_`x'=sum_F4_`x'
+		replace L4_`x'=sum_L4_`x'
+	}
+		 
 
-*CHANGES -----------------------------------------------------------------------
+	forvalues i = 2/2 {
+				local cl czone
+		** Poisson Regression
+		foreach var of varlist $outcome {
+			
+			if `i'!=9 {
 
-* Outcome Variables 
-*patents3_w1 n_newinventors3_w1 
-local outcome 
-local outcome_log inventor_productivity
+			ppmlhdfe `var' F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state) cl(`cl')
+			est sto regres1
+			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+				keep(F3_`direction'_otherstates`expl' F2_`direction'_otherstates`expl' F1_`direction'_otherstates`expl' zero_1 ///
+				L0_`direction'_otherstates`expl' L1_`direction'_otherstates`expl' L2_`direction'_otherstates`expl' L3_`direction'_otherstates`expl') ///
+				yline(0, lcolor(red) lwidth(thin)) ylabel(, labsize(medlarge)) ///
+				xtitle("Years since Change")  graphregion(color(white))
+			capture noisily graph export "$RESULTS/eventstudies/stage2/`var'_spillover_sample`i'_c1_binning_`expl'_`direction'.png", replace
+			}
+						
+			ppmlhdfe `var' change_other_threelargest F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'', absorb(estab_id year#i.fips_state) cl(`cl')
+			est sto regres1
+			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+				keep(F3_`direction'_otherstates`expl' F2_`direction'_otherstates`expl' F1_`direction'_otherstates`expl' zero_1 ///
+				L0_`direction'_otherstates`expl' L1_`direction'_otherstates`expl' L2_`direction'_otherstates`expl' L3_`direction'_otherstates`expl') ///
+				yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+				xtitle("Years since Change") graphregion(color(white))
+			capture noisily graph export "$RESULTS/eventstudies/stage2/`var'_spillover_sample`i'_c2_binning_`expl'_`direction'.png", replace
+			
+		}
+			
+		** Regular Regression
+		foreach var of varlist $outcome_log  {
+			
+			if `i'!=9 {
+				reghdfe `var' F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state) cl(`cl')
+				est sto regres3
+				coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+					keep(F3_`direction'_otherstates`expl' F2_`direction'_otherstates`expl' F1_`direction'_otherstates`expl' zero_1 ///
+					L0_`direction'_otherstates`expl' L1_`direction'_otherstates`expl' L2_`direction'_otherstates`expl' L3_`direction'_otherstates`expl') ///
+					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+					xtitle("Years since Change") graphregion(color(white))
+				capture noisily graph export "$RESULTS/eventstudies/stage2/`var'_spillover_sample`i'_c1_binning_`expl'_`direction'.png", replace
+			}
+					
+			reghdfe `var' change_other_threelargest F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'' , absorb(estab_id year#i.fips_state) cl(`cl')
+			est sto regres3
+			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+				keep(F3_`direction'_otherstates`expl' F2_`direction'_otherstates`expl' F1_`direction'_otherstates`expl' zero_1 ///
+				L0_`direction'_otherstates`expl' L1_`direction'_otherstates`expl' L2_`direction'_otherstates`expl' L3_`direction'_otherstates`expl') ///
+				yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
+				xtitle("Years since Change") graphregion(color(white))
+			capture noisily graph export "$RESULTS/eventstudies/stage2/`var'_spillover_sample`i'_c2_binning_`expl'_`direction'.png", replace
+		}
+	}
 
-local direction change
-		
-local sample1 if inrange(year, 1988, 2018)
-local sample2 if inrange(year, 1988, 2018) & total_patents>10 
-local sample3 if inrange(year, 1988, 2018) & total_patents<10 
-local sample4 if inrange(year, 1988, 2018) & pub_assg==1 
-local sample5 if inrange(year, 1988, 2018) & asg_corp==1
-local sample6 if inrange(year, 1988, 2018) & noncorp_asg==0
-local sample7 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1 
-local sample8 if inrange(year, 1988, 2018) & tag_local==1
-local sample9 if inrange(year, 1988, 2018) & treated!=1  	
-local sample10 if inrange(year, 1988, 2018) & multistate_cz ==0 
-local sample11 if inrange(year, 1988, 2018) & tag_local==1 & multistate_cz ==0 
-local sample12 if inrange(year, 1988, 2018) & noncorp_asg==1
+}
+
+
 
 ********************************************************************************
 * Regular event studies: No binning off 
@@ -145,67 +202,6 @@ foreach expl of numlist 1 2 3 4 5 6  {
 }	
 
 */
-
-********************************************************************************
-* Regular Event Studies: Binning Off 
-********************************************************************************
-*1 2 3 4 5 
-foreach expl of numlist 6 { 		
-	foreach x in change_otherstates`expl' {
-		replace F4_`x'=sum_F4_`x'
-		replace L4_`x'=sum_L4_`x'
-	}
-		 
-
-	forvalues i = 2/2 {
-				local cl czone
-		** Poisson Regression
-	/*	foreach var of varlist `outcome' {
-			
-			if `i'!=9 {
-
-			ppmlhdfe `var' F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state) cl(`cl')
-			est sto regres1
-			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(-0.4(0.2)-0.4 , labsize(medlarge)) ///
-				xtitle("Years since Change")  graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c1_binning_`direction'_new.png", replace
-			}
-						
-			ppmlhdfe `var' change_other_threelargest F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'', absorb(estab_id year#i.fips_state) cl(`cl')
-			est sto regres1
-			coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-				xtitle("Years since Change") graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/estab/corp/weight`expl'/var`var'_spillover_sample`i'_c2_binning_`direction'_new.png", replace
-			
-		}*/
-			
-		** Regular Regression
-		foreach var of varlist `outcome_log'  {
-			
-			if `i'!=9 {
-				reghdfe `var' F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'' & treated!=1, absorb(estab_id year#i.fips_state) cl(`cl')
-				est sto regres3
-				coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-					keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-					xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "$RESULTS/eventstudies/stage2/var`var'_spillover_sample`i'_c1_binning_`direction'.png", replace
-			}
-					
-			reghdfe `var' change_other_threelargest F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl' `sample`i'' , absorb(estab_id year#i.fips_state) cl(`cl')
-			est sto regres3
-			coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-				keep(F?_`direction'_otherstates`expl' zero_1 L?_`direction'_otherstates`expl') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
-				xtitle("Years since Change") graphregion(color(white))
-			capture noisily graph export "$RESULTS/eventstudies/stage2/var`var'_spillover_sample`i'_c2_binning_`direction'_`expl'.png", replace
-		}
-	}
-
-}
-
-
-
 
 
 
