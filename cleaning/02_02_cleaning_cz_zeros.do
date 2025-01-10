@@ -839,3 +839,7 @@ if $gvkey == 1 {
     save "${TEMP}/final_cz_zeros_gvkey.dta", replace 
 }
 
+cap erase "${TEMP}/patentcount_cz_assignee.dta"
+cap erase "${TEMP}/inventorcount_cz_assignee.dta"
+cap erase "${TEMP}/patentcount_cz_gvkey.dta"
+cap erase "${TEMP}/inventorcount_cz_gvkey.dta"

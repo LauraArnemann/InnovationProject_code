@@ -1,11 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	19/03/2024
-// Last Update:    	21/11/2024
+// Last Update:    	29/10/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Running Stacked Regression: Change in credits at other locations 
 ////////////////////////////////////////////////////////////////////////////////
+
 
 use "${TEMP}/patentdata_clean_assignee.dta", clear
 bysort assignee_id: gen count = _n 
@@ -13,22 +14,31 @@ keep if count ==1
 tempfile patentshelper
 save `patentshelper'
 
+
 local sample1 if inrange(year, 1988, 2018)
 local sample7 if inrange(year, 1988, 2018) & noncorp_asg==0 & patents3>10
 local sample8 if inrange(year, 1988, 2018) & asg_corp==1
 local sample9 if inrange(year, 1988, 2018) & asg_corp==1 & patents3>10
 local sample10 if inrange(year, 1988, 2018) & asg_corp==1 & total_patents>20
 
-foreach direction in $direction {
+global direction incr
+* patents3 n_inventors3 n_newinventors3 patents3_w1 n_newinventors3_w1
+global outcome  
+*ln_patents3 ln_n_newinventors3 n_lasttimeinventor n_relocatinginventors 
+global outcome_log inventor_productivity
+*ln_n_inventors3 
+
+
+foreach direction in incr {
 		
 ********************************************************************************
 * Events indicator on state-year level: Change at other locations  
 ********************************************************************************		
 	*other_weighted3 
-	foreach var2 in other_$weighting_strategy {
+	foreach var2 in other_threelargest3 {
 			
-		use "${TEMP}/final_state_stacked_other_total_`var2'_`direction'.dta", replace 
-		merge m:1 estab year using "${TEMP}/final_state_stacked_other_zeros.dta", nogen keep(3)
+		use "${TEMP}/final_state_stacked_`var2'_`direction'.dta", replace 
+		merge m:1 estab year using "${TEMP}/final_state_stacked_other_zeros_`direction'.dta", nogen keep(3)
 			
 		merge m:1 assignee_id using `patentshelper', keepusing(noncorp_asg asg_corp pub_assg)
 			drop if _merge ==2 
@@ -81,7 +91,7 @@ foreach direction in $direction {
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 					xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "${RESULTS}/eventstudies/stackedregression/stacked_other_`outc'_`var2'_`direction'_c1_sample`i'_stateyear.png", replace  
+				capture noisily graph export "${RESULTS}/stackedregression/stacked_other_`outc'_`var2'_`direction'_sample`i'_stateyear.png", replace  
 									
 				ppmlhdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `var2'_pit `var2'_cit `sample`i'', absorb(estab#event year#event#fips_state) cl(estab#event)
 					est sto inventorreg3
@@ -89,7 +99,7 @@ foreach direction in $direction {
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 					 xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "${RESULTS}/eventstudies/stackedregression/stacked_other_`outc'_`var2'_`direction'_c2_sample`i'_stateyear.png", replace  
+				capture noisily graph export "${RESULTS}/stackedregression/stacked_other_`outc'_`var2'_`direction'_c2_sample`i'_stateyear.png", replace  
 				}
 					
 			* Also run the logarithm to give comparability with chaisemartin estimator 
@@ -101,7 +111,7 @@ foreach direction in $direction {
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 					xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "${RESULTS}/eventstudies/stackedregression/stacked_other_`outc'_`var2'_`direction'_c3_sample`i'_stateyear.png", replace 
+				capture noisily graph export "${RESULTS}/stackedregression/stacked_other_`outc'_`var2'_`direction'_c2_sample`i'_stateyear.png", replace 
 				
 				reghdfe `outc' f4_binary f3_binary f2_binary zero_1 l?_binary `var2'_pit `var2'_cit `sample`i'', absorb(estab#event year#event#fips_state) cl(estab#event)
 					est sto inventorreg3
@@ -109,7 +119,7 @@ foreach direction in $direction {
 					xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) keep(f?_binary zero_1 l?_binary) ///
 					yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) ///
 					xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "${RESULTS}/eventstudies/stackedregression/stacked_other_`outc'_`var2'_`direction'_c4_sample`i'_stateyear.png", replace  
+				capture noisily graph export "${RESULTS}/stackedregression/stacked_other_`outc'_`var2'_`direction'_c2_sample`i'_stateyear.png", replace  
 
 			}
 		}

@@ -1,20 +1,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date: 	15/06/2024
-// Last Update: 	22/11/2024
+// Last Update: 	29/10/2024
 // Author: 			Laura Arnemann 
-//					Theresa Bührle
 // Goal: 			Regular two-way fixed effects analysis 
 ////////////////////////////////////////////////////////////////////////////////
-
-local sample1 if inrange(year, 1988, 2018)
-local sample2 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1 
-local sample3 if inrange(year, 1988, 2018) & total_patents>10 
-local sample4 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1  & total_patents>10
-local sample5 if inrange(year, 1988, 2018) & total_patents>10 & multistate_cz==0
-local sample6 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1  & total_patents>10 & multistate_cz==0
-
-local explaining cz_treated_levelcredit_w6
 
 use "${TEMP}/final_cz_corp_assignee.dta", clear 
 
@@ -29,36 +19,47 @@ use "${TEMP}/final_cz_corp_assignee.dta", clear
 replace other_credit_threelargest = 0 if missing(other_credit_threelargest)
 bysort assignee_id year: egen total_patents = total(patents3)
 
-foreach var of varlist $outcome {
+local sample1 if inrange(year, 1988, 2018)
+local sample2 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1 
+local sample3 if inrange(year, 1988, 2018) & total_patents>10 
+local sample4 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1  & total_patents>10
+local sample5 if inrange(year, 1988, 2018) & total_patents>10 & multistate_cz==0
+local sample6 if inrange(year, 1988, 2018) & max_tr_other_threelargest!=1  & total_patents>10 & multistate_cz==0
+
+local explaining cz_treated_levelcredit_w6
+foreach var of varlist n_inventors3_w1 patents3_w1 n_newinventors3_w1  {
 	
-	forvalues i =1/6 {
-		
-		ppmlhdfe `var' `explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(czone)
-		   est sto regres1`i'
-		   estadd local yearfe "\checkmark", replace
-		   estadd local estabfe "\checkmark", replace
-
-		ppmlhdfe `var' `explaining' other_credit_threelargest `sample`i'', absorb(estab_id year#i.fips_state) cl(czone)
-		   est sto regres2`i'
-		   estadd local stateyearfe "\checkmark", replace
-		   estadd local estabfe "\checkmark", replace
-		   estadd local othercontrols "\checkmark", replace
-	}
-
+forvalues i =5/6 {
 	
-	esttab regres11 regres21 regres12 regres22 using "${RESULTS}/tables/stage2/`var'_spillovers_allfirms.tex", replace noconstant mtitles keep(`explaining') ///
-		cells(b(star fmt(%9.3f)) se(par)) stats( estabfe stateyearfe othercontrols N, ///
-		fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "R\&D Credit, other" "Observations")) ///
-		mgroups("All" "No Treatment", pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///
-		collabels(none) starl(* .10 ** .05 *** .01) label 
+	 ppmlhdfe `var' `explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(czone)
+       est sto regres1`i'
+       estadd local yearfe "\checkmark", replace
+       estadd local estabfe "\checkmark", replace
 
-	esttab regres13 regres23 regres14 regres24 using "${RESULTS}/tables/stage2/`var'_spillovers_largefirms.tex", replace noconstant mtitles keep(`explaining') ///
+       ppmlhdfe `var' `explaining' other_credit_threelargest `sample`i'', absorb(estab_id year#i.fips_state) cl(czone)
+       est sto regres2`i'
+       estadd local stateyearfe "\checkmark", replace
+       estadd local estabfe "\checkmark", replace
+       estadd local othercontrols "\checkmark", replace
+}
+
+local explaining cz_treated_levelcredit_w6
+	/*
+	esttab regres11 regres21 regres12 regres22 using "${RESULTS}/tables/spillovers/var`var'_spillovers1.tex", replace noconstant mtitles keep(`explaining') ///
 		cells(b(star fmt(%9.3f)) se(par)) stats( estabfe stateyearfe othercontrols N, ///
 		fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "R\&D Credit, other" "Observations")) ///
 		mgroups("All" "No Treatment", pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///
 		collabels(none) starl(* .10 ** .05 *** .01) label 
 				
-	esttab regres15 regres25 regres16 regres26 using "${RESULTS}/tables/stage2/`var'_spillovers_largefirms2.tex", replace noconstant mtitles keep(`explaining') ///
+
+	esttab regres13 regres23 regres14 regres24 using "${RESULTS}/tables/spillovers/var`var'_spillovers2.tex", replace noconstant mtitles keep(`explaining') ///
+		cells(b(star fmt(%9.3f)) se(par)) stats( estabfe stateyearfe othercontrols N, ///
+		fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "R\&D Credit, other" "Observations")) ///
+		mgroups("All" "No Treatment", pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///
+		collabels(none) starl(* .10 ** .05 *** .01) label 
+	*/ 
+				
+	esttab regres15 regres25 regres16 regres26 using "${RESULTS}/tables/stage2/var`var'_spillovers2.tex", replace noconstant mtitles keep(`explaining') ///
 		cells(b(star fmt(%9.3f)) se(par)) stats( estabfe stateyearfe othercontrols N, ///
 		fmt(%9.0g %9.0g %9.0g %9.0g %9.0g %9.0g ) label("Firm FE" "State-Year FE"  "R\&D Credit, other" "Observations")) ///
 		mgroups("All" "No Treatment", pattern(1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span) ///

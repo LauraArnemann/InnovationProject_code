@@ -1,11 +1,8 @@
-////////////////////////////////////////////////////////////////////////////////
-// Project: 		Moving innovation
-// Creation Date: 	15/06/2024
-// Last Update: 	21/11/2024
-// Author: 			Laura Arnemann 
-//					Theresa Bührle
-// Goal: 			Regular two-way fixed effects analysis with event studies 
-////////////////////////////////////////////////////////////////////////////////
+// Project: Inventor Relocation
+// Creation Date: 15/06/2024
+// Last Update: 15/06/2024
+// Author: Laura Arnemann 
+// Goal: Regular two-way fixed effects analysis with event studies 
 
 local sample1 if inrange(year, 1988, 2018)
 local sample2 if inrange(year, 1988, 2018) & total_patents>10 
@@ -99,7 +96,53 @@ foreach type in assignee {
 	gen zero_1=1
 	label var zero_1 "-1"
 	
+	********************************************************************************
+	* Regular event studies: No binning off 
+	********************************************************************************
+	/*
+	forvalues i = 8/9 {
+		
+		** Poisson Regression 
+		foreach var of varlist $outcome  {
+			foreach explaining in $weighting_strategy  {
 
+				* Generating the local which contains control variables 	
+				local other_controls other_cit_`explaining' other_pit_`explaining'
+					
+				ppmlhdfe `var'  F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
+				est sto regres1
+				coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
+				capture noisily graph export "$RESULTS/eventstudies/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_c1_balancednobin_`type'.png", replace
+
+				ppmlhdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
+				est sto regres2
+				coefplot regres2, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
+				capture noisily graph export "$RESULTS/eventstudies/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_c2_balancednobin_`type'.png", replace
+			} 
+		}	
+		
+		** Regular Regression
+		foreach var of varlist $outcome_log  {
+			foreach explaining in $weighting_strategy  {
+
+				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
+				est sto regres3
+				coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
+				capture noisily graph export "$RESULTS/eventstudies/new_`type'_$dataset/var`var'_`explaining'_sample`i'_c3_balancednobin_`type'.png", replace
+
+				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
+				est sto regres4
+				coefplot regres4, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
+				capture noisily graph export "$RESULTS/eventstudies/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_c4_balancednobin_`type'.png", replace
+			}
+		}
+	}
+
+	*/
 ********************************************************************************
 * Regular Event Studies: Binning Off 
 ********************************************************************************
@@ -123,17 +166,15 @@ foreach type in assignee {
 					
 				ppmlhdfe `var'  F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'' , absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres1
-				coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black))  ///
-					keep(F3_change_`explaining' F2_change_`explaining' F1_change_`explaining' zero_1 L0_change_`explaining' L1_change_`explaining' L2_change_`explaining' L3_change_`explaining') ///
-					yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "$RESULTS/eventstudies/stage1/`var'_`explaining'_sample`i'_c1_balancedbinning_`type'.png", replace
+				coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black))  ///
+					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
+				capture noisily graph export "$RESULTS/eventstudies/c/var`var'_`explaining'_sample`i'_c1_balancedbinning_`type'.png", replace
 
 				ppmlhdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres2
-				coefplot regres2, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-					keep(F3_change_`explaining' F2_change_`explaining' F1_change_`explaining' zero_1 L0_change_`explaining' L1_change_`explaining' L2_change_`explaining' L3_change_`explaining') ///
-					yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "$RESULTS/eventstudies/stage1/`var'_`explaining'_sample`i'_c2_balancedbinning_`type'.png", replace
+				coefplot regres2, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
+				capture noisily graph export "$RESULTS/eventstudies/stage1/var`var'_`explaining'_sample`i'_c2_balancedbinning_`type'.png", replace
 			}
 		}
 		
@@ -143,30 +184,24 @@ foreach type in assignee {
 				
 				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres3
-				coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-					keep(F3_change_`explaining' F2_change_`explaining' F1_change_`explaining' zero_1 L0_change_`explaining' L1_change_`explaining' L2_change_`explaining' L3_change_`explaining') ///
-					yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "$RESULTS/eventstudies/stage1/`var'_`explaining'_sample`i'_c3_balancedbinning_`type'.png", replace
+				coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
+				capture noisily graph export "$RESULTS/eventstudies/stage1/var`var'_`explaining'_sample`i'_c3_balancedbinning_`type'.png", replace
 
 				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
 				est sto regres4
-				coefplot regres4, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(3.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-					keep(F3_change_`explaining' F2_change_`explaining' F1_change_`explaining' zero_1 L0_change_`explaining' L1_change_`explaining' L2_change_`explaining' L3_change_`explaining') ///
-					yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "$RESULTS/eventstudies/stage1/`var'_`explaining'_sample`i'_c4_balancedbinning_`type'.png", replace
+				coefplot regres4, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
+					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0,  lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
+				capture noisily graph export "$RESULTS/eventstudies/stage1/var`var'_`explaining'_sample`i'_c4_balancedbinning_`type'.png", replace
 			}
 		}	
 	}
 
-	
 
 ********************************************************************************
 * Regular Event Studies: Binning Off + Unbalanced Panel
 ********************************************************************************
 	/*
-	
-	CODE STILL NEEDS TO BE ADJUSTED IF WE USE THIS!
-	
 	foreach explaining in $weighting_strategy {
 		foreach x in change_`explaining' increase_`explaining' decrease_`explaining' {
 
@@ -223,56 +258,5 @@ foreach type in assignee {
 		}
 	}
 	*/
-
-
-********************************************************************************
-* Regular event studies: No binning off 
-********************************************************************************
-	/*
-	CODE STILL NEEDS TO BE ADJUSTED IF WE USE THIS!
-	
-	forvalues i = 8/9 {
-		
-		** Poisson Regression 
-		foreach var of varlist $outcome  {
-			foreach explaining in $weighting_strategy  {
-
-				* Generating the local which contains control variables 	
-				local other_controls other_cit_`explaining' other_pit_`explaining'
-					
-				ppmlhdfe `var'  F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
-				est sto regres1
-				coefplot regres1, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "$RESULTS/eventstudies/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_c1_balancednobin_`type'.png", replace
-
-				ppmlhdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
-				est sto regres2
-				coefplot regres2, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "$RESULTS/eventstudies/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_c2_balancednobin_`type'.png", replace
-			} 
-		}	
-		
-		** Regular Regression
-		foreach var of varlist $outcome_log  {
-			foreach explaining in $weighting_strategy  {
-
-				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
-				est sto regres3
-				coefplot regres3, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "$RESULTS/eventstudies/new_`type'_$dataset/var`var'_`explaining'_sample`i'_c3_balancednobin_`type'.png", replace
-
-				reghdfe `var' F?_change_`explaining' zero_1 L?_change_`explaining' `other_controls' `sample`i'', absorb(estab_id year#i.fips_state) cl(estab_id)
-				est sto regres4
-				coefplot regres4, vertical  levels(95)  recast(connected)  omitted graphregion(color(white)) xline(4.5, lpattern(dash) lwidth(thin) lcolor(black)) ///
-					keep(F?_change_`explaining' zero_1 L?_change_`explaining') yline(0, lcolor(red) lwidth(thin)) ylabel(,labsize(medlarge)) xtitle("Years since Change") graphregion(color(white))
-				capture noisily graph export "$RESULTS/eventstudies/new_`type'_${dataset}/var`var'_`explaining'_sample`i'_c4_balancednobin_`type'.png", replace
-			}
-		}
-	}
-
-	*/
-
 }
+
