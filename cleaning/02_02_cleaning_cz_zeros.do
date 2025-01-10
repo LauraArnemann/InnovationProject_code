@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project: Inventor Relocation
 // Creation Date: 	10/02/2024
-// Last Update: 	29/10/2024
+// Last Update: 	11/12/2024
 // Author: 			Laura Arnemann 
 //					Theresa Bührle					
 // Goal: 			Merging the data set with the number of inventors 
@@ -45,9 +45,16 @@ drop dup
 duplicates report patnum inventor_id
 
 * Creating an indicator for assignee type 
-   do "${CODE}/cleaning/sub_clean_gov_uni_entitites.do"
-   gen pub_assg = 0 
-   replace pub_assg=1 if !missing(gvkey)
+	do "${CODE}/cleaning/sub_clean_gov_uni_entitites.do"
+   
+	if $gvkey == 0 {
+    gen pub_assg = 0 
+	replace pub_assg=1 if !missing(gvkey) 
+}
+
+	if $gvkey == 1 {
+    gen pub_assg = 1 
+}
 
    gen noncorp_asg = 0 
    replace noncorp_asg =1 if asg_hospital ==1 | asg_institute==1 | asg_gov==1 
@@ -365,8 +372,23 @@ duplicates tag patnum inventor_id assignee_id, gen(dup)
 drop if dup!=0
 drop dup
 
+* Creating an indicator for assignee type 
+	do "${CODE}/cleaning/sub_clean_gov_uni_entitites.do"
+   
+	if $gvkey == 0 {
+    gen pub_assg = 0 
+	replace pub_assg=1 if !missing(gvkey) 
+}
+
+	if $gvkey == 1 {
+    gen pub_assg = 1 
+}
+
+   gen noncorp_asg = 0 
+   replace noncorp_asg =1 if asg_hospital ==1 | asg_institute==1 | asg_gov==1 
+
 * Patent count by inventor - assignee - state - year
-collapse (count) n_patents=patnum, by(inventor_id assignee_id fips_state czone app_year)
+collapse (count) n_patents=patnum, by(inventor_id assignee_id noncorp_asg pub_assg fips_state czone app_year)
 
 * Drop all inventors working in 3 or more firms and working in 3 or more czones
 bysort inventor_id app_year: gen pat_count=_N
@@ -384,6 +406,7 @@ if $gvkey == 1 {
 }
 
 *Inventor count	 ---------------------------------------------------------------
+// Generate similar options to above 
 
 *1 Only keep inventors which can be uniquely assigned to one cz during a year
 *	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x	x
@@ -567,6 +590,7 @@ erase "${TEMP}/inventor3_cz.dta"
 // Even within assignee_id; one CZ can be appointed to up to 3 states
 
 foreach num of numlist $patentvar {
+	// These files have been previously generated with "${CODE}/cleaning/sub_gen_other_var.do"
    
 	if $gvkey == 0 {
 		use "${TEMP}/other_threelargest`num'.dta", clear 
@@ -576,7 +600,7 @@ foreach num of numlist $patentvar {
 		use "${TEMP}/other_threelargest`num'_gvkey.dta", clear 
 	}
 
-	rename other_rd_credit_threelargest other_threelargest3
+	rename other_rd_credit_threelargest other_threelargest
 
 	egen estab = group(assignee_id fips_state)
 	xtset estab year 
@@ -593,19 +617,59 @@ foreach num of numlist $patentvar {
 	}
 		
 	*keep if max_tr_ == 1
-	drop  states_present new_states states_total total* rank count
-		
+	drop  estab states_present new_states states_total total* rank count
+	
+	rename other_threelargest other_credit_threelargest
+				
 	if $gvkey == 0 {
 		save "${TEMP}/other_threelargest`num'_treated.dta", replace 
 	}
 	if $gvkey == 1 {
 		save "${TEMP}/other_threelargest`num'_treated_gvkey.dta", replace 
 	}
+	
+	*************
+	
+	if $gvkey == 0 {
+		use "${TEMP}/other_all`num'.dta", clear 
+	}
+
+	if $gvkey == 1 {
+		use "${TEMP}/other_all`num'_gvkey.dta", clear 
+	}
+
+	rename other_rd_credit_weighted other_weighted
+
+	egen estab = group(assignee_id fips_state)
+	xtset estab year 
+		
+	foreach var in other_weighted {
+		
+		* Changes in R&D credits
+		gen change_`var'  = `var' - l.`var'
+		*replace  change_`var' = 0 if inrange(change_`var', -1, 1)
+		* We should probably check if this is a good size approximation	
+		gen change_`var'_d = 1 if change_`var' <= -1 & change_`var' != .
+		replace change_`var'_d = 1 if change_`var' >= 1 & change_`var' != .
+		bysort estab: egen max_tr_`var' = max(change_`var'_d)
+	}
+		
+	*keep if max_tr_ == 1
+	drop  estab  
+	
+	rename other_weighted other_credit_weighted
+		
+	if $gvkey == 0 {
+		save "${TEMP}/other_all`num'_treated.dta", replace 
+	}
+	if $gvkey == 1 {
+		save "${TEMP}/other_all`num'_treated_gvkey.dta", replace 
+	}	
 }
  
  
 ********************************************************************************
-*  Merging in data on assignee type 
+*  Prepare data on assignee type 
 ********************************************************************************
 if $gvkey == 0 {
     use "${TEMP}/patentdata_clean_cz_assignee.dta", clear 
@@ -617,6 +681,8 @@ if $gvkey == 1 {
 
 bysort assignee_id: gen count = _n 
 keep if count ==1  
+keep assignee_id noncorp_asg asg_corp pub_assg
+
 tempfile patentshelper
 save `patentshelper'
 
@@ -638,13 +704,10 @@ if $gvkey == 1 {
 
 drop _merge 
 
+*  Merging in  data on assignee type 
 merge m:1 assignee_id using `patentshelper', keepusing(noncorp_asg asg_corp pub_assg)
 drop if _merge ==2 
 drop _merge 
-
-*Local firms (only active in CZ throughout whole sample period)
-// There are some firms that are local in a given year but open up more lcoations over time
-// Due to the fixed definition of other locations, they are recorded with changes at other locations even if cz = 1 in t
 
 rename app_year year 
 destring fips_state, replace
@@ -657,15 +720,25 @@ foreach num of numlist $patentvar {
 	if $gvkey == 1 {
 		merge m:1 fips_state year assignee_id using "${TEMP}/other_threelargest`num'_treated_gvkey.dta"
 	}
+	
+	drop if _merge == 2
+	drop _merge
 
+	if $gvkey == 0 {
+		merge m:1 fips_state year assignee_id using "${TEMP}/other_all`num'_treated.dta"
+}
+	if $gvkey == 1 {
+		merge m:1 fips_state year assignee_id using "${TEMP}/other_all`num'_treated_gvkey.dta"
+}
+	drop if _merge==2
+	drop _merge  
 }
 
-drop if _merge == 2
-drop _merge
-
-replace change_other_threelargest = . if asg_corp!=1 
 	
-* Creating an indicator for only local firms 
+* Creating an indicator for only local firms (only active in CZ throughout whole sample period)
+// There are some firms that are local in a given year but open up more locations over time
+// Due to the fixed definition of other locations, they are recorded with changes at other locations even if cz = 1 in t
+
 bysort assignee_id year czone: gen helper = _n 
 replace helper = . if helper!=1 
 bysort assignee_id year: egen total_labs = total(helper)
@@ -678,64 +751,95 @@ bysort czone fips_state: gen n_labs = _N
 tab tag_local if change_other_threelargest_d == 1 // check; there should be none
 	
 *CZ with firms that are treated	
+**# Bookmark #1 WHY ARE WE SETTING THESE TO MISSING? DO WE ASSUME THAT NONCORP ARE NOT TREATED?
+// IF SO ;WE ALSO HAVE TO SET change_other_threelargest_d TO MISSING
+replace change_other_threelargest = . if asg_corp!=1 
+
 bysort fips_state czone year: egen cz_treated = max(change_other_threelargest_d)
+
+*******************************************************************************
+* Calculating the weighted variable for spillover analysis
+*******************************************************************************
+
+*CHANGE ------------------------------------------------------------------------
 
 *Average rd_credit change of treated firms within CZ
 bysort fips_state czone year: egen cz_treated_change = mean(change_other_threelargest)
 replace cz_treated_change = 0 if cz_treated_change == .
 
-	*Weighted:
+	*Weighted	*	*	*	*	*	*	*	*	*	*	*	*	*	*	*	*	*
+	
+	* Weight multi-state firm as share of all multi-state firms
 	gen inv_count_multistate = n_inventors3 if tag_local != 1 & asg_corp==1
+	
 	bysort fips_state czone year: egen sum_inv_multi = sum(inv_count_multistate)
 	gen weight_multi = inv_count_multistate / sum_inv_multi if inv_count_multistate != .
 	
-	* Importance of multi-state firms: 
+		bysort fips_state czone year: egen test = sum(weight_multi)
+		tab test // should be either 0 or 1
+		drop test
+	
+	* Importance of multi-state firms as compared to all firms in the CZ 
 	bysort fips_state czone year: egen sum_inv = sum(n_inventors3)
 	gen share_inv = sum_inv_multi/sum_inv
 	
-	bysort fips_state czone year: egen test = sum(weight_multi)
-	tab test // should be either 0 or 1
-	drop test
-
+	* Lagging the number of inventors/patents by one year
 	egen estab_id = group(assignee_id fips_state czone)
 	xtset estab_id year 
-	
-	* Lagging the number of inventors/patents by one year 
+	 
 	gen lag_inventors = l.n_inventors3 if tag_local != 1 & asg_corp==1
 	gen lag_patents = l.patents3 if tag_local != 1 & asg_corp==1
 	
 	bysort fips_state czone year: egen sum_invent = sum(lag_inventors)
 	bysort fips_state czone year: egen sum_patents = sum(lag_patents)
 	
+	* Weighted changes with different options
+	// The correct approach for multistate firms would be to exclude them from calculating the weights
+	
 	gen weighted_change1 = change_other_threelargest * weight_multi
+		bysort fips_state czone year: egen cz_treated_change_w1 = sum(weighted_change1)
+	
 	gen weighted_change2 = change_other_threelargest *(lag_inventors/sum_invent)
-	gen weighted_change3 = change_other_threelargest *(lag_patents/sum_patents)
-	gen weighted_change4 = change_other_threelargest * n_inventors3
-	gen weighted_change5 = change_other_threelargest * lag_inventors
-	gen weighted_change6 = change_other_threelargest * n_inventors3 if asg_corp ==1 
-	replace weighted_change6 = 0 if missing(change_other_threelargest)
-
-	* I think the correct approach for multistate firms would be to exclude them from calculating the weights 
-	bysort fips_state czone year: egen cz_treated_change_w1 = sum(weighted_change1)
-	bysort fips_state czone year: egen cz_treated_change_w2 = sum(weighted_change2)
-	bysort fips_state czone year: egen cz_treated_change_w3 = sum(weighted_change3)
-	bysort fips_state czone year: egen cz_treated_change_w4_helper = sum(weighted_change4)
-	gen cz_treated_change_w4 = (cz_treated_change_w4_helper - weighted_change4)/(sum_inv - n_inventors3) if change_other_threelargest!=. 
-	
-	replace cz_treated_change_w4 = cz_treated_change_w4_helper/sum_inv if missing(change_other_threelargest)
-	bysort fips_state czone year: egen cz_treated_change_w5_helper = sum(weighted_change5)
-	
-	gen cz_treated_change_w5 = (cz_treated_change_w5_helper - weighted_change5)/(sum_invent - lag_inventors) if change_other_threelargest!=. 
-	replace cz_treated_change_w5 = cz_treated_change_w5_helper/sum_invent if missing(change_other_threelargest)
-	
-	bysort fips_state czone year: egen cz_treated_change_w6_helper = sum(weighted_change6)
-	gen cz_treated_change_w6 = (cz_treated_change_w6_helper - weighted_change6)/(sum_inv - n_inventors3)
+		bysort fips_state czone year: egen cz_treated_change_w2 = sum(weighted_change2)
 		
-*******************************************************************************
-* Calculating the weighted level of the variable 
-*******************************************************************************
+	gen weighted_change3 = change_other_threelargest *(lag_patents/sum_patents)
+		bysort fips_state czone year: egen cz_treated_change_w3 = sum(weighted_change3)
+		
+	gen weighted_change4 = change_other_threelargest * n_inventors3
+		bysort fips_state czone year: egen cz_treated_change_w4_helper = sum(weighted_change4)
+		gen cz_treated_change_w4 = (cz_treated_change_w4_helper - weighted_change4)/(sum_inv - n_inventors3) ///
+			if change_other_threelargest!=. 
+		replace cz_treated_change_w4 = cz_treated_change_w4_helper/sum_inv ///
+			if missing(change_other_threelargest)
+					
+	gen weighted_change5 = change_other_threelargest * lag_inventors
+		bysort fips_state czone year: egen cz_treated_change_w5_helper = sum(weighted_change5)
+		gen cz_treated_change_w5 = (cz_treated_change_w5_helper - weighted_change5)/(sum_invent - lag_inventors) ///
+			if change_other_threelargest!=. 
+		replace cz_treated_change_w5 = cz_treated_change_w5_helper/sum_invent ///
+			if missing(change_other_threelargest)
+	
+	gen weighted_change6 = change_other_threelargest * n_inventors3 if asg_corp ==1 
+		replace weighted_change6 = 0 if missing(change_other_threelargest)
+		bysort fips_state czone year: egen cz_treated_change_w6_helper = sum(weighted_change6)
+		gen cz_treated_change_w6 = (cz_treated_change_w6_helper - weighted_change6)/(sum_inv - n_inventors3)
+				
+	*Time-constant weighting	* 	*	*	*	*	*	*	*	*	*	*	*
+	
+	* Total # of inv of multi-state firm in CZ across sample / total # inv in CZ across sample
+	bysort assignee_id fips_state czone: egen sum_inv_corp_allyears = sum(n_inventors3) 
+	bysort fips_state czone: egen sum_inv_cz_allyears = sum(sum_inv_corp_allyears)
+	gen share_inv_allyears = sum_inv_corp_allyears/sum_inv_cz_allyears
+	
+		bysort fips_state czone: egen test = sum(share_inv_allyears)
+		tab test // should be either 0 or 1
+		drop test
 
-rename other_threelargest other_credit_threelargest 
+	gen weighted_change7 = change_other_threelargest * share_inv_allyears if asg_corp ==1 
+		bysort fips_state czone year: egen cz_treated_change_w7 = sum(weighted_change7)
+		replace cz_treated_change_w7 = . if change_other_threelargest != . & change_other_threelargest != 0	
+		
+*LEVEL -------------------------------------------------------------------------
 
 foreach tax in credit pit cit {
 	gen weighted_level`tax'1 = other_`tax'_threelargest * weight_multi
@@ -744,28 +848,39 @@ foreach tax in credit pit cit {
 	gen weighted_level`tax'4 = other_`tax'_threelargest * n_inventors3
 	gen weighted_level`tax'5 = other_`tax'_threelargest * lag_inventors
 	gen weighted_level`tax'6 = other_`tax'_threelargest * n_inventors3 if asg_corp ==1 
-	replace weighted_level`tax'6 = 0 if missing(other_`tax'_threelargest)
+		replace weighted_level`tax'6 = 0 if missing(other_`tax'_threelargest)
+		
+	gen weighted_level`tax'7 = other_`tax'_threelargest * share_inv_allyears if asg_corp ==1 
 	
 	* Generating the weighted variable in levels 	
 	bysort fips_state czone year: egen cz_treated_level`tax'_w1 = sum(weighted_level`tax'1)
+	
 	bysort fips_state czone year: egen cz_treated_level`tax'_w2 = sum(weighted_level`tax'2)
+	
 	bysort fips_state czone year: egen cz_treated_level`tax'_w3 = sum(weighted_level`tax'3)
+	
 	bysort fips_state czone year: egen cz_treated_level_w4_helper = sum(weighted_level`tax'4)
-	gen cz_treated_level`tax'_w4 = (cz_treated_level_w4_helper - weighted_level`tax'4)/(sum_inv - n_inventors3) if other_`tax'_threelargest!=. 
+		gen cz_treated_level`tax'_w4 = (cz_treated_level_w4_helper - weighted_level`tax'4)/(sum_inv - n_inventors3) if other_`tax'_threelargest!=. 
+		replace cz_treated_level`tax'_w4 = cz_treated_level_w4_helper/sum_inv
 	
-	replace cz_treated_level`tax'_w4 = cz_treated_level_w4_helper/sum_inv
 	bysort fips_state czone year: egen cz_treated_level_w5_helper = sum(weighted_level`tax'5)
-	
-	gen cz_treated_level`tax'_w5 = (cz_treated_level_w5_helper - weighted_level`tax'5)/(sum_invent - lag_inventors) if other_`tax'_threelargest!=. 
-	replace cz_treated_level`tax'_w5 = cz_treated_level_w5_helper/sum_invent
+		gen cz_treated_level`tax'_w5 = (cz_treated_level_w5_helper - weighted_level`tax'5)/(sum_invent - lag_inventors) if other_`tax'_threelargest!=. 
+		replace cz_treated_level`tax'_w5 = cz_treated_level_w5_helper/sum_invent
 	
 	bysort fips_state czone year: egen cz_treated_level_w6_helper = sum(weighted_level`tax'6)
-	gen cz_treated_level`tax'_w6 = (cz_treated_level_w6_helper - weighted_level`tax'6)/(sum_inv - n_inventors3)
+		gen cz_treated_level`tax'_w6 = (cz_treated_level_w6_helper - weighted_level`tax'6)/(sum_inv - n_inventors3)
+		
+	bysort fips_state czone year: egen cz_treated_level`tax'_w7 = sum(weighted_level`tax'7) 
+		replace cz_treated_level`tax'_w7 = . if other_`tax'_threelargest != . & other_`tax'_threelargest != 0	
 	
-	drop  cz_treated_level_w4_helper cz_treated_level_w6_helper cz_treated_level_w5_helper
+	drop *_helper
 }
+
 	
-	
+*******************************************************************************
+* Add other variables
+*******************************************************************************
+		
 * Define time and treatment dummies	
 xtset estab_id year 
 local x change_other_threelargest
@@ -811,6 +926,7 @@ gen multistate_cz = 0
 replace multistate_cz = 1 if sum_count>1 
 drop count sum_count 
 
+duplicates report assignee_id fips_state czone year // Sanity Check
 compress
 
 if $gvkey == 0 {
@@ -839,7 +955,3 @@ if $gvkey == 1 {
     save "${TEMP}/final_cz_zeros_gvkey.dta", replace 
 }
 
-cap erase "${TEMP}/patentcount_cz_assignee.dta"
-cap erase "${TEMP}/inventorcount_cz_assignee.dta"
-cap erase "${TEMP}/patentcount_cz_gvkey.dta"
-cap erase "${TEMP}/inventorcount_cz_gvkey.dta"

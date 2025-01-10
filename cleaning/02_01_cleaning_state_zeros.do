@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	06/12/2023
-// Last Update:    	29/10/2024
+// Last Update:    	21/11/2024
 // Authors:         Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Generating innovative activity per firm-establishment-year at state level
@@ -41,10 +41,17 @@ drop dup
 duplicates report patnum inventor_id // Check, should be zero 
 
 * Creating an indicator for assignee type 
-   do "${CODE}/cleaning/sub_clean_gov_uni_entitites.do"
-   gen pub_assg = 0 
-   replace pub_assg=1 if !missing(gvkey)
+	do "${CODE}/cleaning/sub_clean_gov_uni_entitites.do"
+   
+	if $gvkey == 0 {
+    gen pub_assg = 0 
+	replace pub_assg=1 if !missing(gvkey) 
+}
 
+	if $gvkey == 1 {
+    gen pub_assg = 1 
+}
+   
    gen noncorp_asg = 0 
    replace noncorp_asg =1 if asg_hospital ==1 | asg_institute==1 | asg_gov==1 
 
@@ -297,9 +304,16 @@ drop if dup!=0
 drop dup
 
 * Creating an indicator for assignee type 
-   do "${CODE}/cleaning/sub_clean_gov_uni_entitites.do"
-   gen pub_assg = 0 
-   replace pub_assg=1 if !missing(gvkey)
+	do "${CODE}/cleaning/sub_clean_gov_uni_entitites.do"
+   
+	if $gvkey == 0 {
+    gen pub_assg = 0 
+	replace pub_assg=1 if !missing(gvkey) 
+}
+
+	if $gvkey == 1 {
+    gen pub_assg = 1 
+}
 
    gen noncorp_asg = 0 
    replace noncorp_asg =1 if asg_hospital ==1 | asg_institute==1 | asg_gov==1 

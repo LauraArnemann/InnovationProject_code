@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Project:        	Moving innovation
 // Creation Date:  	20/11/2023
-// Last Update:    	21/10/2024
+// Last Update:    	26/11/2024
 // Authors:        	Laura Arnemann
 //					Theresa Bührle
 // Goal: 			Master
@@ -11,6 +11,7 @@ clear
 *set maxvar 120000
 *set max_memory 80g, permanently
 set more off
+version 17
 
 /*
 *Programs
