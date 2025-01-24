@@ -11,7 +11,7 @@ clear
 *set maxvar 120000
 *set max_memory 80g, permanently
 set more off
-version 17
+*version 17
 
 /*
 *Programs
@@ -85,7 +85,7 @@ if c(username) == "tbuehrle" {
 
 if c(username) == "there" {
 	
-	global path "D:/DOCS/3_Forschung/Topics/Spillover migration/2_Empirical"
+	global path "F:/DOCS/3_Forschung/Topics/Spillover migration/2_Empirical"
 	
 	global IN "${path}/2_1_Data/raw"
 	global TEMP "${path}/2_1_Data/temp"
