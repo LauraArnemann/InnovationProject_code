@@ -41,6 +41,7 @@ drop dup
 duplicates report patnum inventor_id // Check, should be zero 
 
 * Creating an indicator for assignee type 
+	do "${CODE}/cleaning/sub_clean_assignees.do"
 	do "${CODE}/cleaning/sub_clean_gov_uni_entitites.do"
    
 	if $gvkey == 0 {
@@ -65,6 +66,7 @@ if $gvkey == 1 {
     save "${TEMP}/patentdata_clean_gvkey.dta", replace 
 }
 
+xxxx
 
 *Patent count ------------------------------------------------------------------
 
